@@ -1,146 +1,144 @@
-🧾 Overview
+# 🚀 PrepWise – AI-Powered Career Preparation Platform  
+
+PrepWise is an **end-to-end career preparation platform** built using the **MERN Stack (MongoDB, Express, React, Node.js)**.  
+It integrates **AI-driven resume analysis, skill assessment, and mock interview simulation** to help students and job seekers become job-ready.  
+
+The platform bridges the gap between **academic learning and industry expectations** by evaluating users’ CVs, skills, and interview performance, and then generating **personalized feedback and training recommendations**.  
+
+---
+
+## 🧾 Overview  
+
+PrepWise is designed for **students, job seekers, and professionals** preparing for tech roles.  
+It also includes **admin and trainer functionalities** to manage users, events, news, and training programs.  
+
+---
+
+## ⚙️ Core Features  
+
+### 🧠 CV Checker  
+- AI-driven document analysis for **structure, strengths, and weaknesses**.  
+- Upload CV (PDF/DOCX) and one or more Job Descriptions (JDs).  
+- Returns:
+  - **Strengths:** Keywords matching the job role.  
+  - **Weaknesses:** Missing or irrelevant content.  
+  - **Structure Analysis:** Layout and formatting feedback.  
+  - **Improvement Suggestions:** Targeted edits for better job matching.  
+- ⚙️ *Powered by NLP-based keyword extraction and semantic similarity checks.*  
+
+---
+
+### 💪 Skill Assessor  
+- Extracts **technical and soft skills** from the CV automatically.  
+- Allows users to **self-rate** each skill on a **confidence scale (1–10)**.  
+- Ratings are stored and used to personalize future **training recommendations**.  
+
+---
+
+### 🧑‍💻 AI Mock Interview Module  
+- Simulates a realistic **technical job interview** experience.  
+- Dynamically generates **10 questions**:
+  - 🗣 **3 Behavioral**
+  - 💻 **4 Technical**
+  - 👨‍💻 **3 Coding** (executed live via JDoodle API)  
+- **Voice-enabled answering** using the Web Speech API (speech-to-text).  
+- **Real-time code execution** and debugging feedback.  
+- Each question is graded based on:
+  - Accuracy  
+  - Relevance  
+  - Communication clarity  
+  - Code efficiency  
+
+---
+
+### 📊 Performance Report & Training Recommendations  
+After the interview, users receive a **comprehensive performance report**:  
+- Score breakdown per question (0–100 scale).  
+- Identified strengths and areas for improvement.  
+- Personalized **training recommendations** based on:
+  - Skill gaps  
+  - Self-assessed confidence levels  
+
+---
+
+### 🎯 Training Session Module  
+- Suggests **personalized training programs** with industry experts.  
+- Recommendations generated from **Skill Assessor ratings**.  
+- One-time paid booking through **PayHere integration**.  
+- Trainers manage their sessions and share links with participants.  
+
+---
+
+### 📰 Notice Board & Tech News Feed  
+- **Notice Board:** Admins post updates about:
+  - Hackathons, workshops, and tech events in Sri Lanka.  
+  - Application deadlines and competitions.  
+- **Tech News Feed:** Real-time news fetched via **NewsAPI.org** — keeping users updated on trends in AI, startups, and software development.  
+
+---
+
+### 🧑‍💼 Admin & Trainer Dashboards  
+
+#### 🛠️ Admin Dashboard  
+- Manage users and trainers.  
+- Post and moderate event notices.  
+- Monitor session bookings and activity metrics.  
+
+#### 🎓 Trainer Dashboard  
+- Create and manage training sessions.  
+- Assign users and view their progress.  
+- Collect feedback after sessions.  
+
+---
+
+## 🧩 Tech Stack  
+
+| **Layer** | **Technology** | **Description** |
+|------------|----------------|-----------------|
+| **Frontend** | React.js | Dynamic and responsive UI with routing and state management |
+| **Backend** | Node.js, Express.js | RESTful API development and business logic |
+| **Database** | MongoDB Atlas | Cloud database for users, CVs, sessions, and reports |
+| **Authentication** | JWT | Secure user authentication and session management |
+| **File Upload** | Multer | CV upload and storage management |
+| **AI Integration** | Gemini API | CV analysis and skill extraction |
+| **Code Execution** | JDoodle API | Real-time coding and debugging environment |
+| **Speech Recognition** | Web Speech API | Enables voice-based interview responses |
+| **News Feed** | NewsAPI.org | Fetches real-time global tech news |
+| **Payment Gateway** | PayHere | One-time payment and subscription handling |
+| **Deployment** | AWS / Cloud Hosting | Scalable cloud deployment for frontend and backend |
+
+---
+
+## 🔒 Key Highlights  
+- AI + NLP integration for CV and skill matching.  
+- Real-time coding & voice-based interview simulation.  
+- Role-based dashboards (Admin, Trainer, Fresher).  
+- Personalized learning and upskilling recommendations.  
+- Deployed on cloud infrastructure for scalability and reliability.  
+
+---
+
+## 📬 Contributors  
+👩‍💻 **Development Team:**  
+- **Scrum Master / QA:** Linuka Rodrigo  
+- **Developer:** Shalindri  
+- **Business Analyst:** Gimhan  
+- **Quality Analyst:** Sharini  
+
+---
+
+## 🏁 Project Management  
+- Managed under **Agile Scrum** methodology.  
+- Used **Jira & Confluence** for sprint tracking, UAT, and documentation.  
+- Delivered in 4 sprints:
+  1. Authentication & CV Checker  
+  2. SWOT Analysis & Training Module Design  
+  3. Mock Interview & Feedback Reports  
+  4. Admin Dashboard, Training Session Integration & Notices  
+
+---
+
+> 💡 *PrepWise redefines how freshers prepare for their careers — through AI, automation, and personalized learning.*
+
+---
 
-PrepWise is an end-to-end career preparation platform built using the MERN (MongoDB, Express, React, Node.js) stack, integrating AI-driven resume analysis, skill assessment, and interview simulation.
-
-It bridges the gap between candidates and job readiness by evaluating their CV, skills, and interview performance, then generating a personalized improvement report and training recommendations.
-
-This platform is designed for students, job seekers, and professionals preparing for tech roles, with administrative and trainer functionalities to manage events, news, and training programs.
-
-⚙️ Core Features
-
-CV Checker: AI-driven document analysis for structure, strengths, and weaknesses.
-
-Skill Assessor: Extracts skills from CVs and allows users to self-rate their proficiency.
-
-Mock Interview Module:
-
-10 dynamically generated questions (3 behavioral, 4 technical, 3 coding).
-
-Coding questions run on JDoodle API for real-time debugging.
-
-Voice-enabled answering using speech-to-text.
-
-Performance Report: Generates analytical summaries and personalized feedback.
-
-Training Recommendations: Suggests skill development paths and learning programs.
-
-Notice Board: Displays local tech events (hackathons, meetups, competitions).
-
-Tech News Feed: Fetches real-time global and Sri Lankan tech news from external APIs.
-
-Admin Dashboard: Manage users and post event notices.
-
-Trainer Dashboard: Manage training programs and monitor learners’ progress.
-
-🧩 Tech Stack
-Layer	Technology	Description
-Frontend	React.js, state management, routing
-Backend	Node.js, Express.js	REST API development
-Database	MongoDB Atlas	Cloud database for users, CVs, and training data
-Authentication	JWT	Secure login & access control
-File Upload	Multer	CV upload and storage
-Gemini API	CV analysis and skill extraction
-Code Execution	JDoodle API	Live coding and debugging environment
-Speech Recognition	Web Speech API	Enables voice-based interview responses
-News API	NewsAPI.org	Fetching real-time tech news
-Deployment	AWS and cloud hosting
-
-🔍 Detailed Feature Breakdown
-1️⃣ CV Checker
-
-Upload your CV (PDF/DOCX) and Job Description.
-The system analyzes and returns:
-
-Strengths: Skills or keywords aligned with the job.
-
-Weaknesses: Missing or irrelevant content.
-
-Structure Analysis: Layout and formatting feedback.
-
-Improvement Suggestions: Targeted edits for better job matching.
-
-👉 Powered by NLP-based keyword extraction and semantic similarity checks.
-
-2️⃣ Skill Assessor
-
-Automatically extracts technical and soft skills from your CV.
-
-Users rate themselves on a confidence scale (1–10).
-
-Data used to personalize training recommendations later.
-
-3️⃣ AI Interview Module
-
-A dynamic mock interview simulator built for full-stack and technical roles.
-
-Generates 10 questions:
-
-🗣 3 Behavioral
-
-💻 4 Technical
-
-👨‍💻 3 Coding (via JDoodle live compiler)
-
-Voice-based answering supported.
-
-Real-time code execution & debugging feedback.
-
-Each question graded based on:
-
-Accuracy
-
-Relevance
-
-Communication clarity
-
-Code efficiency (for coding questions)
-
-4️⃣ Performance Report & Recommendations
-
-After the interview:
-
-A comprehensive report is generated including:
-
-Score per question (0–100 scale)
-
-Strengths and areas for improvement
-
-Suggested next steps
-
-Training Recommendations:
-
-AI recommends trainings, bootcamps, or materials
-
-Recommendations based on:
-
-Skill gaps
-
-Self-assessed confidence
-
-5️⃣ Notice & News Feed
-
-Notice Board: Admins can post updates about:
-
-Tech events, hackathons, and workshops in Sri Lanka
-
-Application deadlines and competitions
-
-News Feed: Integrated Tech News API keeps users updated on the latest trends in AI, software development, and startups.
-
-6️⃣ Admin & Trainer Dashboards
-
-Admin Panel:
-
-User management (view, delete, update)
-
-Post and manage notices
-
-Approve or moderate events
-
-Trainer Panel:
-
-Create and manage training sessions
-
-Assign users to sessions
-
-Monitor user engagement and performance
