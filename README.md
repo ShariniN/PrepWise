@@ -116,9 +116,3 @@ After the interview, users receive a **comprehensive performance report**:
 - Personalized learning and upskilling recommendations.  
 - Deployed on cloud infrastructure for scalability and reliability.  
 
----
-
-> 💡 *PrepWise redefines how freshers prepare for their careers — through AI, automation, and personalized learning.*
-
----
-
