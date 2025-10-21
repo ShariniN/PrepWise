@@ -104,7 +104,6 @@ After the interview, users receive a **comprehensive performance report**:
 | **Code Execution** | JDoodle API | Real-time coding and debugging environment |
 | **Speech Recognition** | Web Speech API | Enables voice-based interview responses |
 | **News Feed** | NewsAPI.org | Fetches real-time global tech news |
-| **Payment Gateway** | PayHere | One-time payment and subscription handling |
 | **Deployment** | AWS / Cloud Hosting | Scalable cloud deployment for frontend and backend |
 
 ---
