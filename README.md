@@ -118,26 +118,6 @@ After the interview, users receive a **comprehensive performance report**:
 
 ---
 
-## 📬 Contributors  
-👩‍💻 **Development Team:**  
-- **Scrum Master / QA:** Linuka Rodrigo  
-- **Developer:** Shalindri  
-- **Business Analyst:** Gimhan  
-- **Quality Analyst:** Sharini  
-
----
-
-## 🏁 Project Management  
-- Managed under **Agile Scrum** methodology.  
-- Used **Jira & Confluence** for sprint tracking, UAT, and documentation.  
-- Delivered in 4 sprints:
-  1. Authentication & CV Checker  
-  2. SWOT Analysis & Training Module Design  
-  3. Mock Interview & Feedback Reports  
-  4. Admin Dashboard, Training Session Integration & Notices  
-
----
-
 > 💡 *PrepWise redefines how freshers prepare for their careers — through AI, automation, and personalized learning.*
 
 ---
