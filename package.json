@@ -1,0 +1,32 @@
+{
+  "dependencies": {
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^17.2.2",
+    "express-rate-limit": "^8.0.1",
+    "express-session": "^1.18.2",
+    "mongoose": "^8.17.0",
+    "nodemailer": "^7.0.6"
+  },
+  "name": "pw---finalll",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gimhanfdo/PrepWise-Web-App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Gimhanfdo/PrepWise-Web-App/issues"
+  },
+  "homepage": "https://github.com/Gimhanfdo/PrepWise-Web-App#readme"
+}
