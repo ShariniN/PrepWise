@@ -685,7 +685,7 @@ IMPORTANT:
     console.log('📏 Response length:', rawText.length);
     console.log('🔍 Response preview (first 200 chars):', rawText.substring(0, 200));
 
-    // Enhanced JSON extraction with better error handling
+ 
     let cleanedText = rawText
       .trim()
       .replace(/```json\s*/gi, '')
