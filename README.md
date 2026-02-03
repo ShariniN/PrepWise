@@ -61,36 +61,6 @@ After the interview, users receive a **comprehensive performance report**:
 
 ---
 
-### 🎯 Training Session Module  
-- Suggests **personalized training programs** with industry experts.  
-- Recommendations generated from **Skill Assessor ratings**.  
-- One-time paid booking through **PayHere integration**.  
-- Trainers manage their sessions and share links with participants.  
-
----
-
-### 📰 Notice Board & Tech News Feed  
-- **Notice Board:** Admins post updates about:
-  - Hackathons, workshops, and tech events in Sri Lanka.  
-  - Application deadlines and competitions.  
-- **Tech News Feed:** Real-time news fetched via **NewsAPI.org** — keeping users updated on trends in AI, startups, and software development.  
-
----
-
-### 🧑‍💼 Admin & Trainer Dashboards  
-
-#### 🛠️ Admin Dashboard  
-- Manage users and trainers.  
-- Post and moderate event notices.  
-- Monitor session bookings and activity metrics.  
-
-#### 🎓 Trainer Dashboard  
-- Create and manage training sessions.  
-- Assign users and view their progress.  
-- Collect feedback after sessions.  
-
----
-
 ## 🧩 Tech Stack  
 
 | **Layer** | **Technology** | **Description** |
@@ -103,7 +73,6 @@ After the interview, users receive a **comprehensive performance report**:
 | **AI Integration** | Gemini API | CV analysis and skill extraction |
 | **Code Execution** | JDoodle API | Real-time coding and debugging environment |
 | **Speech Recognition** | Web Speech API | Enables voice-based interview responses |
-| **News Feed** | NewsAPI.org | Fetches real-time global tech news |
 | **Deployment** | AWS / Cloud Hosting | Scalable cloud deployment for frontend and backend |
 
 ---
