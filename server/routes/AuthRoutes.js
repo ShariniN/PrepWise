@@ -4,11 +4,6 @@ import userAuth from '../middleware/userAuth.js';
 
 
 const authRouter = express.Router();
-
-// authRouter.get('/is-auth', (req, res) => {
-//   // Replace with real authentication check
-//   res.json({ authenticated: true });
-// });
 authRouter.post('/register', registerUser);
 authRouter.post('/login', login);
 authRouter.post('/logout', logout);

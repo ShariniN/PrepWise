@@ -1,7 +1,5 @@
-
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
-import trainerModel from "../models/TrainerModel.js";
 
 const userAuth = async (req, res, next) => {
   const token = req.cookies.token;
@@ -14,7 +12,6 @@ const userAuth = async (req, res, next) => {
   }
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     if (!decoded.id) {
