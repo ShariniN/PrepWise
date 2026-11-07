@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import EmailVerify from './pages/EmailVerify'
 import ResetPassword from './pages/ResetPassword'
-import {ToastContainer} from 'react-toastify';
+import Toaster from './components/ui/Toaster';
 import 'react-toastify/dist/ReactToastify.css';
 import FresherDashboard from './pages/FresherDashboard'
 import ProfileSettings from './pages/ProfileSettings'
@@ -36,14 +37,17 @@ import MyCases from './pages/MyCases'
 
 
 
+// Dev-only component gallery; the import is dropped from production builds.
+const UiKit = import.meta.env.DEV ? lazy(() => import('./pages/UiKit')) : null;
+
 const App = () => {
   return (
     <div>
       <DemoBanner/>
-      <ToastContainer/>
+      <Toaster/>
       <Routes>
         {/* Authentication Routes */}
-        <Route path='/' element={<Login/>}/>
+        <Route path='/' element={<Landing/>}/>
         <Route path='/accept-invite' element={<AcceptInvite/>}/>
         <Route path='/login' element={<Login/>}/>
         <Route path='/email-verify' element={<EmailVerify/>}/>
@@ -88,6 +92,8 @@ const App = () => {
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>
+
+        {UiKit && <Route path='/ui-kit' element={<Suspense fallback={null}><UiKit/></Suspense>}/>}
 
         <Route path='*' element={<Login/>}/>
       </Routes>
