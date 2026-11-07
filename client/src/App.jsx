@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
+import Landing from './pages/Landing'
 import EmailVerify from './pages/EmailVerify'
 import ResetPassword from './pages/ResetPassword'
 import Toaster from './components/ui/Toaster';
@@ -46,7 +47,7 @@ const App = () => {
       <Toaster/>
       <Routes>
         {/* Authentication Routes */}
-        <Route path='/' element={<Login/>}/>
+        <Route path='/' element={<Landing/>}/>
         <Route path='/accept-invite' element={<AcceptInvite/>}/>
         <Route path='/login' element={<Login/>}/>
         <Route path='/email-verify' element={<EmailVerify/>}/>
