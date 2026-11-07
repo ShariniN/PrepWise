@@ -1,1 +1,50 @@
-export default [];
+export default [
+  {
+    slug: 'next-greater-element', title: 'Next greater element', topic: ['data-structures', 'stacks', 'arrays'], diff: 'medium', min: 20, outcome: 'Use a stack of unresolved positions',
+    text: 'For each number in the list find the first number to its right that is strictly larger. Use -1 where there is none.',
+    params: [['a', 'ints', 'between 1 and 1000 integers']], ret: ['ints', 'one answer per position'],
+    js: 'function solve(a) {\n  const res = new Array(a.length).fill(-1);\n  const stack = [];\n  for (let i = 0; i < a.length; i++) {\n    while (stack.length && a[stack[stack.length - 1]] < a[i]) res[stack.pop()] = a[i];\n    stack.push(i);\n  }\n  return res;\n}',
+    py: 'def solve(a):\n    res = [-1] * len(a)\n    stack = []\n    for i, x in enumerate(a):\n        while stack and a[stack[-1]] < x:\n            res[stack.pop()] = x\n        stack.append(i)\n    return res',
+    tests: [[[[2, 1, 5, 3, 6]], true, '5 5 6 6 -1'], [[[4, 3, 2]], true, '-1 -1 -1'], [[[7]], false, '-1'], [[[1, 1, 2]], false, '2 2 -1'], [[[1, 2, 3, 4]], false, '2 3 4 -1']],
+  },
+  {
+    slug: 'days-until-warmer', title: 'Days until warmer', topic: ['data-structures', 'stacks'], diff: 'medium', min: 20, outcome: 'Store indexes on a stack to measure distances',
+    text: 'Given daily temperatures, for each day print how many days you must wait until a warmer temperature. Print 0 if no later day is warmer.',
+    params: [['t', 'ints', 'between 1 and 1000 temperatures']], ret: ['ints', 'the wait in days for each day'],
+    js: 'function solve(t) {\n  const res = new Array(t.length).fill(0);\n  const stack = [];\n  for (let i = 0; i < t.length; i++) {\n    while (stack.length && t[stack[stack.length - 1]] < t[i]) {\n      const j = stack.pop();\n      res[j] = i - j;\n    }\n    stack.push(i);\n  }\n  return res;\n}',
+    py: 'def solve(t):\n    res = [0] * len(t)\n    stack = []\n    for i, x in enumerate(t):\n        while stack and t[stack[-1]] < x:\n            j = stack.pop()\n            res[j] = i - j\n        stack.append(i)\n    return res',
+    tests: [[[[73, 74, 75, 71, 69, 72, 76, 73]], true, '1 1 4 2 1 1 0 0'], [[[30]], true, '0'], [[[50, 40, 30]], false, '0 0 0'], [[[30, 40, 50, 60]], false, '1 1 1 0'], [[[10, 10, 10]], false, '0 0 0']],
+  },
+  {
+    slug: 'queue-from-stacks', title: 'Queue operations', topic: ['data-structures', 'queues'], diff: 'medium', min: 20, outcome: 'Model first-in first-out behaviour',
+    text: 'Simulate a queue. The input is a sequence of commands separated by spaces: `E x` adds the number `x` to the back of the queue and `D` removes the number at the front and records it. Print the removed numbers in order. A `D` on an empty queue records nothing.',
+    params: [['commands', 'str', 'for example `E 1 E 2 D E 3 D D`']], ret: ['ints', 'the numbers removed by `D`, in order (empty line if none)'],
+    js: "function solve(commands) {\n  const t = commands.trim().split(/\\s+/).filter(Boolean);\n  const queue = [];\n  const out = [];\n  for (let i = 0; i < t.length; i++) {\n    if (t[i] === 'E') queue.push(Number(t[++i]));\n    else if (t[i] === 'D' && queue.length) out.push(queue.shift());\n  }\n  return out;\n}",
+    py: "def solve(commands):\n    t = commands.split()\n    queue, out, i = [], [], 0\n    while i < len(t):\n        if t[i] == 'E':\n            i += 1\n            queue.append(int(t[i]))\n        elif t[i] == 'D' and queue:\n            out.append(queue.pop(0))\n        i += 1\n    return out",
+    tests: [[['E 1 E 2 D E 3 D D'], true, '1 2 3'], [['D D'], true, ''], [['E 5'], false, ''], [['E 9 D E 8 D D E 7 D'], false, '9 8 7'], [['E -4 E -3 D'], false, '-4']],
+  },
+  {
+    slug: 'first-repeated-value', title: 'First value seen twice', topic: ['data-structures', 'hashing'], diff: 'easy', min: 8, outcome: 'Use a set for constant-time membership checks',
+    text: 'Scan the list from left to right and print the first number that you have already seen earlier. Print -1 if all numbers are different.',
+    params: [['a', 'ints', 'between 0 and 1000 integers, none equal to -1']], ret: ['int', 'the first repeated number, or -1'],
+    js: 'function solve(a) {\n  const seen = new Set();\n  for (const x of a) {\n    if (seen.has(x)) return x;\n    seen.add(x);\n  }\n  return -1;\n}',
+    py: 'def solve(a):\n    seen = set()\n    for x in a:\n        if x in seen:\n            return x\n        seen.add(x)\n    return -1',
+    tests: [[[[2, 1, 3, 1, 2]], true, 1], [[[1, 2, 3]], true, -1], [[[]], false, -1], [[[5, 5]], false, 5], [[[7, 8, 9, 8, 7]], false, 8]],
+  },
+  {
+    slug: 'top-k-frequent', title: 'Most frequent numbers', topic: ['data-structures', 'hashing', 'sorting'], diff: 'medium', min: 20, outcome: 'Combine a frequency map with sorting',
+    text: 'Print the `k` numbers that appear most often, most frequent first. If two numbers appear equally often, the smaller one comes first.',
+    params: [['a', 'ints', 'between 1 and 1000 integers'], ['k', 'int', 'from 1 up to the number of distinct values']], ret: ['ints', 'the `k` most frequent numbers'],
+    js: 'function solve(a, k) {\n  const f = new Map();\n  for (const x of a) f.set(x, (f.get(x) || 0) + 1);\n  return [...f.keys()].sort((x, y) => f.get(y) - f.get(x) || x - y).slice(0, k);\n}',
+    py: 'def solve(a, k):\n    f = {}\n    for x in a:\n        f[x] = f.get(x, 0) + 1\n    return sorted(f, key=lambda x: (-f[x], x))[:k]',
+    tests: [[[[1, 1, 1, 2, 2, 3], 2], true, '1 2'], [[[5], 1], true, '5'], [[[4, 4, 6, 6, 9], 2], false, '4 6'], [[[3, 1, 2], 3], false, '1 2 3'], [[[-1, -1, 2, 2, 2], 1], false, '2']],
+  },
+  {
+    slug: 'sliding-window-max', title: 'Window maximums', topic: ['data-structures', 'queues', 'arrays'], diff: 'hard', min: 30, outcome: 'Keep a deque of candidate maximums',
+    text: 'A window of width `k` slides over the list one step at a time. Print the maximum value inside the window at each position.',
+    params: [['a', 'ints', 'between 1 and 5000 integers'], ['k', 'int', 'from 1 to the list length']], ret: ['ints', 'the maximum of every window, left to right'],
+    js: 'function solve(a, k) {\n  const dq = [];\n  const out = [];\n  for (let i = 0; i < a.length; i++) {\n    while (dq.length && dq[0] <= i - k) dq.shift();\n    while (dq.length && a[dq[dq.length - 1]] <= a[i]) dq.pop();\n    dq.push(i);\n    if (i >= k - 1) out.push(a[dq[0]]);\n  }\n  return out;\n}',
+    py: 'def solve(a, k):\n    from collections import deque\n    dq, out = deque(), []\n    for i, x in enumerate(a):\n        while dq and dq[0] <= i - k:\n            dq.popleft()\n        while dq and a[dq[-1]] <= x:\n            dq.pop()\n        dq.append(i)\n        if i >= k - 1:\n            out.append(a[dq[0]])\n    return out',
+    tests: [[[[1, 3, -1, -3, 5, 3, 6, 7], 3], true, '3 3 5 5 6 7'], [[[4], 1], true, '4'], [[[2, 1], 2], false, '2'], [[[9, 8, 7, 6], 2], false, '9 8 7'], [[[1, 2, 3, 4], 1], false, '1 2 3 4']],
+  },
+];

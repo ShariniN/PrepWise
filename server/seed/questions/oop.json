@@ -1,1 +1,273 @@
-[]
+[
+  {
+    "slug": "bank-account-simulation",
+    "title": "Bank account",
+    "type": "coding",
+    "topic": [
+      "oop",
+      "classes",
+      "encapsulation"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 15,
+    "learningOutcome": "Protect an invariant (no overdraft) inside a class",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Model a `BankAccount` class with a private balance that starts at 0. `D x` deposits `x`. `W x` withdraws `x` only if the balance is large enough; otherwise the withdrawal is rejected and nothing changes. Create one account, apply the commands in order, and print the final balance. Put the rules inside the class, not in `solve`.\n\n**Input** (standard input), one line each:\n1. `commands`: commands separated by spaces, for example `D 100 W 30 W 500`\n\n**Output** (standard output): the final balance\n\n**Example**\n\nInput:\n```\nD 100 W 30 W 500\n```\nOutput:\n```\n70\n```\n",
+    "starterCode": {
+      "javascript": "function solve(commands) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(commands):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String commands) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "class BankAccount {\n  #balance = 0;\n  deposit(x) { this.#balance += x; }\n  withdraw(x) { if (x <= this.#balance) this.#balance -= x; }\n  get balance() { return this.#balance; }\n}\nfunction solve(commands) {\n  const t = commands.trim().split(/\\s+/).filter(Boolean);\n  const acct = new BankAccount();\n  for (let i = 0; i < t.length; i += 2) {\n    const amount = Number(t[i + 1]);\n    if (t[i] === 'D') acct.deposit(amount); else acct.withdraw(amount);\n  }\n  return acct.balance;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "class BankAccount:\n    def __init__(self):\n        self._balance = 0\n    def deposit(self, x):\n        self._balance += x\n    def withdraw(self, x):\n        if x <= self._balance:\n            self._balance -= x\n    @property\n    def balance(self):\n        return self._balance\n\ndef solve(commands):\n    t = commands.split()\n    acct = BankAccount()\n    for i in range(0, len(t), 2):\n        amount = int(t[i + 1])\n        if t[i] == 'D':\n            acct.deposit(amount)\n        else:\n            acct.withdraw(amount)\n    return acct.balance\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "D 100 W 30 W 500",
+        "expectedOutput": "70",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "W 5",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "D 50 W 50 D 20",
+        "expectedOutput": "20",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "D 10 D 10 D 10 W 25 W 6",
+        "expectedOutput": "5",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "shapes-total-area",
+    "title": "Shapes and polymorphism",
+    "type": "coding",
+    "topic": [
+      "oop",
+      "inheritance",
+      "polymorphism"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 20,
+    "learningOutcome": "Give different classes a common method and call it without checking the type",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Create a base class `Shape` with an `area()` method and subclasses `Rect` (width, height), `Square` (side) and `Triangle` (base, height; area is base x height divided by 2, rounded down). The input lists shapes as `R w h`, `S s` or `T b h` separated by spaces. Build the shapes, then add up `area()` for all of them without using `if` on the shape type when summing.\n\n**Input** (standard input), one line each:\n1. `shapes`: for example `R 2 3 S 4 T 5 2`\n\n**Output** (standard output): the total area\n\n**Example**\n\nInput:\n```\nR 2 3 S 4 T 5 2\n```\nOutput:\n```\n27\n```\n",
+    "starterCode": {
+      "javascript": "function solve(shapes) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(shapes):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String shapes) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "class Shape { area() { return 0; } }\nclass Rect extends Shape { constructor(w, h) { super(); this.w = w; this.h = h; } area() { return this.w * this.h; } }\nclass Square extends Shape { constructor(s) { super(); this.s = s; } area() { return this.s * this.s; } }\nclass Triangle extends Shape { constructor(b, h) { super(); this.b = b; this.h = h; } area() { return Math.floor((this.b * this.h) / 2); } }\nfunction solve(shapes) {\n  const t = shapes.trim().split(/\\s+/).filter(Boolean).map((x) => (/^[RST]$/.test(x) ? x : Number(x)));\n  const list = [];\n  for (let i = 0; i < t.length;) {\n    if (t[i] === 'R') { list.push(new Rect(t[i + 1], t[i + 2])); i += 3; }\n    else if (t[i] === 'S') { list.push(new Square(t[i + 1])); i += 2; }\n    else { list.push(new Triangle(t[i + 1], t[i + 2])); i += 3; }\n  }\n  return list.reduce((sum, s) => sum + s.area(), 0);\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "class Shape:\n    def area(self):\n        return 0\nclass Rect(Shape):\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n    def area(self):\n        return self.w * self.h\nclass Square(Shape):\n    def __init__(self, s):\n        self.s = s\n    def area(self):\n        return self.s * self.s\nclass Triangle(Shape):\n    def __init__(self, b, h):\n        self.b, self.h = b, h\n    def area(self):\n        return (self.b * self.h) // 2\n\ndef solve(shapes):\n    t = shapes.split()\n    out, i = [], 0\n    while i < len(t):\n        if t[i] == 'R':\n            out.append(Rect(int(t[i + 1]), int(t[i + 2]))); i += 3\n        elif t[i] == 'S':\n            out.append(Square(int(t[i + 1]))); i += 2\n        else:\n            out.append(Triangle(int(t[i + 1]), int(t[i + 2]))); i += 3\n    return sum(s.area() for s in out)\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "R 2 3 S 4 T 5 2",
+        "expectedOutput": "27",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "S 1",
+        "expectedOutput": "1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "T 3 3",
+        "expectedOutput": "4",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "R 10 10 R 1 1 S 2 T 7 7",
+        "expectedOutput": "129",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "undo-redo-counter",
+    "title": "Counter with undo",
+    "type": "coding",
+    "topic": [
+      "oop",
+      "classes",
+      "stacks"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 20,
+    "learningOutcome": "Keep history inside an object so callers cannot corrupt it",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Build a `Counter` class that starts at 0 and supports `add x` (add `x`), `undo` (revert the most recent change that has not been undone; nothing happens if there is none) and `redo` (re-apply the most recently undone change; nothing happens if there is none). A new `add` clears the redo history. Apply the commands (separated by spaces) and print the final value.\n\n**Input** (standard input), one line each:\n1. `commands`: for example `add 5 add 3 undo redo`\n\n**Output** (standard output): the final counter value\n\n**Example**\n\nInput:\n```\nadd 5 add 3 undo redo\n```\nOutput:\n```\n8\n```\n",
+    "starterCode": {
+      "javascript": "function solve(commands) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(commands):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String commands) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "class Counter {\n  constructor() { this.value = 0; this.done = []; this.undone = []; }\n  add(x) { this.value += x; this.done.push(x); this.undone = []; }\n  undo() { if (this.done.length) { const x = this.done.pop(); this.value -= x; this.undone.push(x); } }\n  redo() { if (this.undone.length) { const x = this.undone.pop(); this.value += x; this.done.push(x); } }\n}\nfunction solve(commands) {\n  const t = commands.trim().split(/\\s+/).filter(Boolean);\n  const c = new Counter();\n  for (let i = 0; i < t.length; i++) {\n    if (t[i] === 'add') c.add(Number(t[++i]));\n    else if (t[i] === 'undo') c.undo();\n    else if (t[i] === 'redo') c.redo();\n  }\n  return c.value;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "class Counter:\n    def __init__(self):\n        self.value = 0\n        self.done = []\n        self.undone = []\n    def add(self, x):\n        self.value += x\n        self.done.append(x)\n        self.undone = []\n    def undo(self):\n        if self.done:\n            x = self.done.pop()\n            self.value -= x\n            self.undone.append(x)\n    def redo(self):\n        if self.undone:\n            x = self.undone.pop()\n            self.value += x\n            self.done.append(x)\n\ndef solve(commands):\n    t = commands.split()\n    c = Counter()\n    i = 0\n    while i < len(t):\n        if t[i] == 'add':\n            i += 1\n            c.add(int(t[i]))\n        elif t[i] == 'undo':\n            c.undo()\n        elif t[i] == 'redo':\n            c.redo()\n        i += 1\n    return c.value\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "add 5 add 3 undo redo",
+        "expectedOutput": "8",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "undo redo",
+        "expectedOutput": "0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "add 5 undo add 2 redo",
+        "expectedOutput": "2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "add 1 add 2 add 3 undo undo redo",
+        "expectedOutput": "3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "add 4 undo undo",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "add -5 add 9",
+        "expectedOutput": "4",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "grade-book-best",
+    "title": "Grade book",
+    "type": "coding",
+    "topic": [
+      "oop",
+      "classes",
+      "collections"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 20,
+    "learningOutcome": "Group data and behaviour in a Student class",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Each student has a name and a list of marks. Create a `Student` class with an `average()` method (use exact comparison of totals divided by count, no rounding). The input is a list of records separated by semicolons, each record being `name mark mark ...`. Print the name of the student with the highest average. If two students tie, print the name that comes first alphabetically.\n\n**Input** (standard input), one line each:\n1. `records`: for example `ana 80 90;ben 70 100 85`\n\n**Output** (standard output): the name of the top student\n\n**Example**\n\nInput:\n```\nana 80 90;ben 70 100 85\n```\nOutput:\n```\nana\n```\n",
+    "starterCode": {
+      "javascript": "function solve(records) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(records):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String records) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "class Student {\n  constructor(name, marks) { this.name = name; this.marks = marks; }\n  average() { return this.marks.reduce((a, b) => a + b, 0) / this.marks.length; }\n}\nfunction solve(records) {\n  const students = records.split(';').map((r) => r.trim().split(/\\s+/)).map((p) => new Student(p[0], p.slice(1).map(Number)));\n  students.sort((a, b) => b.average() - a.average() || (a.name < b.name ? -1 : 1));\n  return students[0].name;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "class Student:\n    def __init__(self, name, marks):\n        self.name, self.marks = name, marks\n    def average(self):\n        return sum(self.marks) / len(self.marks)\n\ndef solve(records):\n    students = []\n    for r in records.split(';'):\n        p = r.split()\n        students.append(Student(p[0], [int(x) for x in p[1:]]))\n    students.sort(key=lambda s: (-s.average(), s.name))\n    return students[0].name\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "ana 80 90;ben 70 100 85",
+        "expectedOutput": "ana",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "zed 50",
+        "expectedOutput": "zed",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "bo 60 80;al 70 70",
+        "expectedOutput": "al",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "x 100;y 99 100",
+        "expectedOutput": "x",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "m 1 2 3;n 2 2;o 3 1",
+        "expectedOutput": "m",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  }
+]

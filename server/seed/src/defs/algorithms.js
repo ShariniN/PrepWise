@@ -1,1 +1,50 @@
-export default [];
+export default [
+  {
+    slug: 'roman-to-integer', title: 'Roman numerals to number', topic: ['algorithms', 'strings'], diff: 'medium', min: 15, outcome: 'Handle a rule where a symbol\'s meaning depends on its neighbour',
+    text: 'Convert a Roman numeral to an integer. The symbols are I=1, V=5, X=10, L=50, C=100, D=500, M=1000. A symbol written before a larger one is subtracted (`IV` is 4, `XC` is 90); otherwise values are added.',
+    params: [['s', 'str', 'a valid Roman numeral for a number from 1 to 3999']], ret: ['int', 'the value'],
+    js: "function solve(s) {\n  const v = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };\n  let total = 0;\n  for (let i = 0; i < s.length; i++) total += v[s[i]] < (v[s[i + 1]] || 0) ? -v[s[i]] : v[s[i]];\n  return total;\n}",
+    py: "def solve(s):\n    v = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}\n    total = 0\n    for i, c in enumerate(s):\n        nxt = v[s[i + 1]] if i + 1 < len(s) else 0\n        total += -v[c] if v[c] < nxt else v[c]\n    return total",
+    tests: [[['MCMXCIV'], true, 1994], [['III'], true, 3], [['IV'], false, 4], [['LVIII'], false, 58], [['MMMCMXCIX'], false, 3999], [['XL'], false, 40]],
+  },
+  {
+    slug: 'edit-distance', title: 'Edit distance', topic: ['algorithms', 'dynamic-programming', 'strings'], diff: 'hard', min: 30, outcome: 'Fill a two-dimensional table from smaller prefixes',
+    text: 'The edit distance between two words is the smallest number of single-letter insertions, deletions or replacements that turns the first word into the second.',
+    params: [['a', 'str', 'at most 200 lowercase letters (may be empty)'], ['b', 'str', 'at most 200 lowercase letters (may be empty)']], ret: ['int', 'the edit distance'],
+    js: 'function solve(a, b) {\n  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]);\n  for (let j = 0; j <= b.length; j++) dp[0][j] = j;\n  for (let i = 1; i <= a.length; i++) {\n    for (let j = 1; j <= b.length; j++) {\n      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);\n    }\n  }\n  return dp[a.length][b.length];\n}',
+    py: 'def solve(a, b):\n    dp = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]\n    for i in range(len(a) + 1):\n        dp[i][0] = i\n    for j in range(len(b) + 1):\n        dp[0][j] = j\n    for i in range(1, len(a) + 1):\n        for j in range(1, len(b) + 1):\n            if a[i - 1] == b[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1]\n            else:\n                dp[i][j] = 1 + min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])\n    return dp[len(a)][len(b)]',
+    tests: [[['kitten', 'sitting'], true, 3], [['', 'abc'], true, 3], [['same', 'same'], false, 0], [['abc', ''], false, 3], [['horse', 'ros'], false, 3], [['', ''], false, 0]],
+  },
+  {
+    slug: 'longest-increasing-subsequence', title: 'Longest increasing subsequence', topic: ['algorithms', 'dynamic-programming'], diff: 'hard', min: 30, outcome: 'Define a state per position and combine earlier answers',
+    text: 'Find the length of the longest strictly increasing subsequence. A subsequence keeps the original order but may skip elements.',
+    params: [['a', 'ints', 'between 1 and 2000 integers']], ret: ['int', 'the length of the longest strictly increasing subsequence'],
+    js: 'function solve(a) {\n  const dp = new Array(a.length).fill(1);\n  let best = 1;\n  for (let i = 1; i < a.length; i++) {\n    for (let j = 0; j < i; j++) if (a[j] < a[i]) dp[i] = Math.max(dp[i], dp[j] + 1);\n    best = Math.max(best, dp[i]);\n  }\n  return best;\n}',
+    py: 'def solve(a):\n    dp = [1] * len(a)\n    for i in range(1, len(a)):\n        for j in range(i):\n            if a[j] < a[i]:\n                dp[i] = max(dp[i], dp[j] + 1)\n    return max(dp)',
+    tests: [[[[10, 9, 2, 5, 3, 7, 101, 18]], true, 4], [[[5]], true, 1], [[[7, 7, 7]], false, 1], [[[1, 2, 3, 4]], false, 4], [[[4, 3, 2, 1]], false, 1], [[[0, 8, 4, 12, 2]], false, 3]],
+  },
+  {
+    slug: 'house-robber', title: 'Non-adjacent maximum', topic: ['algorithms', 'dynamic-programming'], diff: 'medium', min: 20, outcome: 'Choose between taking an item and skipping it',
+    text: 'A row of houses each hold some cash. You may not rob two houses that are next to each other. What is the most money you can take?',
+    params: [['money', 'ints', 'between 0 and 1000 non-negative integers']], ret: ['int', 'the maximum total'],
+    js: 'function solve(money) {\n  let take = 0, skip = 0;\n  for (const m of money) [take, skip] = [skip + m, Math.max(take, skip)];\n  return Math.max(take, skip);\n}',
+    py: 'def solve(money):\n    take = skip = 0\n    for m in money:\n        take, skip = skip + m, max(take, skip)\n    return max(take, skip)',
+    tests: [[[[2, 7, 9, 3, 1]], true, 12], [[[]], true, 0], [[[5]], false, 5], [[[1, 2, 3, 1]], false, 4], [[[10, 1, 1, 10]], false, 20], [[[0, 0, 0]], false, 0]],
+  },
+  {
+    slug: 'knapsack-01', title: 'Packing the knapsack', topic: ['algorithms', 'dynamic-programming'], diff: 'hard', min: 30, outcome: 'Fill a capacity table, one item at a time',
+    text: 'Each item can be packed at most once. Choose items whose total weight is at most the capacity so that their total value is as large as possible.',
+    params: [['weights', 'ints', 'between 1 and 100 positive integers'], ['values', 'ints', 'the same number of positive integers'], ['capacity', 'int', 'from 0 to 10000']], ret: ['int', 'the maximum total value'],
+    js: 'function solve(weights, values, capacity) {\n  const best = new Array(capacity + 1).fill(0);\n  for (let i = 0; i < weights.length; i++) {\n    for (let c = capacity; c >= weights[i]; c--) best[c] = Math.max(best[c], best[c - weights[i]] + values[i]);\n  }\n  return best[capacity];\n}',
+    py: 'def solve(weights, values, capacity):\n    best = [0] * (capacity + 1)\n    for w, v in zip(weights, values):\n        for c in range(capacity, w - 1, -1):\n            best[c] = max(best[c], best[c - w] + v)\n    return best[capacity]',
+    tests: [[[[1, 3, 4, 5], [1, 4, 5, 7], 7], true, 9], [[[2], [10], 1], true, 0], [[[2], [10], 2], false, 10], [[[1, 1, 1], [5, 5, 5], 0], false, 0], [[[5, 4, 6, 3], [10, 40, 30, 50], 10], false, 90]],
+  },
+  {
+    slug: 'happy-number', title: 'Happy number', topic: ['algorithms', 'math', 'hashing'], diff: 'easy', min: 12, outcome: 'Detect a cycle by remembering visited states',
+    text: 'Replace a number by the sum of the squares of its digits and repeat. If you reach 1 the number is happy; if the process loops forever without reaching 1 it is not.',
+    params: [['n', 'int', 'from 1 to 1,000,000,000']], ret: ['bool', '`true` if `n` is happy'],
+    js: 'function solve(n) {\n  const seen = new Set();\n  while (n !== 1 && !seen.has(n)) {\n    seen.add(n);\n    let s = 0;\n    while (n > 0) { const d = n % 10; s += d * d; n = Math.floor(n / 10); }\n    n = s;\n  }\n  return n === 1;\n}',
+    py: 'def solve(n):\n    seen = set()\n    while n != 1 and n not in seen:\n        seen.add(n)\n        n = sum(int(d) ** 2 for d in str(n))\n    return n == 1',
+    tests: [[[19], true, 'true'], [[2], true, 'false'], [[1], false, 'true'], [[7], false, 'true'], [[4], false, 'false'], [[1000000000], false, 'true']],
+  },
+];
