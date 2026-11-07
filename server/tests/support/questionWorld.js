@@ -3,6 +3,7 @@
 import { mock } from 'node:test';
 import questionRepo from '../../repositories/questionRepo.js';
 import { newId } from '../helpers.js';
+import { installAssessmentWorld } from './assessmentWorld.js';
 
 const same = (a, b) => String(a ?? '') === String(b ?? '');
 const clone = (o) => (o == null ? o : structuredClone(o));
@@ -96,12 +97,12 @@ export const installQuestionWorld = (world) => {
     return clone(a);
   });
   mock.method(questionRepo, 'findDraft', async (inst, uid, qid) =>
-    clone(db.attempts.find((a) => a.runKind === 'draft' && same(a.institutionId, inst) && same(a.userId, uid) && same(a.questionId, qid))) || null);
+    clone(db.attempts.find((a) => a.runKind === 'draft' && !a.assessmentSessionId && same(a.institutionId, inst) && same(a.userId, uid) && same(a.questionId, qid))) || null);
   mock.method(questionRepo, 'solvedQuestionIds', async (inst, uid) => [...new Set(db.attempts
-    .filter((a) => a.runKind === 'submit' && a.verdict === 'accepted' && same(a.institutionId, inst) && same(a.userId, uid)).map((a) => a.questionId))]);
+    .filter((a) => a.runKind === 'submit' && a.verdict === 'accepted' && !a.assessmentSessionId && same(a.institutionId, inst) && same(a.userId, uid)).map((a) => a.questionId))]);
   mock.method(questionRepo, 'countAttemptsFor', async (qid) => db.attempts.filter((a) => same(a.questionId, qid)).length);
 
-  mock.method(questionRepo, 'addEventBatch', async (doc) => { db.batches.push({ _id: newId(), ...clone(doc) }); });
+  mock.method(questionRepo, 'addEventBatch', async (doc) => { db.batches.push({ _id: newId(), createdAt: new Date(), ...clone(doc) }); });
   mock.method(questionRepo, 'countEventBatches', async (inst, aid) => db.batches.filter((b) => same(b.attemptId, aid) && same(b.institutionId, inst)).length);
 
   // seeding helpers for tests
@@ -114,5 +115,6 @@ export const installQuestionWorld = (world) => {
     tests.forEach((t, order) => db.tests.push({ _id: newId(), institutionId: d.institutionId, questionId: d._id, weight: 1, comparison: 'trim', visible: false, order, ...t }));
     return d;
   };
+  installAssessmentWorld(world); // assessments share the attempts / batches stored above
   return db;
 };

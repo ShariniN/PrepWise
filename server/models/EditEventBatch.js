@@ -15,6 +15,7 @@ const editEventBatchSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', required: true, index: true },
   seq: { type: Number, default: 0 },
+  assessmentSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'AssessmentSession', default: null, index: true },
   events: { type: [eventSchema], default: [] },
 }, { timestamps: true, collection: 'editeventbatches' });
 
