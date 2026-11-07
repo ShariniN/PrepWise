@@ -7,9 +7,9 @@ import { ErrorState, LoadingState, EmptyState } from './EmptyState';
 import InsufficientData from './InsufficientData';
 import ExcludedNote from './ExcludedNote';
 
-const Flag = ({ icon: Icon, children }) => (
+const Flag = ({ icon, children }) => (
   <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5">
-    <Icon size={12} aria-hidden="true" /> {children}
+    {icon} {children}
   </span>
 );
 
@@ -68,9 +68,9 @@ const QuestionQuality = ({ courseId, cohortId }) => {
                     </p>
                     {flagged && (
                       <div className="flex flex-wrap items-center gap-2">
-                        {q.flags?.maybeBadlyWorded && <Flag icon={AlertTriangle}>Maybe badly worded: strong students also fail</Flag>}
-                        {q.flags?.lowDiscrimination && <Flag icon={AlertTriangle}>Low discrimination (D under 0.1)</Flag>}
-                        {q.usage?.overExposed && <Flag icon={Repeat}>Over-exposed: consider rotating it</Flag>}
+                        {q.flags?.maybeBadlyWorded && <Flag icon={<AlertTriangle size={12} aria-hidden="true" />}>Maybe badly worded: strong students also fail</Flag>}
+                        {q.flags?.lowDiscrimination && <Flag icon={<AlertTriangle size={12} aria-hidden="true" />}>Low discrimination (D under 0.1)</Flag>}
+                        {q.usage?.overExposed && <Flag icon={<Repeat size={12} aria-hidden="true" />}>Over-exposed: consider rotating it</Flag>}
                         <Link to={`/questions/${q.questionId}`} className="text-sm text-indigo-700 underline">
                           Suggest edit: open in the question editor
                         </Link>

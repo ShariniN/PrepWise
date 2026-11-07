@@ -19,7 +19,7 @@ const TABS = [
 const LecturerDashboard = () => {
   const [tab, setTab] = useState('reteach');
   const [scope, setScope] = useState({ courseId: '', cohortId: '' });
-  const current = TABS.find((t) => t.id === tab);
+  const Current = TABS.find((t) => t.id === tab).Comp;
 
   return (
     <div className="space-y-4">
@@ -41,7 +41,7 @@ const LecturerDashboard = () => {
           </div>
           <div className="bg-white rounded-2xl shadow p-6" role="tabpanel">
             {scope.courseId
-              ? <current.Comp key={tab} courseId={scope.courseId} cohortId={scope.cohortId} />
+              ? <Current key={tab} courseId={scope.courseId} cohortId={scope.cohortId} />
               : <p className="text-sm text-gray-500">Choose a course to see this view.</p>}
           </div>
         </>
