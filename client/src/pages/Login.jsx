@@ -1,15 +1,16 @@
 import React, { useContext, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { homeForRole } from "../utils/roles";
 
 const Login = () => {
   const navigate = useNavigate();
 
   // Destructure values from context
-  const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
+  const { backendUrl, setIsLoggedin, getUserData, setAuth } = useContext(AppContext);
 
   // UI button state
   const [state, setState] = useState("Log in");
@@ -33,10 +34,11 @@ const Login = () => {
       if (data.success) {
         // Update context and fetch user info
         setIsLoggedin(true);
+        setAuth(data);
         getUserData();
 
-        // Navigate based on account type
-        navigate("/fresher-dashboard");
+        // Navigate based on role
+        navigate(homeForRole(data.role));
       }
     } catch (error) {
       // Handle errors from server or network
@@ -111,15 +113,8 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Link to Register */}
         <p className="text-gray-700 text-center text-sm mt-6">
-          Don’t have an account?{" "}
-          <Link
-            to="/register"
-            className="text-blue-600 font-medium hover:underline"
-          >
-            Sign up here
-          </Link>
+          Your university invites you by email.
         </p>
       </div>
     </div>

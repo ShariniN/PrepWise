@@ -8,7 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import FresherDashboard from './pages/FresherDashboard'
 import ProfileSettings from './pages/ProfileSettings'
 import CVAnalyzer from './pages/CVAnalyzer'
-import SignUp from './pages/SignUp'
+import AcceptInvite from './pages/AcceptInvite'
 import SkillAssessor from './pages/SkillAssessor'
 import Interview from './pages/Interview'
 
@@ -21,7 +21,7 @@ const App = () => {
       <Routes>
         {/* Authentication Routes */}
         <Route path='/' element={<Login/>}/>
-        <Route path='/register' element={<SignUp/>}/>
+        <Route path='/accept-invite' element={<AcceptInvite/>}/>
         <Route path='/login' element={<Login/>}/>
         <Route path='/email-verify' element={<EmailVerify/>}/>
         <Route path='/reset-password' element={<ResetPassword/>}/>

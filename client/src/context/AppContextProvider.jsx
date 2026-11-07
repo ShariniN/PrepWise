@@ -9,16 +9,31 @@ export const AppContextProvider = (props) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [isLoggedin, setIsLoggedin] = useState(false);
     const [userData, setUserData] = useState(false);
+    const [role, setRole] = useState(null);
+    const [institutionId, setInstitutionId] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
+
+    const setAuth = (info) => {
+        setRole(info?.role || null);
+        setInstitutionId(info?.institutionId || null);
+    };
+
+    const clearAuth = () => {
+        setIsLoggedin(false);
+        setUserData(false);
+        setRole(null);
+        setInstitutionId(null);
+    };
 
     const getAuthState = async () => {
         try {
             const { data } = await axios.get(backendUrl + '/api/auth/is-auth');
             if (data.success) {
                 setIsLoggedin(true);
+                setAuth(data.user || data);
                 getUserData();
             } else {
-                setIsLoggedin(false);
-                setUserData(null);
+                clearAuth();
             }
         } catch (error) {
             // Only show error toast if it's not a 401 (Unauthorized)
@@ -27,8 +42,9 @@ export const AppContextProvider = (props) => {
             }
 
             // Ensure logout state is reflected in the UI
-            setIsLoggedin(false);
-            setUserData(null);
+            clearAuth();
+        } finally {
+            setAuthLoading(false);
         }
     };
 
@@ -62,7 +78,12 @@ export const AppContextProvider = (props) => {
         setIsLoggedin,
         userData, 
         setUserData,
-        getUserData
+        getUserData,
+        role,
+        institutionId,
+        authLoading,
+        setAuth,
+        clearAuth
     };
 
     return (
