@@ -16,6 +16,8 @@ import institutionRouter from './routes/InstitutionRoutes.js';
 import courseRouter from './routes/CourseRoutes.js';
 import meRouter from './routes/MeRoutes.js';
 import complianceRouter from './routes/ComplianceRoutes.js';
+import practiceRouter from './routes/practiceRoutes.js';
+import questionRouter from './routes/questionRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -49,6 +51,8 @@ app.use('/api/institution', institutionRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/me', meRouter);
 app.use('/api/compliance', complianceRouter);
+app.use('/api/practice', practiceRouter);
+app.use('/api/questions', questionRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {
@@ -65,7 +69,7 @@ app.get(/.*/, (req, res) => {
 // ---------------- ERROR HANDLER ----------------
 app.use((error, req, res, next) => {
   // Typed errors raised from shared code (tenancy, AI usage cap)
-  if (error?.code === 'AI_MONTHLY_CAP' || error?.name === 'TenantError') {
+  if (error?.code === 'AI_MONTHLY_CAP' || error?.name === 'TenantError' || error?.code === 'EXECUTION_UNAVAILABLE') {
     return res.status(error.status).json({ success: false, message: error.message, code: error.code });
   }
   console.error(error);

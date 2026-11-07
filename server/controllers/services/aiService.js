@@ -433,6 +433,18 @@ const calculateCategoryScores = (responses) => {
   };
 };
 
+
+// Drafts coding questions for lecturers. Goes through callAIModel, so the per-university AI cap applies.
+// The output is untrusted: it must still pass the sandbox validation gate before it can be published.
+export const generateQuestionDrafts = async ({ topic, difficulty, language, count }) => {
+  const instruction = 'You write programming exam questions for university lecturers. Return ONLY a JSON array. Each item has: title, statement (markdown, states the stdin format and stdout format exactly), starterCode, referenceSolution (a complete correct program that reads stdin and writes stdout), wrongSolution (a complete program that looks plausible but is subtly wrong), tests (array of {input, expectedOutput, visible}; 4 to 6 tests, at least one visible, include edge cases).';
+  const inputPrompt = `Write ${count} question(s). Topic: ${topic}. Difficulty: ${difficulty}. Language for all code: ${language}.`;
+  const rawText = await callAIModel(instruction, inputPrompt, `${instruction}
+
+${inputPrompt}`, { temperature: 0.4, maxOutputTokens: 4000 });
+  return parseAIResponse(rawText);
+};
+
 // Export rate limit info for monitoring
 export const getRateLimitInfo = () => ({
   requestCount,
@@ -445,5 +457,6 @@ export default {
   generateInterviewQuestions, 
   generateAIFeedback, 
   generateOverallInterviewFeedback,
+  generateQuestionDrafts,
   getRateLimitInfo
 };
