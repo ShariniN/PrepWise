@@ -1,6 +1,7 @@
 import React from 'react';
 import { isCodeType } from '../../utils/practice';
 import { publishBlockers } from '../../utils/questionForm';
+import { Badge, Button, Card } from '../ui';
 
 const MOVES = {
   draft: ['in_review', 'published'],
@@ -9,51 +10,51 @@ const MOVES = {
   retired: ['draft'],
 };
 const LABEL = { draft: 'Back to draft', in_review: 'Send to review', published: 'Publish', retired: 'Retire' };
+const STATUS_TONE = { draft: 'neutral', in_review: 'primary', published: 'success', retired: 'danger' };
 
 const PublishGate = ({ question, dirty, busy, onStatus, onValidate, canValidate }) => {
   const blockers = publishBlockers(question, dirty);
   const moves = MOVES[question.status] || [];
   const v = question.validation;
   return (
-    <section className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-4 space-y-3" aria-label="Publish gate">
+    <Card as="section" tone="primary" className="space-y-3" aria-label="Publish gate">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold text-gray-800">Publish gate</h3>
-        <span className="text-xs rounded-full bg-white border px-2 py-0.5">Status: {question.status.replace('_', ' ')}</span>
-        <span className="text-xs text-gray-500">Version {question.version}</span>
+        <h3 className="font-display text-lg font-semibold text-ink">Publish gate</h3>
+        <Badge tone={STATUS_TONE[question.status] || 'neutral'} dot>Status: {question.status.replace('_', ' ')}</Badge>
+        <span className="text-xs text-ink-2">Version {question.version}</span>
       </div>
       {isCodeType(question.type) && (
-        <p className="text-sm">
-          Validation: {!v ? <span className="text-gray-600">never run</span>
-            : v.current && v.passed ? <span className="text-green-700 font-medium">passed for the current content ({v.testsRun} tests)</span>
-            : !v.current ? <span className="text-amber-700 font-medium">out of date</span>
-            : <span className="text-red-700 font-medium">failed</span>}
+        <p className="text-sm text-ink">
+          Validation: {!v ? <span className="text-ink-2">never run</span>
+            : v.current && v.passed ? <span className="font-semibold text-success-700">passed for the current content ({v.testsRun} tests)</span>
+            : !v.current ? <span className="font-semibold text-sun-700">out of date</span>
+            : <span className="font-semibold text-danger-700">failed</span>}
         </p>
       )}
       {blockers.length > 0 ? (
-        <ul className="list-disc pl-5 text-sm text-amber-800" role="status">
+        <ul className="list-disc space-y-0.5 pl-5 text-sm text-ink" role="status">
           {blockers.map((b) => <li key={b}>{b}</li>)}
         </ul>
-      ) : <p className="text-sm text-green-700">Ready to publish.</p>}
+      ) : <p className="text-sm font-semibold text-success-700">Ready to publish.</p>}
       <div className="flex flex-wrap gap-2">
         {isCodeType(question.type) && (
-          <button type="button" disabled={busy || !canValidate} onClick={onValidate}
-            className="px-3 py-2 text-sm rounded-lg bg-white border border-indigo-300 text-indigo-800 disabled:opacity-50">
+          <Button size="sm" variant="secondary" loading={busy === 'validate'} disabled={!!busy || !canValidate} onClick={onValidate}>
             {busy === 'validate' ? 'Validating...' : 'Validate in sandbox'}
-          </button>
+          </Button>
         )}
         {moves.map((s) => {
           const blocked = s === 'published' && blockers.length > 0;
           return (
-            <button key={s} type="button" disabled={!!busy || blocked || !question.editable}
-              title={blocked ? blockers[0] : undefined} onClick={() => onStatus(s)}
-              className={`px-3 py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${s === 'published' ? 'bg-green-600 text-white' : 'bg-white border border-gray-300'}`}>
+            <Button key={s} size="sm" variant={s === 'published' ? 'primary' : 'secondary'}
+              disabled={!!busy || blocked || !question.editable}
+              title={blocked ? blockers[0] : undefined} onClick={() => onStatus(s)}>
               {LABEL[s]}
-            </button>
+            </Button>
           );
         })}
       </div>
-      {question.status === 'published' && <p className="text-xs text-gray-500">Editing a published question moves it back to draft until it is validated and published again.</p>}
-    </section>
+      {question.status === 'published' && <p className="text-xs text-ink-2">Editing a published question moves it back to draft until it is validated and published again.</p>}
+    </Card>
   );
 };
 

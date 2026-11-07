@@ -1,30 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import { Plus, Sparkles } from 'lucide-react';
+import AppShell from '../components/AppShell';
 import AiDraftDialog from '../components/authoring/AiDraftDialog';
+import { Badge, Button, Card, EmptyState, Field, Select, Skeleton } from '../components/ui';
 import { listBank, duplicateQuestion } from '../api/questions';
 import { errorMessage } from '../api/client';
 import { QUESTION_TYPES, STATUSES } from '../utils/practice';
 
-const STATUS_CLS = {
-  draft: 'bg-gray-200 text-gray-700',
-  in_review: 'bg-blue-100 text-blue-800',
-  published: 'bg-green-100 text-green-800',
-  retired: 'bg-red-100 text-red-700',
-};
+const STATUS_TONE = { draft: 'neutral', in_review: 'primary', published: 'success', retired: 'danger' };
 
 const Row = ({ q, onDuplicate, busy }) => (
-  <li className="flex flex-wrap items-center gap-2 p-3">
-    <Link to={`/questions/${q.id}`} className="font-medium text-indigo-700 hover:underline flex-1 min-w-[12rem]">{q.title || '(untitled)'}</Link>
-    <span className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">{q.type}</span>
-    <span className="text-xs text-gray-600">{q.difficulty}</span>
-    <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_CLS[q.status] || ''}`}>{q.status?.replace('_', ' ')}</span>
-    {q.source === 'ai_drafted' && <span className="text-xs bg-purple-100 text-purple-700 rounded-full px-2 py-0.5">AI drafted</span>}
-    {(q.topic || []).map((t) => <span key={t} className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{t}</span>)}
+  <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3.5 sm:px-6">
+    <Link to={`/questions/${q.id}`} className="min-w-[12rem] flex-1 font-semibold text-ink hover:text-primary-700 hover:underline">{q.title || '(untitled)'}</Link>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Badge tone="primary">{q.type}</Badge>
+      <Badge tone="neutral">{q.difficulty}</Badge>
+      <Badge tone={STATUS_TONE[q.status] || 'neutral'} dot>{q.status?.replace('_', ' ')}</Badge>
+      {q.source === 'ai_drafted' && <Badge tone="warning">AI drafted</Badge>}
+      {(q.topic || []).map((t) => <Badge key={t} tone="neutral">{t}</Badge>)}
+    </div>
     {q.editable
-      ? <Link to={`/questions/${q.id}`} className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300">Edit</Link>
-      : <button type="button" disabled={busy} onClick={() => onDuplicate(q)} className="text-xs px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50">Duplicate to edit</button>}
+      ? <Button as={Link} to={`/questions/${q.id}`} size="sm" variant="secondary">Edit</Button>
+      : <Button size="sm" variant="secondary" disabled={busy} onClick={() => onDuplicate(q)}>Duplicate to edit</Button>}
   </li>
 );
 
@@ -73,62 +72,74 @@ const QuestionBank = () => {
 
   const own = (questions || []).filter((q) => !q.isSeed);
   const seeds = (questions || []).filter((q) => q.isSeed);
-  const sel = 'border border-gray-300 rounded px-2 py-1.5 text-sm bg-white';
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <section className="bg-white rounded-2xl shadow p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="text-2xl font-bold text-gray-800">Question bank</h1>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setAi(true)} className="px-3 py-2 text-sm rounded-lg bg-purple-600 text-white">Draft with AI</button>
-              <Link to="/questions/new" className="px-3 py-2 text-sm rounded-lg bg-indigo-600 text-white">New question</Link>
-            </div>
+    <AppShell
+      title="Question bank"
+      actions={(
+        <>
+          <Button variant="secondary" icon={<Sparkles size={16} aria-hidden="true" />} onClick={() => setAi(true)}>Draft with AI</Button>
+          <Button as={Link} to="/questions/new" icon={<Plus size={16} aria-hidden="true" />}>New question</Button>
+        </>
+      )}
+    >
+      <div className="space-y-5">
+        <Card tone="sand" className="!p-4">
+          <div className="grid gap-4 sm:flex sm:flex-wrap sm:items-end">
+            <Field label="Status" className="sm:w-48">
+              {(p) => (
+                <Select {...p} value={filters.status} onChange={(e) => set({ status: e.target.value })}>
+                  <option value="">All</option>
+                  {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                </Select>
+              )}
+            </Field>
+            <Field label="Type" className="sm:w-48">
+              {(p) => (
+                <Select {...p} value={filters.type} onChange={(e) => set({ type: e.target.value })}>
+                  <option value="">All</option>
+                  {QUESTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </Select>
+              )}
+            </Field>
+            <label className="flex min-h-[2.75rem] items-center gap-2 text-sm font-medium text-ink">
+              <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={filters.mine} onChange={(e) => set({ mine: e.target.checked })} /> Mine only
+            </label>
           </div>
-          <div className="mt-4 flex flex-wrap items-end gap-3">
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Status
-              <select className={sel} value={filters.status} onChange={(e) => set({ status: e.target.value })}>
-                <option value="">All</option>
-                {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-              </select>
-            </label>
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Type
-              <select className={sel} value={filters.type} onChange={(e) => set({ type: e.target.value })}>
-                <option value="">All</option>
-                {QUESTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
-            <label className="text-sm text-gray-700 flex items-center gap-2 pb-1.5">
-              <input type="checkbox" checked={filters.mine} onChange={(e) => set({ mine: e.target.checked })} /> Mine only
-            </label>
-          </div>
-        </section>
+        </Card>
 
-        {questions === null && <p className="text-gray-500" role="status">Loading questions...</p>}
+        {questions === null && (
+          <div role="status" className="space-y-3">
+            <Skeleton className="h-16 w-full" rounded="rounded-3xl" />
+            <Skeleton className="h-16 w-full" rounded="rounded-3xl" />
+            <span className="sr-only">Loading questions...</span>
+          </div>
+        )}
         {error && (
-          <div role="alert" className="bg-white rounded-2xl shadow p-4 text-red-700 text-sm">
-            {error} <button type="button" className="underline ml-2" onClick={() => { setQuestions(null); setTick((n) => n + 1); }}>Retry</button>
+          <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">
+            {error}
+            <Button size="sm" variant="secondary" onClick={() => { setQuestions(null); setTick((n) => n + 1); }}>Retry</Button>
           </div>
         )}
         {questions && !error && (
           <>
-            <section className="bg-white rounded-2xl shadow">
-              <h2 className="px-4 pt-4 font-semibold text-gray-700">Your institution</h2>
-              {own.length === 0 ? <p className="p-4 text-sm text-gray-500">No questions yet. Create one, draft with AI, or duplicate a seed question below.</p>
-                : <ul className="divide-y">{own.map((q) => <Row key={q.id} q={q} onDuplicate={duplicate} busy={busy} />)}</ul>}
-            </section>
-            <section className="bg-white rounded-2xl shadow">
-              <h2 className="px-4 pt-4 font-semibold text-gray-700">Global seed bank <span className="text-xs font-normal text-gray-500">(read only)</span></h2>
-              {seeds.length === 0 ? <p className="p-4 text-sm text-gray-500">No seed questions match.</p>
-                : <ul className="divide-y">{seeds.map((q) => <Row key={q.id} q={q} onDuplicate={duplicate} busy={busy} />)}</ul>}
-            </section>
+            <Card as="section" padded={false} className="overflow-hidden">
+              <h2 className="px-4 pb-2 pt-5 font-display text-xl font-semibold text-ink sm:px-6">Your institution</h2>
+              {own.length === 0
+                ? <div className="px-4 pb-5 sm:px-6"><EmptyState title="No questions yet" description="No questions yet. Create one, draft with AI, or duplicate a seed question below." className="!py-8" /></div>
+                : <ul className="divide-y divide-line">{own.map((q) => <Row key={q.id} q={q} onDuplicate={duplicate} busy={busy} />)}</ul>}
+            </Card>
+            <Card as="section" padded={false} className="overflow-hidden">
+              <h2 className="px-4 pb-2 pt-5 font-display text-xl font-semibold text-ink sm:px-6">Global seed bank <span className="font-sans text-sm font-normal text-ink-2">(read only)</span></h2>
+              {seeds.length === 0
+                ? <p className="px-4 pb-5 text-sm text-ink-2 sm:px-6">No seed questions match.</p>
+                : <ul className="divide-y divide-line">{seeds.map((q) => <Row key={q.id} q={q} onDuplicate={duplicate} busy={busy} />)}</ul>}
+            </Card>
           </>
         )}
-      </main>
+      </div>
       {ai && <AiDraftDialog onClose={() => setAi(false)} onCreated={onAiCreated} />}
-    </div>
+    </AppShell>
   );
 };
 

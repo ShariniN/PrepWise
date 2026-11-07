@@ -1,18 +1,17 @@
 import React from 'react';
-
-const inp = 'w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white disabled:bg-gray-100';
+import { Button, Field, Input, Textarea } from '../ui';
 
 // Answer key fields for mcq and trace questions.
 const ChoiceFields = ({ form, set, disabled }) => {
   if (form.type === 'trace') {
     return (
-      <div className="space-y-3">
-        <label className="block text-xs text-gray-600">Expected output (what the program prints)
-          <textarea className={`${inp} font-mono`} rows={4} disabled={disabled} value={form.traceAnswer} onChange={(e) => set({ traceAnswer: e.target.value })} />
-        </label>
-        <label className="block text-xs text-gray-600">Explanation (shown after answering)
-          <textarea className={inp} rows={3} disabled={disabled} value={form.explanation} onChange={(e) => set({ explanation: e.target.value })} />
-        </label>
+      <div className="space-y-4">
+        <Field label="Expected output (what the program prints)">
+          {(p) => <Textarea {...p} className="font-mono" rows={4} disabled={disabled} value={form.traceAnswer} onChange={(e) => set({ traceAnswer: e.target.value })} />}
+        </Field>
+        <Field label="Explanation (shown after answering)">
+          {(p) => <Textarea {...p} rows={3} disabled={disabled} value={form.explanation} onChange={(e) => set({ explanation: e.target.value })} />}
+        </Field>
       </div>
     );
   }
@@ -26,25 +25,25 @@ const ChoiceFields = ({ form, set, disabled }) => {
     else set({ correct: [i] });
   };
   return (
-    <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" disabled={disabled} checked={form.multi} onChange={(e) => set({ multi: e.target.checked, correct: e.target.checked ? form.correct : form.correct.slice(0, 1) })} />
+    <div className="space-y-4">
+      <label className="flex items-center gap-2 text-sm font-medium text-ink">
+        <input type="checkbox" className="h-4 w-4 accent-primary-600" disabled={disabled} checked={form.multi} onChange={(e) => set({ multi: e.target.checked, correct: e.target.checked ? form.correct : form.correct.slice(0, 1) })} />
         Allow multiple correct answers
       </label>
       <ul className="space-y-2">
         {form.options.map((o, i) => (
-          <li key={i} className="flex items-center gap-2">
-            <input type={form.multi ? 'checkbox' : 'radio'} name="correct" aria-label={`Option ${i + 1} is correct`}
+          <li key={i} className="flex items-center gap-3">
+            <input type={form.multi ? 'checkbox' : 'radio'} name="correct" aria-label={`Option ${i + 1} is correct`} className="h-4 w-4 shrink-0 accent-primary-600"
               disabled={disabled} checked={form.correct.includes(i)} onChange={() => toggleCorrect(i)} />
-            <input className={inp} disabled={disabled} value={o} onChange={(e) => setOption(i, e.target.value)} placeholder={`Option ${i + 1}`} />
-            <button type="button" disabled={disabled || form.options.length <= 2} onClick={() => removeOption(i)} className="text-xs text-red-600 disabled:opacity-40">Remove</button>
+            <Input disabled={disabled} value={o} onChange={(e) => setOption(i, e.target.value)} placeholder={`Option ${i + 1}`} aria-label={`Option ${i + 1}`} />
+            <Button size="sm" variant="ghost" className="!text-danger-600 hover:!bg-danger-50" disabled={disabled || form.options.length <= 2} onClick={() => removeOption(i)}>Remove</Button>
           </li>
         ))}
       </ul>
-      <button type="button" disabled={disabled || form.options.length >= 8} onClick={() => set({ options: [...form.options, ''] })} className="text-xs px-2 py-1 rounded bg-gray-200 disabled:opacity-50">Add option</button>
-      <label className="block text-xs text-gray-600">Explanation (shown after answering)
-        <textarea className={inp} rows={3} disabled={disabled} value={form.explanation} onChange={(e) => set({ explanation: e.target.value })} />
-      </label>
+      <Button size="sm" variant="secondary" disabled={disabled || form.options.length >= 8} onClick={() => set({ options: [...form.options, ''] })}>Add option</Button>
+      <Field label="Explanation (shown after answering)">
+        {(p) => <Textarea {...p} rows={3} disabled={disabled} value={form.explanation} onChange={(e) => set({ explanation: e.target.value })} />}
+      </Field>
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import { ArrowLeft } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Button, Card, Skeleton } from '../components/ui';
 import QuestionFields from '../components/authoring/QuestionFields';
 import ChoiceFields from '../components/authoring/ChoiceFields';
 import SolutionEditors from '../components/authoring/SolutionEditors';
@@ -18,7 +20,7 @@ import { errorMessage, errorCode } from '../api/client';
 import { blankForm, toForm, toPayload } from '../utils/questionForm';
 import { isCodeType } from '../utils/practice';
 
-const Card = ({ children }) => <section className="bg-white rounded-2xl shadow p-6 space-y-4">{children}</section>;
+const Panel = ({ children }) => <Card as="section" className="space-y-4">{children}</Card>;
 
 const QuestionEditor = () => {
   const { id } = useParams();
@@ -117,61 +119,70 @@ const QuestionEditor = () => {
     catch (e) { toast.error(errorMessage(e, 'Could not duplicate')); }
   };
 
-  const shell = (children) => (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-4">
-        <Link to="/questions" className="text-sm text-indigo-700 hover:underline">&larr; Question bank</Link>
+  const shell = (children, title) => (
+    <AppShell title={title}>
+      <div className="mx-auto max-w-4xl space-y-5">
+        <Link to="/questions" className="-mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:underline">
+          <ArrowLeft size={16} aria-hidden="true" /> Question bank
+        </Link>
         {children}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 
-  if (loadError) return shell(<div role="alert" className="bg-white rounded-2xl shadow p-6 text-red-700">{loadError}</div>);
-  if (!isNew && !question) return shell(<p className="text-gray-500" role="status">Loading question...</p>);
+  if (loadError) return shell(<div role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 p-5 text-danger-700">{loadError}</div>, 'Question');
+  if (!isNew && !question) {
+    return shell(
+      <div role="status" className="space-y-3">
+        <Skeleton className="h-28 w-full" rounded="rounded-3xl" />
+        <Skeleton className="h-64 w-full" rounded="rounded-3xl" />
+        <span className="sr-only">Loading question...</span>
+      </div>,
+      'Edit question',
+    );
+  }
 
   const code = isCodeType(form.type);
   const rubricType = form.type === 'short' || form.type === 'behavioural';
-  const btn = 'px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50';
 
   return shell(
     <>
-      <h1 className="text-2xl font-bold text-gray-800">{isNew ? 'New question' : form.title || 'Edit question'}</h1>
       {disabled && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3">
-          <span>{question.isSeed ? 'Seed questions are read only.' : 'You can only edit questions you authored.'} Duplicate it to make your own editable copy.</span>
-          <button type="button" onClick={duplicate} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Duplicate to edit</button>
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-sun-200 bg-sun-50 p-4 text-sm text-ink">
+          <span className="min-w-0 flex-1">{question.isSeed ? 'Seed questions are read only.' : 'You can only edit questions you authored.'} Duplicate it to make your own editable copy.</span>
+          <Button size="sm" onClick={duplicate}>Duplicate to edit</Button>
         </div>
       )}
 
       {!isNew && <PublishGate question={question} dirty={dirty} busy={busy} onStatus={changeStatus} onValidate={validate} canValidate={!disabled} />}
       {unavailable && <UnavailableNotice message={unavailable.message || 'The sandbox could not run your code, so validation was not recorded.'} />}
-      {validation && <Card><ValidationResults result={validation} /></Card>}
+      {validation && <Panel><ValidationResults result={validation} /></Panel>}
 
-      <Card>
+      <Panel>
         <QuestionFields form={form} set={set} isNew={isNew} disabled={disabled} />
-      </Card>
+      </Panel>
 
-      {(form.type === 'mcq' || form.type === 'trace') && <Card><ChoiceFields form={form} set={set} disabled={disabled} /></Card>}
-      {code && <Card><SolutionEditors form={form} set={set} disabled={disabled} aiDrafted={question?.source === 'ai_drafted'} /></Card>}
+      {(form.type === 'mcq' || form.type === 'trace') && <Panel><ChoiceFields form={form} set={set} disabled={disabled} /></Panel>}
+      {code && <Panel><SolutionEditors form={form} set={set} disabled={disabled} aiDrafted={question?.source === 'ai_drafted'} /></Panel>}
 
       {!disabled && (
-        <div className="flex gap-2 sticky bottom-0 bg-gray-100/90 py-2">
-          <button type="button" className={`${btn} bg-indigo-600 text-white`} disabled={!!busy || (!isNew && !dirty)} onClick={save}>
+        <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-full border border-line bg-surface/95 px-4 py-2.5 shadow-float backdrop-blur">
+          <Button loading={busy === 'save'} disabled={!!busy || (!isNew && !dirty)} onClick={save}>
             {busy === 'save' ? 'Saving...' : isNew ? 'Create draft' : 'Save changes'}
-          </button>
-          {dirty && !isNew && <span className="text-xs text-amber-700 self-center">Unsaved changes</span>}
-          {!isNew && <button type="button" className={`${btn} bg-white border border-red-300 text-red-700 ml-auto`} onClick={remove}>Delete</button>}
+          </Button>
+          {dirty && !isNew && <span className="text-xs font-medium text-sun-700">Unsaved changes</span>}
+          {!isNew && <Button variant="secondary" className="ml-auto !border-danger-200 !text-danger-700" onClick={remove}>Delete</Button>}
         </div>
       )}
 
       {code && !isNew && (
-        <Card><TestCaseTable key={question.id} questionId={question.id} tests={question.tests} disabled={disabled} onChanged={refresh} /></Card>
+        <Panel><TestCaseTable key={question.id} questionId={question.id} tests={question.tests} disabled={disabled} onChanged={refresh} /></Panel>
       )}
-      {code && isNew && <p className="text-sm text-gray-500">Create the draft first, then add test cases.</p>}
-      {rubricType && !isNew && <Card><RubricEditor questionId={question.id} disabled={disabled} /></Card>}
-      {rubricType && isNew && <p className="text-sm text-gray-500">Create the draft first, then add a rubric.</p>}
-    </>
+      {code && isNew && <p className="text-sm text-ink-2">Create the draft first, then add test cases.</p>}
+      {rubricType && !isNew && <Panel><RubricEditor questionId={question.id} disabled={disabled} /></Panel>}
+      {rubricType && isNew && <p className="text-sm text-ink-2">Create the draft first, then add a rubric.</p>}
+    </>,
+    isNew ? 'New question' : form.title || 'Edit question',
   );
 };
 
