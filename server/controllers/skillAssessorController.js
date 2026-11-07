@@ -274,6 +274,7 @@ export const saveRatings = async (req, res) => {
 
         const assessmentData = {
           userId: userId,
+          institutionId: req.user.institutionId,
           resumeHash: resumeHash,
           assessmentType: 'Technical Skills',
           skills: validatedSkills,

@@ -8,6 +8,8 @@ const skillsAssessmentSchema = new mongoose.Schema({
     required: [true, 'User ID is required'],
     index: true
   },
+  // Set at creation from req.user; not required so older documents stay valid
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', default: null, index: true },
   assessmentType: {
     type: String,
     required: [true, 'Assessment type is required'],

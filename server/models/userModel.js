@@ -13,11 +13,12 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, 'Please enter a valid email']
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    // Invited users have no password until they accept the invitation
+    required: [function () { return this.status !== 'invited'; }, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
   phoneNumber: {
@@ -25,11 +26,26 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{10,15}$/, 'Please enter a valid phone number']
   },
-  accountType: {
+  role: {
     type: String,
-    enum: ['Fresher'],
-    default: 'Fresher'
+    enum: ['student', 'lecturer', 'career_officer', 'university_admin'],
+    default: 'student',
+    required: true
   },
+  institutionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Institution',
+    required: [true, 'Institution is required'],
+    index: true
+  },
+  // New documents are created explicitly as 'invited'; the default keeps pre-existing users active.
+  status: {
+    type: String,
+    enum: ['invited', 'active', 'deactivated'],
+    default: 'active'
+  },
+  inviteTokenHash: { type: String, default: '', index: true },
+  inviteExpiresAt: { type: Date, default: null },
   isAccountVerified: {
     type: Boolean,
     default: false
@@ -89,13 +105,18 @@ const userSchema = new mongoose.Schema({
 // Define indexes separately
 userSchema.index({ email: 1 }, { unique: true, name: 'email_unique' });
 userSchema.index({ isAccountVerified: 1 }, { name: 'account_verified' });
-userSchema.index({ accountType: 1 }, { name: 'account_type' });
+userSchema.index({ institutionId: 1, role: 1, status: 1 }, { name: 'institution_role_status' });
 userSchema.index({ lastActive: -1 }, { name: 'last_active' });
 userSchema.index({ 'currentCV.hash': 1 }, { name: 'cv_hash_lookup', sparse: true }); // Sparse index for CV hash
 
 // Virtual for checking if user has uploaded CV
 userSchema.virtual('hasCV').get(function() {
   return !!(this.currentCV && this.currentCV.text && this.currentCV.text.trim().length > 0);
+});
+
+// Compatibility with the current client: students are still reported as 'Fresher'.
+userSchema.virtual('accountType').get(function() {
+  return this.role === 'student' || !this.role ? 'Fresher' : this.role;
 });
 
 // Virtual for CV upload age
@@ -130,6 +151,8 @@ userSchema.methods.toJSON = function() {
   delete userObject.resetOtp;
   delete userObject.verifyOtpExpireAt;
   delete userObject.resetOtpExpireAt;
+  delete userObject.inviteTokenHash;
+  delete userObject.inviteExpiresAt;
   return userObject;
 };
 

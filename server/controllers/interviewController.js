@@ -354,6 +354,7 @@ export const createInterview = async (req, res) => {
 
     const interview = new InterviewModel({
       userId,
+      institutionId: req.user.institutionId,
       jobDescription: jobDescription.trim(),
       resumeText: resumeText.trim(),
       questions,
@@ -480,6 +481,7 @@ export const createInterviewWithProfileCV = async (req, res) => {
 
     const interview = new InterviewModel({
       userId,
+      institutionId: req.user.institutionId,
       jobDescription: jobDescription.trim(),
       resumeText: actualCVText,
       questions,
@@ -669,9 +671,10 @@ export const submitAnswer = async (req, res) => {
         validatedLanguage,
         executionResults
       );
+      analysis = { ...analysis, source: 'ai' };
     } catch (error) {
       console.error('AI feedback failed:', error.message);
-      analysis = generateFallbackFeedback(question.type, sanitizedResponseText, sanitizedCode, validatedLanguage, executionResults);
+      analysis = { ...generateFallbackFeedback(question.type, sanitizedResponseText, sanitizedCode, validatedLanguage, executionResults), source: 'fallback' };
     }
 
     const response = {

@@ -8,6 +8,8 @@ const cvAnalysisSchema = new mongoose.Schema({
     required: [true, 'User ID is required'],
     index: true
   },
+  // Set at creation from req.user; not required so older documents stay valid
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', default: null, index: true },
   // MODIFIED: Make resumeText optional since it can come from user profile now
   resumeText: {
     type: String,

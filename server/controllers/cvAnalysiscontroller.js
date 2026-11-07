@@ -787,6 +787,7 @@ export const analyzeWithProfileCV = async (req, res) => {
     
     const newAnalysis = new CVAnalysis({
       userId: req.user.id,
+      institutionId: req.user.institutionId,
       resumeText: '',
       resumeHash: combinedHash,
       usedProfileCV: true,
@@ -1005,6 +1006,7 @@ export const saveAnalysis = async (req, res) => {
       // Create new analysis
       analysis = new CVAnalysis({
         userId: req.user.id,
+        institutionId: req.user.institutionId,
         resumeText: resumeText.substring(0, 15000),
         resumeHash,
         jobDescriptions,

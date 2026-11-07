@@ -72,7 +72,9 @@ const responseSchema = new mongoose.Schema({
     technicalAccuracy: { type: Number, min: 0, max: 10 },
     structuredResponse: { type: Number, min: 0, max: 10 },
     codeQuality: { type: Number, min: 0, max: 10 },
-    timeEfficiency: { type: Number, min: 0, max: 10 }
+    timeEfficiency: { type: Number, min: 0, max: 10 },
+    // Where this score came from. Dashboards must exclude 'fallback'.
+    source: { type: String, enum: ['tests', 'ai', 'human', 'fallback'] }
   }
 });
 
@@ -82,6 +84,8 @@ const interviewSchema = new mongoose.Schema({
     ref: 'user', 
     required: true 
   },
+  // Set at creation from req.user; not required so older documents stay valid
+  institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', default: null, index: true },
   jobDescription: { type: String, required: true },
   resumeText: { type: String, required: true },
   
