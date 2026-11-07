@@ -1,10 +1,10 @@
 import express from 'express'
-import { isAuthenticated, login, logout, registerUser, resetPassword, sendResetOtp, sendVerifyOtp, verifyEmail } from '../controllers/authcontroller.js';
+import { acceptInvite, isAuthenticated, login, logout, resetPassword, sendResetOtp, sendVerifyOtp, verifyEmail } from '../controllers/authcontroller.js';
 import userAuth from '../middleware/userAuth.js';
 
 
 const authRouter = express.Router();
-authRouter.post('/register', registerUser);
+authRouter.post("/accept-invite", acceptInvite);
 authRouter.post('/login', login);
 authRouter.post('/logout', logout);
 authRouter.post('/send-verify-otp', userAuth, sendVerifyOtp);

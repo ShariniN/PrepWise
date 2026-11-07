@@ -4,6 +4,8 @@ import crypto from "crypto";
 import userModel from "../models/userModel.js";
 import transporter from "../config/nodemailer.js";
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../config/emailTemplates.js";
+import { hashToken } from "../services/inviteTokens.js";
+import { audit } from "../services/audit.js";
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -15,74 +17,77 @@ const generateOtp = () => String(crypto.randomInt(100000, 1000000));
 
 const signToken = (user) =>
   jwt.sign(
-    { id: user._id, accountType: user.accountType, userType: "fresher" },
+    {
+      id: user._id,
+      role: user.role,
+      institutionId: user.institutionId,
+      accountType: user.accountType,
+      userType: "fresher",
+    },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
-// Register (open registration is replaced by invitations in Phase 1)
-export const registerUser = async (req, res) => {
-  const { name, email, password, phoneNumber } = req.body;
+const PASSWORD_RULE = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
 
-  if (!name || !email || !password || !phoneNumber) {
-    return res.json({ success: false, message: "Missing Details" });
+// Open registration no longer exists. People are invited by their university and activate the
+// account here with the single-use token from the invitation link.
+export const acceptInvite = async (req, res) => {
+  const { token, password, name, phoneNumber } = req.body || {};
+
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token) || !password) {
+    return res.status(400).json({ success: false, code: "INVITE_INVALID", message: "A valid invitation token and a password are required" });
   }
-
-  if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/.test(password)) {
-    return res.json({
+  if (typeof password !== "string" || !PASSWORD_RULE.test(password)) {
+    return res.status(400).json({
       success: false,
       message: "Password must be at least 6 characters long, include one uppercase letter, one number, and one special character",
     });
   }
-
-  if (!/^\d{10}$/.test(phoneNumber)) {
-    return res.json({
-      success: false,
-      message: "Phone number must be exactly 10 digits",
-    });
+  if (phoneNumber !== undefined && phoneNumber !== "" && !/^\d{10}$/.test(String(phoneNumber))) {
+    return res.status(400).json({ success: false, message: "Phone number must be exactly 10 digits" });
+  }
+  if (name !== undefined && (typeof name !== "string" || !name.trim() || name.trim().length > 100)) {
+    return res.status(400).json({ success: false, message: "Name must be 1 to 100 characters" });
   }
 
   try {
-    const existingUser = await userModel.findOne({ email });
-    if (existingUser) {
-      return res.json({ success: false, message: "User already exists with this email" });
+    const user = await userModel.findOne({ inviteTokenHash: hashToken(token) });
+
+    if (!user || user.status !== "invited") {
+      return res.status(400).json({ success: false, code: "INVITE_INVALID", message: "This invitation is not valid. Ask your administrator to send a new one." });
+    }
+    if (!user.inviteExpiresAt || new Date(user.inviteExpiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ success: false, code: "INVITE_EXPIRED", message: "This invitation has expired. Ask your administrator to send a new one." });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const otp = generateOtp();
+    user.password = await bcrypt.hash(password, 10);
+    user.status = "active";
+    user.inviteTokenHash = "";
+    user.inviteExpiresAt = null;
+    // The link was delivered to this mailbox, so the address counts as verified.
+    user.isAccountVerified = true;
+    if (name) user.name = name.trim();
+    if (phoneNumber) user.phoneNumber = String(phoneNumber);
+    await user.save();
 
-    const newAccount = new userModel({
-      name,
-      email,
-      password: hashedPassword,
-      phoneNumber,
-      accountType: "Fresher",
-      verifyOtp: otp,
-      verifyOtpExpireAt: Date.now() + 24 * 60 * 60 * 1000,
-    });
-    await newAccount.save();
+    await audit({ actor: user._id, action: "user.invite_accept", target: user._id, institutionId: user.institutionId });
 
-    res.cookie("token", signToken(newAccount), {
-      ...cookieOptions(),
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    await transporter.sendMail({
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: "Welcome to PrepWise - Verify Your Email",
-      html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace("{{email}}", email),
-    });
+    res.cookie("token", signToken(user), { ...cookieOptions(), maxAge: 7 * 24 * 60 * 60 * 1000 });
 
     return res.json({
       success: true,
-      message: "Registration successful! Please check your email for verification OTP.",
-      needsVerification: true,
-      accountType: "Fresher",
+      message: "Your account is ready.",
+      role: user.role,
+      institutionId: user.institutionId,
+      accountType: user.accountType,
+      isAccountVerified: true,
+      needsVerification: false,
+      userType: "fresher",
     });
   } catch (error) {
-    console.error("Registration error:", error);
-    res.json({ success: false, message: error.message });
+    console.error("Accept invite error:", error);
+    return res.status(500).json({ success: false, message: "Could not accept the invitation" });
   }
 };
 
@@ -98,12 +103,22 @@ export const login = async (req, res) => {
 
   try {
     const user = await userModel.findOne({ email });
-    const isMatch = user ? await bcrypt.compare(password, user.password) : false;
+    const isMatch = user && user.password ? await bcrypt.compare(password, user.password) : false;
 
     if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password. Please try again",
+      });
+    }
+
+    // Checked after the password so the message only reaches someone who knows it
+    if (user.status === "deactivated" || user.status === "invited") {
+      return res.status(403).json({
+        success: false,
+        message: user.status === "deactivated"
+          ? "This account has been deactivated. Contact your university administrator."
+          : "This account has not been activated yet. Use the link in your invitation email.",
       });
     }
 
@@ -114,6 +129,8 @@ export const login = async (req, res) => {
 
     return res.json({
       success: true,
+      role: user.role,
+      institutionId: user.institutionId,
       accountType: user.accountType,
       isAccountVerified: user.isAccountVerified || false,
       needsVerification: !user.isAccountVerified,
@@ -213,6 +230,9 @@ export const isAuthenticated = async (req, res) => {
         name: user.name,
         email: user.email,
         accountType: user.accountType,
+        role: user.role,
+        institutionId: user.institutionId,
+        status: user.status,
         isAccountVerified: user.isAccountVerified || false,
         phoneNumber: user.phoneNumber,
         lastActive: user.lastActive || user.updatedAt,
@@ -237,7 +257,7 @@ export const sendResetOtp = async (req, res) => {
   try {
     const user = await userModel.findOne({ email });
 
-    if (!user) {
+    if (!user || user.status === "deactivated" || user.status === "invited") {
       return res.json({ success: false, message: "User not found" });
     }
 
@@ -272,7 +292,7 @@ export const resetPassword = async (req, res) => {
   try {
     const user = await userModel.findOne({ email });
 
-    if (!user) {
+    if (!user || user.status === "deactivated" || user.status === "invited") {
       return res.json({ success: false, message: "User not found" });
     }
 
