@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { CheckCircle, XCircle, AlertTriangle, Lightbulb, FileText, Layout, Target, BarChart3, ArrowLeft, Star, TrendingUp, Settings, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
-import NavBar from "../components/NavBar";
+import AppShell from "../components/AppShell";
 import { useNavigate } from "react-router-dom";
 
 
@@ -126,10 +126,10 @@ const SkillsAssessment = ({
 
   // Get confidence level color
   const getConfidenceColor = (level) => {
-    if (level >= 8) return 'text-emerald-700 bg-emerald-100 border-emerald-200';
-    if (level >= 6) return 'text-blue-700 bg-blue-100 border-blue-200';
-    if (level >= 4) return 'text-amber-700 bg-amber-100 border-amber-200';
-    return 'text-red-700 bg-red-100 border-red-200';
+    if (level >= 8) return 'text-success-700 bg-success-100 border-success-100';
+    if (level >= 6) return 'text-primary-700 bg-primary-100 border-primary-200';
+    if (level >= 4) return 'text-sun-700 bg-sun-100 border-sun-200';
+    return 'text-danger-700 bg-danger-100 border-danger-100';
   };
 
   // Get confidence level text
@@ -151,30 +151,30 @@ const SkillsAssessment = ({
   }, {});
 
   const renderInstructions = () => (
-    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-2xl p-4 md:p-6 mb-6">
+    <div className="bg-primary-50 border border-primary-200 rounded-3xl p-4 md:p-6 mb-6">
       <div className="flex flex-col md:flex-row items-start gap-4">
-        <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+        <div className="flex-shrink-0 w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center shadow-soft">
           <Settings className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg md:text-xl font-bold text-blue-900 mb-3">How to Rate Your Skills</h3>
-          <div className="space-y-3 text-sm text-blue-800">
+          <h3 className="text-lg md:text-xl font-bold text-primary-900 mb-3">How to Rate Your Skills</h3>
+          <div className="space-y-3 text-sm text-primary-800">
             <p className="font-medium">Rate each technology based on your current confidence level:</p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-400 rounded-full shadow-sm"></div>
+                <div className="w-3 h-3 bg-danger-500 rounded-full shadow-sm"></div>
                 <span><strong>1-3 (Beginner):</strong> Basic understanding, need guidance</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-amber-400 rounded-full shadow-sm"></div>
+                <div className="w-3 h-3 bg-sun-400 rounded-full shadow-sm"></div>
                 <span><strong>4-5 (Intermediate):</strong> Can work independently with some help</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-400 rounded-full shadow-sm"></div>
+                <div className="w-3 h-3 bg-primary-400 rounded-full shadow-sm"></div>
                 <span><strong>6-7 (Proficient):</strong> Confident, can mentor others</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-emerald-400 rounded-full shadow-sm"></div>
+                <div className="w-3 h-3 bg-success-500 rounded-full shadow-sm"></div>
                 <span><strong>8-10 (Expert):</strong> Deep expertise, can architect solutions</span>
               </div>
             </div>
@@ -185,24 +185,22 @@ const SkillsAssessment = ({
   );
 
   const renderRatingStep = () => (
-    <div className="min-h-screen bg-gray-50">
-                      <NavBar/>
+    <div>
     <div className="space-y-6 md:space-y-8">
-      <br />
       {/* Header */}
       <div className="text-center">
         
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-800 px-4 py-2 rounded-full text-sm font-medium mb-4 shadow-sm">
+        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-800 px-4 py-2 rounded-full text-sm font-medium mb-4 shadow-sm">
           <Star className="w-4 h-4" />
           Skills Assessment
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Rate Your Technical Skills</h1>
-        <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+        <h1 className="text-3xl md:text-4xl font-bold text-ink mb-4">Rate Your Technical Skills</h1>
+        <p className="text-lg md:text-xl text-ink-2 max-w-3xl mx-auto px-4">
           Help us understand your confidence level with each technology to provide better career insights
         </p>
-        <div className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl px-4 py-2 shadow-sm">
-          <BarChart3 className="w-5 h-5 text-gray-600" />
-          <span className="text-gray-800 font-semibold">{technologies.length} technologies found</span>
+        <div className="mt-6 inline-flex items-center gap-2 bg-sand rounded-2xl px-4 py-2 shadow-sm">
+          <BarChart3 className="w-5 h-5 text-ink-2" />
+          <span className="text-ink font-semibold">{technologies.length} technologies found</span>
         </div>
       </div>
       </div>
@@ -212,36 +210,36 @@ const SkillsAssessment = ({
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+        <div className="bg-danger-50 border border-danger-100 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0" />
-            <span className="text-red-800">{error}</span>
+            <AlertCircle className="w-5 h-5 text-danger-600 mr-2 flex-shrink-0" />
+            <span className="text-danger-700">{error}</span>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm">
+        <div className="bg-success-50 border border-success-100 rounded-2xl p-4 shadow-sm">
           <div className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-emerald-600 mr-2 flex-shrink-0" />
-            <span className="text-emerald-800">{success}</span>
+            <CheckCircle className="w-5 h-5 text-success-600 mr-2 flex-shrink-0" />
+            <span className="text-success-700">{success}</span>
           </div>
         </div>
       )}
 
       {technologies.length === 0 ? (
         <div className="text-center py-16">
-          <div className="w-20 h-20 text-gray-400 mx-auto mb-6 flex items-center justify-center bg-gray-100 rounded-2xl shadow-inner">
+          <div className="w-20 h-20 text-ink-muted mx-auto mb-6 flex items-center justify-center bg-sand rounded-2xl shadow-inner">
             <AlertTriangle className="w-10 h-10" />
           </div>
-          <h3 className="text-2xl font-semibold text-gray-600 mb-3">No Technologies Found</h3>
-          <p className="text-gray-500 mb-8 max-w-md mx-auto px-4">
+          <h3 className="text-2xl font-semibold text-ink-2 mb-3">No Technologies Found</h3>
+          <p className="text-ink-muted mb-8 max-w-md mx-auto px-4">
             No technologies were extracted from your resume. Please go back and analyze your CV first.
           </p>
           {onBack && (
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-surface text-primary-600 border-2 border-primary-600 rounded-full hover:bg-primary-50 transition-all shadow-soft hover:shadow-card"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to CV Analysis
@@ -251,17 +249,17 @@ const SkillsAssessment = ({
       ) : (
         <>
           {/* Technologies Rating Grid */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 md:p-6 border-b border-gray-200">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900">Technology Skills</h2>
-              <p className="text-gray-600 mt-1">Use the sliders to rate your confidence level for each technology</p>
+          <div className="bg-surface rounded-2xl border border-line shadow-soft overflow-hidden">
+            <div className="bg-sand p-4 md:p-6 border-b border-line">
+              <h2 className="text-xl md:text-2xl font-bold text-ink">Technology Skills</h2>
+              <p className="text-ink-2 mt-1">Use the sliders to rate your confidence level for each technology</p>
             </div>
             
             <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
               {Object.entries(groupedTechnologies).map(([category, techs]) => (
-                <div key={category} className="border-b border-gray-100 last:border-0">
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 md:px-6 py-3 border-b border-gray-200 sticky top-0 z-10">
-                    <h3 className="text-lg font-bold text-gray-800">{category}</h3>
+                <div key={category} className="border-b border-line last:border-0">
+                  <div className="bg-sand px-4 md:px-6 py-3 border-b border-line sticky top-0 z-10">
+                    <h3 className="text-lg font-bold text-ink">{category}</h3>
                   </div>
                   <div className="p-4 md:p-6 space-y-6">
                     {techs.map((tech, techIndex) => {
@@ -270,18 +268,18 @@ const SkillsAssessment = ({
                         <div key={globalIndex} className="group">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
                             <div className="flex items-center gap-3">
-                              <h4 className="text-lg font-semibold text-gray-900">{tech.name}</h4>
+                              <h4 className="text-lg font-semibold text-ink">{tech.name}</h4>
                               <span className={`text-xs px-3 py-1 rounded-full border font-medium ${getConfidenceColor(tech.confidenceLevel)}`}>
                                 {getConfidenceText(tech.confidenceLevel)}
                               </span>
                             </div>
-                            <div className={`text-2xl font-bold px-4 py-2 rounded-xl shadow-sm ${getConfidenceColor(tech.confidenceLevel)}`}>
+                            <div className={`text-2xl font-bold px-4 py-2 rounded-2xl shadow-sm ${getConfidenceColor(tech.confidenceLevel)}`}>
                               {tech.confidenceLevel}
                             </div>
                           </div>
                           
                           <div className="flex items-center gap-2 md:gap-4">
-                            <span className="text-sm text-gray-500 font-medium w-6 md:w-8">1</span>
+                            <span className="text-sm text-ink-muted font-medium w-6 md:w-8">1</span>
                             <div className="flex-1 relative">
                               <input
                                 type="range"
@@ -289,16 +287,16 @@ const SkillsAssessment = ({
                                 max="10"
                                 value={tech.confidenceLevel}
                                 onChange={(e) => handleRatingChange(globalIndex, e.target.value)}
-                                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full h-3 bg-line rounded-xl appearance-none cursor-pointer slider focus:outline-none focus:ring-2 focus:ring-primary-500"
                               />
-                              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                              <div className="flex justify-between text-xs text-ink-muted mt-1">
                                 <span>Beginner</span>
                                 <span className="hidden sm:inline">Intermediate</span>
                                 <span className="hidden sm:inline">Proficient</span>
                                 <span>Expert</span>
                               </div>
                             </div>
-                            <span className="text-sm text-gray-500 font-medium w-6 md:w-8 text-right">10</span>
+                            <span className="text-sm text-ink-muted font-medium w-6 md:w-8 text-right">10</span>
                           </div>
                         </div>
                       );
@@ -310,21 +308,21 @@ const SkillsAssessment = ({
           </div>
           
           {/* Action Bar */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-6 shadow-lg">
+          <div className="bg-surface border border-line rounded-3xl p-4 md:p-6 shadow-soft">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
               {/* Statistics */}
               <div className="flex flex-wrap items-center gap-3 md:gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-sm"></div>
-                  <span className="text-gray-600">Expert (8-10): <strong className="text-gray-900">{technologies.filter(t => t.confidenceLevel >= 8).length}</strong></span>
+                  <div className="w-3 h-3 bg-success-500 rounded-full shadow-sm"></div>
+                  <span className="text-ink-2">Expert (8-10): <strong className="text-ink">{technologies.filter(t => t.confidenceLevel >= 8).length}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
-                  <span className="text-gray-600">Proficient (6-7): <strong className="text-gray-900">{technologies.filter(t => t.confidenceLevel >= 6 && t.confidenceLevel < 8).length}</strong></span>
+                  <div className="w-3 h-3 bg-primary-500 rounded-full shadow-sm"></div>
+                  <span className="text-ink-2">Proficient (6-7): <strong className="text-ink">{technologies.filter(t => t.confidenceLevel >= 6 && t.confidenceLevel < 8).length}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-amber-500 rounded-full shadow-sm"></div>
-                  <span className="text-gray-600">Learning (&lt;6): <strong className="text-gray-900">{technologies.filter(t => t.confidenceLevel < 6).length}</strong></span>
+                  <div className="w-3 h-3 bg-sun-500 rounded-full shadow-sm"></div>
+                  <span className="text-ink-2">Learning (&lt;6): <strong className="text-ink">{technologies.filter(t => t.confidenceLevel < 6).length}</strong></span>
                 </div>
               </div>
 
@@ -333,7 +331,7 @@ const SkillsAssessment = ({
                 {onBack && (
                   <button
                     onClick={onBack}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-sm hover:shadow-md"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface text-ink-2 border-2 border-line rounded-full hover:bg-sand transition-all shadow-sm hover:shadow-md"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Back to Analysis
@@ -342,11 +340,11 @@ const SkillsAssessment = ({
                 <button
                   onClick={handleSaveRatings}
                   disabled={saving || technologies.length === 0}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-surface text-primary-600 border-2 border-primary-600 rounded-full hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold shadow-soft hover:shadow-card"
                 >
                   {saving ? (
                     <>
-                      <Loader className="w-5 h-5 animate-spin text-indigo-600" />
+                      <Loader className="w-5 h-5 animate-spin text-primary-600" />
                       Saving Assessment...
                     </>
                   ) : (
@@ -366,70 +364,68 @@ const SkillsAssessment = ({
   const navigate = useNavigate();
 
   const renderSuccessStep = () => (
-    <div className="min-h-screen bg-gray-50">
-                      <NavBar/>
-                      <br/>
+    <div>
     <div className="space-y-6 md:space-y-8 text-center max-w-5xl mx-auto">
-      <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
-        <CheckCircle className="w-12 h-12 text-emerald-600" />
+      <div className="w-24 h-24 bg-success-100 rounded-3xl flex items-center justify-center mx-auto shadow-soft">
+        <CheckCircle className="w-12 h-12 text-success-600" />
       </div>
       
       <div>
-        <h1 className="text-3xl md:text-4xl font-bold text-emerald-600 mb-4">Skills Assessment Complete!</h1>
-        <p className="text-xl text-gray-600 px-4">
+        <h1 className="text-3xl md:text-4xl font-bold text-success-600 mb-4">Skills Assessment Complete!</h1>
+        <p className="text-xl text-ink-2 px-4">
           Your skill assessments have been saved for {technologies.length} technologies
         </p>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4">
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all">
+        <div className="bg-success-50 border border-success-100 rounded-3xl p-6 md:p-8 shadow-soft hover:shadow-card transition-all">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <TrendingUp className="w-6 h-6 text-emerald-600" />
-            <span className="font-bold text-emerald-800 text-lg">Expert Level</span>
+            <TrendingUp className="w-6 h-6 text-success-600" />
+            <span className="font-bold text-success-700 text-lg">Expert Level</span>
           </div>
-          <div className="text-3xl md:text-4xl font-bold text-emerald-600 mb-2">
+          <div className="text-3xl md:text-4xl font-bold text-success-600 mb-2">
             {technologies.filter(t => t.confidenceLevel >= 8).length}
           </div>
-          <div className="text-emerald-700">Technologies (8-10)</div>
+          <div className="text-success-700">Technologies (8-10)</div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all">
+        <div className="bg-primary-50 border border-primary-200 rounded-3xl p-6 md:p-8 shadow-soft hover:shadow-card transition-all">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <Star className="w-6 h-6 text-blue-600" />
-            <span className="font-bold text-blue-800 text-lg">Proficient</span>
+            <Star className="w-6 h-6 text-primary-600" />
+            <span className="font-bold text-primary-800 text-lg">Proficient</span>
           </div>
-          <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">
+          <div className="text-3xl md:text-4xl font-bold text-primary-600 mb-2">
             {technologies.filter(t => t.confidenceLevel >= 6 && t.confidenceLevel < 8).length}
           </div>
-          <div className="text-blue-700">Technologies (6-7)</div>
+          <div className="text-primary-700">Technologies (6-7)</div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all">
+        <div className="bg-sun-50 border border-sun-200 rounded-3xl p-6 md:p-8 shadow-soft hover:shadow-card transition-all">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <BarChart3 className="w-6 h-6 text-amber-600" />
-            <span className="font-bold text-amber-800 text-lg">Learning</span>
+            <BarChart3 className="w-6 h-6 text-sun-600" />
+            <span className="font-bold text-sun-700 text-lg">Learning</span>
           </div>
-          <div className="text-3xl md:text-4xl font-bold text-amber-600 mb-2">
+          <div className="text-3xl md:text-4xl font-bold text-sun-600 mb-2">
             {technologies.filter(t => t.confidenceLevel < 6).length}
           </div>
-          <div className="text-amber-700">Technologies (&lt;6)</div>
+          <div className="text-sun-700">Technologies (&lt;6)</div>
         </div>
       </div>
 
       {/* Summary Card */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 md:p-8 shadow-lg mx-4">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Assessment Summary</h3>
+      <div className="bg-surface border border-line rounded-3xl p-6 md:p-8 shadow-soft mx-4">
+        <h3 className="text-xl font-bold text-ink mb-6">Assessment Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900 mb-1">
+            <div className="text-3xl font-bold text-ink mb-1">
               {(technologies.reduce((sum, tech) => sum + tech.confidenceLevel, 0) / technologies.length).toFixed(1)}/10
             </div>
-            <div className="text-gray-600">Average Confidence Level</div>
+            <div className="text-ink-2">Average Confidence Level</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900 mb-1">{technologies.length}</div>
-            <div className="text-gray-600">Technologies Assessed</div>
+            <div className="text-3xl font-bold text-ink mb-1">{technologies.length}</div>
+            <div className="text-ink-2">Technologies Assessed</div>
           </div>
         </div>
       </div>
@@ -439,7 +435,7 @@ const SkillsAssessment = ({
       <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
         <button
           onClick={() => setStep('rating')}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all shadow-lg hover:shadow-xl"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface text-ink-2 border-2 border-line rounded-full hover:bg-sand transition-all shadow-soft hover:shadow-card"
         >
           <Settings className="w-4 h-4" />
           Update Assessments
@@ -447,7 +443,7 @@ const SkillsAssessment = ({
         {onBack && (
           <button
             onClick={onBack}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface text-primary-600 border-2 border-primary-600 rounded-full hover:bg-primary-50 transition-all shadow-soft hover:shadow-card"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to CV Analysis
@@ -455,7 +451,7 @@ const SkillsAssessment = ({
         )}
         <button
           onClick={() => navigate('/interview')}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface text-primary-600 border-2 border-primary-600 rounded-full hover:bg-primary-50 transition-all shadow-soft hover:shadow-card"
           >
           <ArrowRight className="w-4 h-4" />
           Proceed to Mock Interview 
@@ -468,16 +464,16 @@ const SkillsAssessment = ({
   // Enhanced validation check
   if (!resumeHash || !extractedTechnologies || extractedTechnologies.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-sand flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white border border-red-200 rounded-2xl p-8 text-center shadow-xl">
-            <div className="w-16 h-16 text-red-600 mx-auto mb-6 flex items-center justify-center bg-red-100 rounded-2xl shadow-inner">
+          <div className="bg-surface border border-danger-100 rounded-2xl p-8 text-center shadow-card">
+            <div className="w-16 h-16 text-danger-600 mx-auto mb-6 flex items-center justify-center bg-danger-100 rounded-2xl shadow-inner">
               <AlertTriangle className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-bold text-red-800 mb-4">
+            <h2 className="text-2xl font-bold text-danger-700 mb-4">
               {!resumeHash ? "Resume Analysis Required" : "No Technologies Found"}
             </h2>
-            <p className="text-red-600 mb-6">
+            <p className="text-danger-600 mb-6">
               {!resumeHash 
                 ? "Please analyze your resume first to extract technologies for assessment."
                 : "No technologies were extracted from your resume. Please ensure your resume contains technical skills and try analyzing again."
@@ -486,7 +482,7 @@ const SkillsAssessment = ({
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-red-600 border-2 border-red-600 rounded-xl hover:bg-red-50 transition-all shadow-lg hover:shadow-xl"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-surface text-danger-600 border-2 border-danger-600 rounded-full hover:bg-danger-50 transition-all shadow-soft hover:shadow-card"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to CV Analysis
@@ -499,22 +495,22 @@ const SkillsAssessment = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 py-6 md:px-6 md:py-8">
+    <AppShell width="wide">
+      <div>
         <style>{`
           .slider::-webkit-slider-thumb {
             appearance: none;
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
             cursor: pointer;
             border: 3px solid #ffffff;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
             transition: all 0.2s ease;
           }
           .slider::-webkit-slider-thumb:hover {
-            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+            background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
             transform: scale(1.1);
             box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
           }
@@ -522,7 +518,7 @@ const SkillsAssessment = ({
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
             cursor: pointer;
             border: 3px solid #ffffff;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
@@ -530,15 +526,15 @@ const SkillsAssessment = ({
           .slider::-webkit-slider-track {
             height: 12px;
             border-radius: 6px;
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            background: #ebe7dc;
           }
           .slider::-moz-range-track {
             height: 12px;
             border-radius: 6px;
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            background: #ebe7dc;
           }
           .slider:focus::-webkit-slider-track {
-            background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+            background: #d6cfbc;
           }
           @keyframes spin {
             from { transform: rotate(0deg); }
@@ -552,7 +548,7 @@ const SkillsAssessment = ({
         {step === 'rating' && renderRatingStep()}
         {step === 'success' && renderSuccessStep()}
       </div>
-    </div>
+    </AppShell>
   );
 };
 
@@ -572,19 +568,19 @@ const API_ENDPOINTS = {
 // Enhanced Circular Progress Component
 const CircularProgress = ({ percentage, label, colorIndex = 0 }) => {
   const colors = [
-    { primary: "#4f46e5", secondary: "#e0e7ff", gradient: "from-indigo-500 to-purple-600" },
-    { primary: "#059669", secondary: "#d1fae5", gradient: "from-emerald-500 to-teal-600" },
-    { primary: "#d97706", secondary: "#fef3c7", gradient: "from-amber-500 to-orange-600" },
-    { primary: "#dc2626", secondary: "#fee2e2", gradient: "from-red-500 to-pink-600" },
-    { primary: "#7c3aed", secondary: "#ede9fe", gradient: "from-purple-500 to-indigo-600" },
-    { primary: "#0891b2", secondary: "#cffafe", gradient: "from-cyan-500 to-blue-600" },
+    { primary: "#4f46e5", secondary: "#e0e7ff", gradient: "from-primary-500 to-primary-600" },
+    { primary: "#059669", secondary: "#d1fae5", gradient: "from-success-500 to-success-600" },
+    { primary: "#d97706", secondary: "#fef3c7", gradient: "from-sun-500 to-sun-600" },
+    { primary: "#dc2626", secondary: "#fee2e2", gradient: "from-danger-500 to-danger-600" },
+    { primary: "#4338ca", secondary: "#ede9fe", gradient: "from-primary-500 to-primary-600" },
+    { primary: "#0891b2", secondary: "#cffafe", gradient: "from-primary-500 to-primary-600" },
   ];
   const color = colors[colorIndex % colors.length];
   const strokeDasharray = 2 * Math.PI * 50;
   const strokeDashoffset = strokeDasharray - (strokeDasharray * percentage) / 100;
 
   return (
-    <div className="flex flex-col items-center p-4 md:p-6 bg-white rounded-2xl border border-gray-200 hover:shadow-xl transition-all shadow-lg transform hover:scale-105">
+    <div className="flex flex-col items-center p-4 md:p-6 bg-surface rounded-3xl border border-line hover:shadow-card transition-all shadow-soft transform hover:scale-105">
       <div className="relative w-24 md:w-28 h-24 md:h-28 mb-4">
         <svg className="transform -rotate-90 w-full h-full">
           <circle
@@ -614,7 +610,7 @@ const CircularProgress = ({ percentage, label, colorIndex = 0 }) => {
           </span>
         </div>
       </div>
-      <span className="text-sm font-semibold text-gray-700 text-center">{label}</span>
+      <span className="text-sm font-semibold text-ink-2 text-center">{label}</span>
     </div>
   );
 };
@@ -625,27 +621,27 @@ const StructuredRecommendations = ({ result, index }) => {
 
   if (result.isNonTechRole) {
     return (
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4 md:p-6 rounded-2xl shadow-lg">
+      <div className="bg-sun-50 border border-sun-200 p-4 md:p-6 rounded-3xl shadow-soft">
         <div className="flex items-center mb-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0" />
-          <h3 className="font-semibold text-amber-800">Non-Technical Role Detected</h3>
+          <AlertTriangle className="w-5 h-5 text-sun-600 mr-2 flex-shrink-0" />
+          <h3 className="font-semibold text-sun-700">Non-Technical Role Detected</h3>
         </div>
-        <p className="text-amber-700">{result.message}</p>
+        <p className="text-sun-700">{result.message}</p>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'strengths', label: 'Strengths', icon: CheckCircle, color: 'text-emerald-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
-    { id: 'content', label: 'Content Issues', icon: FileText, color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
-    { id: 'structure', label: 'Structure Issues', icon: Layout, color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
-    { id: 'recommendations', label: 'Recommendations', icon: Lightbulb, color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200' }
+    { id: 'strengths', label: 'Strengths', icon: CheckCircle, color: 'text-success-600', bgColor: 'bg-success-50', borderColor: 'border-success-100' },
+    { id: 'content', label: 'Content Issues', icon: FileText, color: 'text-sun-600', bgColor: 'bg-sun-50', borderColor: 'border-sun-200' },
+    { id: 'structure', label: 'Structure Issues', icon: Layout, color: 'text-danger-600', bgColor: 'bg-danger-50', borderColor: 'border-danger-100' },
+    { id: 'recommendations', label: 'Recommendations', icon: Lightbulb, color: 'text-primary-600', bgColor: 'bg-primary-50', borderColor: 'border-primary-200' }
   ];
 
   const renderList = (items, icon, colorClass, bgClass) => {
     if (!items || items.length === 0) {
       return (
-        <div className="text-gray-500 italic text-center py-8 bg-gray-50 rounded-xl">
+        <div className="text-ink-muted italic text-center py-8 bg-sand rounded-2xl">
           No items available for this category
         </div>
       );
@@ -654,9 +650,9 @@ const StructuredRecommendations = ({ result, index }) => {
     return (
       <div className="space-y-4">
         {items.map((item, idx) => (
-          <div key={idx} className={`flex items-start gap-4 p-4 ${bgClass} rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow`}>
+          <div key={idx} className={`flex items-start gap-4 p-4 ${bgClass} rounded-2xl border border-line shadow-sm hover:shadow-md transition-shadow`}>
             <icon className={`w-5 h-5 mt-0.5 flex-shrink-0 ${colorClass}`} />
-            <span className="text-gray-700 leading-relaxed">{item}</span>
+            <span className="text-ink-2 leading-relaxed">{item}</span>
           </div>
         ))}
       </div>
@@ -668,11 +664,11 @@ const StructuredRecommendations = ({ result, index }) => {
     
     switch (activeTab) {
       case 'strengths':
-        return renderList(result.strengths, CheckCircle, 'text-emerald-600', 'bg-emerald-50');
+        return renderList(result.strengths, CheckCircle, 'text-success-600', 'bg-success-50');
       case 'content':
-        return renderList(result.contentWeaknesses, FileText, 'text-amber-600', 'bg-amber-50');
+        return renderList(result.contentWeaknesses, FileText, 'text-sun-600', 'bg-sun-50');
       case 'structure':
-        return renderList(result.structureWeaknesses, Layout, 'text-red-600', 'bg-red-50');
+        return renderList(result.structureWeaknesses, Layout, 'text-danger-600', 'bg-danger-50');
       case 'recommendations':
         const allRecommendations = [
           ...(result.contentRecommendations || []).map(rec => ({ text: rec, type: 'content' })),
@@ -681,23 +677,23 @@ const StructuredRecommendations = ({ result, index }) => {
         return (
           <div className="space-y-4">
             {allRecommendations.length === 0 ? (
-              <div className="text-gray-500 italic text-center py-8 bg-gray-50 rounded-xl">
+              <div className="text-ink-muted italic text-center py-8 bg-sand rounded-2xl">
                 No recommendations available
               </div>
             ) : (
               allRecommendations.map((rec, idx) => (
-                <div key={idx} className="flex items-start gap-4 p-4 bg-indigo-50 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <div key={idx} className="flex items-start gap-4 p-4 bg-primary-50 rounded-2xl border border-line shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                    <Lightbulb className="w-5 h-5 text-primary-600 flex-shrink-0" />
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                       rec.type === 'content' 
-                        ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                        : 'bg-purple-100 text-purple-700 border border-purple-200'
+                        ? 'bg-sun-100 text-sun-700 border border-sun-200' 
+                        : 'bg-primary-100 text-primary-700 border border-primary-200'
                     }`}>
                       {rec.type}
                     </span>
                   </div>
-                  <span className="text-gray-700 leading-relaxed">{rec.text}</span>
+                  <span className="text-ink-2 leading-relaxed">{rec.text}</span>
                 </div>
               ))
             )}
@@ -709,16 +705,16 @@ const StructuredRecommendations = ({ result, index }) => {
   };
 
   return (
-    <div className="bg-white p-4 md:p-6 shadow-lg border border-gray-200 rounded-2xl hover:shadow-xl transition-all">
+    <div className="bg-surface p-4 md:p-6 shadow-soft border border-line rounded-3xl hover:shadow-card transition-all">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <h3 className="text-xl font-bold text-gray-800">Job Description {index + 1}</h3>
+        <h3 className="text-xl font-bold text-ink">Job Description {index + 1}</h3>
         <span
           className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm ${
             result.matchPercentage >= 80
-              ? "bg-gradient-to-r from-emerald-100 to-emerald-200 text-emerald-800 border border-emerald-300"
+              ? "bg-success-100 text-success-700 border border-success-100"
               : result.matchPercentage >= 60
-              ? "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border border-amber-300"
-              : "bg-gradient-to-r from-red-100 to-red-200 text-red-800 border border-red-300"
+              ? "bg-sun-100 text-sun-700 border border-sun-300"
+              : "bg-danger-100 text-danger-700 border border-danger-100"
           }`}
         >
           Match Score: {result.matchPercentage}%
@@ -726,20 +722,20 @@ const StructuredRecommendations = ({ result, index }) => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 mb-8 bg-gradient-to-r from-gray-100 to-gray-200 p-2 rounded-2xl shadow-inner">
+      <div className="flex flex-wrap gap-2 mb-8 bg-sand p-2 rounded-2xl shadow-inner">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 rounded-2xl text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? `bg-white ${tab.color} shadow-lg border ${tab.borderColor} transform scale-105`
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                  ? `bg-surface ${tab.color} shadow-soft border ${tab.borderColor} transform scale-105`
+                  : 'text-ink-2 hover:text-ink hover:bg-sand hover:shadow-sm'
               }`}
             >
-              <Icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : 'text-gray-400'}`} />
+              <Icon className={`w-4 h-4 ${activeTab === tab.id ? tab.color : 'text-ink-muted'}`} />
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
@@ -1126,13 +1122,13 @@ const handleSaveIndividualAnalysis = async (index) => {
   const renderCVSourceSelection = () => {
     if (cvUploadMode === 'check' || loadingProfileCV) {
       return (
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-4 md:p-6 shadow-lg">
+        <div className="bg-surface rounded-3xl border border-line p-4 md:p-6 shadow-soft">
           <div className="flex items-center justify-center py-8">
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto text-gray-400 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+              <div className="w-12 h-12 mx-auto text-ink-muted bg-sand rounded-2xl flex items-center justify-center mb-4">
                 <RefreshCw className="w-6 h-6 animate-spin" />
               </div>
-              <p className="text-gray-600">Checking for existing CV...</p>
+              <p className="text-ink-2">Checking for existing CV...</p>
             </div>
           </div>
         </div>
@@ -1141,70 +1137,70 @@ const handleSaveIndividualAnalysis = async (index) => {
 
     if (cvUploadMode === 'profile' && profileCV) {
       return (
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-4 md:p-6 shadow-lg">
-          <label className="block font-bold mb-4 text-gray-800">
+        <div className="bg-surface rounded-3xl border border-line p-4 md:p-6 shadow-soft">
+          <label className="block font-bold mb-4 text-ink">
             Choose CV Source
           </label>
           
           {/* Profile CV Option */}
-          <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all mb-4 ${
+          <div className={`p-4 rounded-2xl border-2 cursor-pointer transition-all mb-4 ${
             useProfileCV 
-              ? 'border-emerald-400 bg-emerald-50 shadow-lg' 
-              : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
+              ? 'border-success-500 bg-success-50 shadow-soft' 
+              : 'border-line bg-surface hover:border-line hover:shadow-md'
           }`} onClick={handleUseProfileCV}>
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                useProfileCV ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-soft ${
+                useProfileCV ? 'bg-success-500 text-white' : 'bg-sand text-ink-2'
               }`}>
                 <User className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Use Profile CV</h3>
-                <p className="text-sm text-gray-600">{profileCV.fileName}</p>
-                <p className="text-xs text-gray-500">
+                <h3 className="font-semibold text-ink">Use Profile CV</h3>
+                <p className="text-sm text-ink-2">{profileCV.fileName}</p>
+                <p className="text-xs text-ink-muted">
                   Uploaded: {new Date(profileCV.uploadedAt).toLocaleDateString()}
                   {profileCV.fileSize && ` • ${(profileCV.fileSize / 1024).toFixed(1)} KB`}
                 </p>
               </div>
               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                useProfileCV ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                useProfileCV ? 'border-success-500 bg-success-500' : 'border-line'
               }`}>
-                {useProfileCV && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                {useProfileCV && <div className="w-2 h-2 bg-surface rounded-full"></div>}
               </div>
             </div>
           </div>
 
           {/* Upload New CV Option */}
-          <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+          <div className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
             !useProfileCV && !resumeFile 
-              ? 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md' 
+              ? 'border-line bg-surface hover:border-line hover:shadow-md' 
               : !useProfileCV && resumeFile
-              ? 'border-emerald-400 bg-emerald-50 shadow-lg'
-              : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
+              ? 'border-success-500 bg-success-50 shadow-soft'
+              : 'border-line bg-surface hover:border-line hover:shadow-md'
           }`} onClick={handleUploadNewCV}>
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-soft ${
                 !useProfileCV && resumeFile 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-gray-100 text-gray-600'
+                  ? 'bg-success-500 text-white' 
+                  : 'bg-sand text-ink-2'
               }`}>
                 <Upload className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-gray-900">Upload New CV</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold text-ink">Upload New CV</h3>
+                <p className="text-sm text-ink-2">
                   {resumeFile ? resumeFile.name : 'Choose a different PDF file'}
                 </p>
                 {resumeFile && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-ink-muted">
                     {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                 )}
               </div>
               <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                !useProfileCV && resumeFile ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300'
+                !useProfileCV && resumeFile ? 'border-success-500 bg-success-500' : 'border-line'
               }`}>
-                {!useProfileCV && resumeFile && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                {!useProfileCV && resumeFile && <div className="w-2 h-2 bg-surface rounded-full"></div>}
               </div>
             </div>
           </div>
@@ -1215,10 +1211,10 @@ const handleSaveIndividualAnalysis = async (index) => {
               <div
                 className={`relative border-2 border-dashed rounded-2xl p-6 md:p-8 text-center transition-all ${
                   dragActive
-                    ? "border-indigo-400 bg-indigo-50 scale-105 shadow-lg"
+                    ? "border-primary-400 bg-primary-50 scale-105 shadow-soft"
                     : resumeFile
-                    ? "border-emerald-400 bg-emerald-50 shadow-lg"
-                    : "border-gray-300 hover:border-gray-400 hover:bg-gray-50 hover:shadow-md"
+                    ? "border-success-500 bg-success-50 shadow-soft"
+                    : "border-line hover:border-line hover:bg-sand hover:shadow-md"
                 }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
@@ -1234,27 +1230,27 @@ const handleSaveIndividualAnalysis = async (index) => {
 
                 {resumeFile ? (
                   <div className="space-y-3">
-                    <div className="w-12 h-12 mx-auto text-emerald-600 bg-emerald-100 rounded-2xl flex items-center justify-center shadow-lg">
+                    <div className="w-12 h-12 mx-auto text-success-600 bg-success-100 rounded-2xl flex items-center justify-center shadow-soft">
                       <CheckCircle className="w-6 h-6" />
                     </div>
-                    <p className="font-semibold text-emerald-700 truncate">{resumeFile.name}</p>
-                    <p className="text-sm text-emerald-600">
+                    <p className="font-semibold text-success-700 truncate">{resumeFile.name}</p>
+                    <p className="text-sm text-success-600">
                       {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="w-12 h-12 mx-auto text-gray-400 bg-gray-100 rounded-2xl flex items-center justify-center">
+                    <div className="w-12 h-12 mx-auto text-ink-muted bg-sand rounded-2xl flex items-center justify-center">
                       <Upload className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-gray-600">
-                        <span className="font-semibold text-indigo-600">
+                      <p className="text-ink-2">
+                        <span className="font-semibold text-primary-600">
                           Click to upload
                         </span>{" "}
                         or drag and drop
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">PDF files up to 10MB</p>
+                      <p className="text-sm text-ink-muted mt-1">PDF files up to 10MB</p>
                     </div>
                   </div>
                 )}
@@ -1267,17 +1263,17 @@ const handleSaveIndividualAnalysis = async (index) => {
 
     // Default upload mode when no profile CV exists
     return (
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-4 md:p-6 shadow-lg">
-        <label className="block font-bold mb-4 text-gray-800">
+      <div className="bg-surface rounded-3xl border border-line p-4 md:p-6 shadow-soft">
+        <label className="block font-bold mb-4 text-ink">
           Upload Resume (PDF only)
         </label>
         <div
           className={`relative border-2 border-dashed rounded-2xl p-6 md:p-8 text-center transition-all ${
             dragActive
-              ? "border-indigo-400 bg-indigo-50 scale-105 shadow-lg"
+              ? "border-primary-400 bg-primary-50 scale-105 shadow-soft"
               : resumeFile
-              ? "border-emerald-400 bg-emerald-50 shadow-lg"
-              : "border-gray-300 hover:border-gray-400 hover:bg-gray-50 hover:shadow-md"
+              ? "border-success-500 bg-success-50 shadow-soft"
+              : "border-line hover:border-line hover:bg-sand hover:shadow-md"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -1293,27 +1289,27 @@ const handleSaveIndividualAnalysis = async (index) => {
 
           {resumeFile ? (
             <div className="space-y-3">
-              <div className="w-12 h-12 mx-auto text-emerald-600 bg-emerald-100 rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 mx-auto text-success-600 bg-success-100 rounded-2xl flex items-center justify-center shadow-soft">
                 <CheckCircle className="w-6 h-6" />
               </div>
-              <p className="font-semibold text-emerald-700 truncate">{resumeFile.name}</p>
-              <p className="text-sm text-emerald-600">
+              <p className="font-semibold text-success-700 truncate">{resumeFile.name}</p>
+              <p className="text-sm text-success-600">
                 {(resumeFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="w-12 h-12 mx-auto text-gray-400 bg-gray-100 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto text-ink-muted bg-sand rounded-2xl flex items-center justify-center">
                 <Upload className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-gray-600">
-                  <span className="font-semibold text-indigo-600">
+                <p className="text-ink-2">
+                  <span className="font-semibold text-primary-600">
                     Click to upload
                   </span>{" "}
                   or drag and drop
                 </p>
-                <p className="text-sm text-gray-500 mt-1">PDF files up to 10MB</p>
+                <p className="text-sm text-ink-muted mt-1">PDF files up to 10MB</p>
               </div>
             </div>
           )}
@@ -1336,30 +1332,22 @@ const handleSaveIndividualAnalysis = async (index) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="min-h-screen bg-gray-50">
-                      <NavBar />
-      <div className="flex flex-col lg:flex-row min-h-screen">
+    <AppShell
+      width="wide"
+      eyebrow="AI-Powered Analysis"
+      title="CV Analyzer"
+      subtitle="Upload your resume and compare it against job descriptions"
+    >
+      <div>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
 
         {/* Left Sidebar - 50% width on desktop */}
-        <div className="w-full lg:w-1/2 bg-white border-r border-gray-200 shadow-xl">
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <div className="p-4 md:p-6 space-y-6 md:space-y-8">
-              {/* Header */}
-              <div className="text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-full text-indigo-700 font-medium text-sm mb-4">
-                  <Target className="w-4 h-4" />
-                  AI-Powered Analysis
-                </div>
-                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
-                  CV Analyzer
-                </h1>
-                <p className="text-gray-600">Upload your resume and compare it against job descriptions</p>
-              </div>
-
+        <div className="min-w-0">
+          <div>
+            <div className="space-y-6 md:space-y-8">
               {/* Error Display */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-4 rounded-2xl shadow-lg animate-pulse">
+                <div className="bg-danger-50 border border-danger-100 text-danger-700 px-4 py-4 rounded-2xl shadow-soft animate-pulse">
                   <div className="flex items-start">
                     <XCircle className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
                     <span className="text-sm leading-relaxed">{error}</span>
@@ -1371,12 +1359,12 @@ const handleSaveIndividualAnalysis = async (index) => {
               {renderCVSourceSelection()}
 
               {/* Job Descriptions */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-4 md:p-6 shadow-lg">
+              <div className="bg-surface rounded-3xl border border-line p-4 md:p-6 shadow-soft">
                 <div className="flex justify-between items-center mb-4">
-                  <label className="block font-bold text-gray-800">
+                  <label className="block font-bold text-ink">
                     Job Descriptions
                   </label>
-                  <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 font-medium">
+                  <span className="text-sm text-ink-muted bg-surface px-3 py-1 rounded-full shadow-sm border border-line font-medium">
                     {jobDescriptions.length}/5
                   </span>
                 </div>
@@ -1387,21 +1375,21 @@ const handleSaveIndividualAnalysis = async (index) => {
                       <div className="flex gap-3">
                         <div className="flex-1">
                           <textarea
-                            className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none shadow-sm hover:shadow-md bg-white"
+                            className="w-full p-4 border border-line rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none shadow-sm hover:shadow-md bg-surface"
                             rows="4"
                             placeholder={`Enter job description ${index + 1}...`}
                             value={jd}
                             onChange={(e) => handleJDChange(index, e.target.value)}
                           />
                           <div className="flex justify-between mt-2">
-                            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">
+                            <span className="text-xs text-ink-muted font-medium bg-sand px-2 py-1 rounded">
                               JD {index + 1}
                             </span>
                             <span
                               className={`text-xs font-medium px-2 py-1 rounded ${
                                 jd.length < 50 
-                                  ? "text-amber-600 bg-amber-100" 
-                                  : "text-emerald-600 bg-emerald-100"
+                                  ? "text-sun-600 bg-sun-100" 
+                                  : "text-success-600 bg-success-100"
                               }`}
                             >
                               {jd.length} chars
@@ -1412,7 +1400,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                         {jobDescriptions.length > 1 && (
                           <button
                             onClick={() => removeJD(index)}
-                            className="self-start mt-1 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all shadow-sm hover:shadow-md"
+                            className="self-start mt-1 p-2 text-danger-500 hover:text-danger-700 hover:bg-danger-50 rounded-2xl transition-all shadow-sm hover:shadow-md"
                             title="Remove this job description"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1426,7 +1414,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                 {jobDescriptions.length < 5 && (
                   <button
                     onClick={addJD}
-                    className="w-full mt-4 p-3 text-sm bg-white text-indigo-700 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 transition-all font-medium shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                    className="w-full mt-4 p-3 text-sm bg-surface text-primary-700 border-2 border-primary-200 rounded-2xl hover:bg-primary-50 transition-all font-medium shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Add Another Job Description
@@ -1444,18 +1432,18 @@ const handleSaveIndividualAnalysis = async (index) => {
                     (useProfileCV && !profileCV) ||
                     jobDescriptions.some((jd) => jd.trim() === "")
                   }
-                  className={`w-full px-6 py-4 rounded-2xl font-bold transition-all text-lg shadow-lg ${
+                  className={`w-full px-6 py-4 rounded-2xl font-bold transition-all text-lg shadow-soft ${
                     loading ||
                     (!useProfileCV && !resumeFile) ||
                     (useProfileCV && !profileCV) ||
                     jobDescriptions.some((jd) => jd.trim() === "")
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50 active:scale-95 shadow-xl hover:shadow-2xl"
+                      ? "bg-line text-ink-muted cursor-not-allowed"
+                      : "bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95 shadow-card hover:shadow-float"
                   }`}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center gap-3">
-                      <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Analyzing Resume...
                     </div>
                   ) : (
@@ -1470,7 +1458,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                   <button
                     onClick={handleClear}
                     disabled={loading}
-                    className="w-full px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-2xl hover:bg-gray-50 transition-all disabled:opacity-50 font-medium shadow-lg hover:shadow-xl"
+                    className="w-full px-6 py-3 bg-surface text-ink-2 border-2 border-line rounded-full hover:bg-sand transition-all disabled:opacity-50 font-medium shadow-soft hover:shadow-card"
                   >
                     Clear All
                   </button>
@@ -1482,17 +1470,17 @@ const handleSaveIndividualAnalysis = async (index) => {
       
 
         {/* Right Content Area - 50% width on desktop */}
-        <div className="w-full lg:w-1/2 flex-1 min-h-screen">
-          <div className="h-full overflow-y-auto custom-scrollbar">
-            <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+        <div className="min-w-0">
+          <div>
+            <div className="space-y-6 md:space-y-8">
               {loading && (
                 <div className="flex justify-center items-center py-32">
                   <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6"></div>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-3">
+                    <div className="w-16 h-16 border-4 border-primary-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-6"></div>
+                    <h3 className="text-xl font-semibold text-ink-2 mb-3">
                       Analyzing Your Resume
                     </h3>
-                    <p className="text-gray-500">This may take a few moments...</p>
+                    <p className="text-ink-muted">This may take a few moments...</p>
                   </div>
                 </div>
               )}
@@ -1500,8 +1488,8 @@ const handleSaveIndividualAnalysis = async (index) => {
               {!loading && results.length > 0 && (
                 <>
                   {/* Match Scores */}
-                  <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-8">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-6 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 md:p-8">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6 text-ink">
                       Match Scores Overview
                     </h2>
                     <div className={`grid gap-4 md:gap-6 ${
@@ -1521,14 +1509,14 @@ const handleSaveIndividualAnalysis = async (index) => {
                   </div>
 
                   {/* CV Source Info */}
-                  <div className="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 border border-gray-200 p-4 md:p-6 rounded-2xl shadow-lg">
+                  <div className="bg-surface border border-line p-4 md:p-6 rounded-3xl shadow-soft">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-sm">
+                      <div className="p-2 bg-ink-muted rounded-2xl shadow-sm">
                         {useProfileCV ? <User className="w-5 h-5 text-white" /> : <Upload className="w-5 h-5 text-white" />}
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-800">CV Source</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="font-bold text-ink">CV Source</h3>
+                        <p className="text-sm text-ink-2">
                           {useProfileCV 
                             ? `Using profile CV: ${profileCV?.fileName || 'Unknown'}` 
                             : `Uploaded file: ${resumeFile?.name || 'Unknown'}`
@@ -1537,25 +1525,25 @@ const handleSaveIndividualAnalysis = async (index) => {
                       </div>
                     </div>
                     {resumeData?.extractedTechnologies?.length > 0 && (
-                      <p className="text-sm text-gray-500 ml-11">
+                      <p className="text-sm text-ink-muted ml-11">
                         {resumeData.extractedTechnologies.length} technologies extracted
                       </p>
                     )}
                   </div>
 
                   {/* Skills Assessment Navigation */}
-                  <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-indigo-200 p-6 md:p-8 rounded-2xl shadow-xl">
+                  <div className="bg-primary-50 border border-primary-200 p-6 md:p-8 rounded-3xl shadow-card">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                       <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                        <div className="p-3 bg-primary-500 rounded-2xl shadow-soft">
                           <BarChart3 className="w-8 h-8 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-xl md:text-2xl font-bold text-gray-900">Skills Assessment</h3>
-                          <p className="text-gray-600 mt-1">
+                          <h3 className="text-xl md:text-2xl font-bold text-ink">Skills Assessment</h3>
+                          <p className="text-ink-2 mt-1">
                             Rate your confidence level for each extracted technology
                             {resumeData?.extractedTechnologies?.length > 0 && (
-                              <span className="ml-1 text-indigo-600 font-semibold">
+                              <span className="ml-1 text-primary-600 font-semibold">
                                 ({resumeData.extractedTechnologies.length} technologies found)
                               </span>
                             )}
@@ -1565,10 +1553,10 @@ const handleSaveIndividualAnalysis = async (index) => {
                       <button
                         onClick={handleNavigateToSkillsAssessment}
                         disabled={!resumeData || !resumeData.extractedTechnologies?.length}
-                        className={`px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all shadow-lg ${
+                        className={`px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all shadow-soft ${
                           !resumeData || !resumeData.extractedTechnologies?.length
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50 active:scale-95 shadow-xl hover:shadow-2xl"
+                            ? "bg-line text-ink-muted cursor-not-allowed"
+                            : "bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95 shadow-card hover:shadow-float"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -1581,7 +1569,7 @@ const handleSaveIndividualAnalysis = async (index) => {
 
                   {/* Detailed Analysis */}
                   <div className="space-y-6">
-                    <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    <h2 className="text-2xl md:text-3xl font-bold text-ink">
                       Detailed Analysis Results
                     </h2>
                     {results.map((res, idx) => (
@@ -1589,10 +1577,10 @@ const handleSaveIndividualAnalysis = async (index) => {
                         <StructuredRecommendations result={res} index={idx} />
                         <div className="flex justify-end">
                           <button
-                            className={`px-6 py-3 rounded-2xl transition-all font-bold shadow-lg ${
+                            className={`px-6 py-3 rounded-2xl transition-all font-bold shadow-soft ${
                               savedIndices.includes(idx)
-                                ? "bg-gray-600 cursor-not-allowed text-white"
-                                : "bg-white text-indigo-600 border-2 border-indigo-600 hover:bg-indigo-50 hover:shadow-xl active:scale-95"
+                                ? "bg-ink-2 cursor-not-allowed text-white"
+                                : "bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 hover:shadow-card active:scale-95"
                             }`}
                             disabled={savedIndices.includes(idx)}
                             onClick={() => handleSaveIndividualAnalysis(idx)}
@@ -1617,20 +1605,20 @@ const handleSaveIndividualAnalysis = async (index) => {
               )}
 
               {!loading && results.length === 0 && (
-                <div className="text-center py-16 md:py-32 bg-white border border-gray-200 rounded-2xl shadow-xl">
-                  <div className="w-20 h-20 mx-auto text-gray-400 mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center shadow-inner">
+                <div className="text-center py-16 md:py-32 bg-surface border border-line rounded-2xl shadow-card">
+                  <div className="w-20 h-20 mx-auto text-ink-muted mb-6 bg-sand rounded-3xl flex items-center justify-center shadow-inner">
                     <FileText className="w-10 h-10" />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-700 mb-4">
+                  <h3 className="text-2xl md:text-3xl font-bold text-ink-2 mb-4">
                     Ready to Analyze Your Resume
                   </h3>
-                  <p className="text-gray-500 max-w-md mx-auto leading-relaxed px-4">
+                  <p className="text-ink-muted max-w-md mx-auto leading-relaxed px-4">
                     {cvUploadMode === 'profile' && profileCV 
                       ? "Use your profile CV or upload a new one, then add job descriptions to get started."
                       : "Upload your resume and add job descriptions to get started with our comprehensive analysis."
                     }
                     <br /><br />
-                    <span className="text-sm text-gray-400">
+                    <span className="text-sm text-ink-muted">
                       💡 Pro tip: Include only relevant details in job descriptions for better analysis accuracy.
                     </span>
                   </p>
@@ -1643,21 +1631,21 @@ const handleSaveIndividualAnalysis = async (index) => {
       </div>
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         /* Custom scrollbar styling */
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f8fafc;
+          background: #f1ece1;
           border-radius: 4px;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
+          background: #d6cfbc;
           border-radius: 4px;
-          border: 1px solid #f1f5f9;
+          border: 1px solid #f1ece1;
         }
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -1696,12 +1684,6 @@ const handleSaveIndividualAnalysis = async (index) => {
           animation: fadeIn 0.4s ease-out;
         }
 
-        /* Responsive text adjustments */
-        @media (max-width: 640px) {
-          h1 { font-size: 1.75rem !important; }
-          h2 { font-size: 1.5rem !important; }
-          h3 { font-size: 1.25rem !important; }
-        }
 
         /* Enhanced button hover effects */
         .btn-gradient:hover {
@@ -1709,18 +1691,12 @@ const handleSaveIndividualAnalysis = async (index) => {
           box-shadow: 0 20px 40px rgba(79, 70, 229, 0.3);
         }
 
-        /* Smooth transitions for all interactive elements */
-        * {
-          transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
-          transition-duration: 200ms;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        }
 
         /* Enhanced focus states for accessibility */
         button:focus-visible,
         input:focus-visible,
         textarea:focus-visible {
-          outline: 2px solid #6366f1;
+          outline: 2px solid #4f46e5;
           outline-offset: 2px;
         }
 
@@ -1742,7 +1718,7 @@ const handleSaveIndividualAnalysis = async (index) => {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+          background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
           cursor: pointer;
           border: 3px solid #ffffff;
           box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
@@ -1750,7 +1726,7 @@ const handleSaveIndividualAnalysis = async (index) => {
         }
         
         .slider::-webkit-slider-thumb:hover {
-          background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+          background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
           transform: scale(1.1);
           box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
         }
@@ -1759,7 +1735,7 @@ const handleSaveIndividualAnalysis = async (index) => {
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+          background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
           cursor: pointer;
           border: 3px solid #ffffff;
           box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
@@ -1768,20 +1744,20 @@ const handleSaveIndividualAnalysis = async (index) => {
         .slider::-webkit-slider-track {
           height: 12px;
           border-radius: 6px;
-          background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+          background: #ebe7dc;
         }
         
         .slider::-moz-range-track {
           height: 12px;
           border-radius: 6px;
-          background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+          background: #ebe7dc;
         }
         
         .slider:focus::-webkit-slider-track {
-          background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+          background: #d6cfbc;
         }
       `}</style>
-    </div>
+    </AppShell>
   );
 };
 
