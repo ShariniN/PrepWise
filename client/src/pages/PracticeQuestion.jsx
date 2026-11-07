@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import AppShell from '../components/AppShell';
+import { ArrowLeft } from 'lucide-react';
+import { Badge, Button, Card, Skeleton, Textarea } from '../components/ui';
 import Markdown from '../components/Markdown';
 import CodeEditor from '../components/CodeEditor';
 import ResultView from '../components/ResultView';
@@ -119,47 +121,44 @@ const PracticeQuestion = () => {
   }, [question, code, source, language, answer]);
 
   const shell = (children) => (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
-        <Link to="/practice" className="text-sm text-indigo-700 hover:underline">&larr; All questions</Link>
-        {children}
-      </main>
-    </div>
+    <AppShell width="wide">
+      <Link to="/practice" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 hover:text-primary-800">
+        <ArrowLeft size={16} aria-hidden="true" /> All questions
+      </Link>
+      {children}
+    </AppShell>
   );
 
-  if (loadError) return shell(<div role="alert" className="bg-white rounded-2xl shadow p-6 text-red-700">{loadError}</div>);
-  if (!question || !initialised) return shell(<p className="text-gray-500" role="status">Loading question...</p>);
+  if (loadError) return shell(<div role="alert" className="rounded-3xl border border-danger-100 bg-danger-100 p-6 text-danger-700">{loadError}</div>);
+  if (!question || !initialised) return shell(<div role="status" aria-label="Loading question"><Skeleton className="h-96 w-full" rounded="rounded-3xl" /></div>);
 
   const saveLabel = { saving: 'Saving...', saved: 'Draft saved', error: 'Draft not saved' }[draft.saveState];
-  const btn = 'px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed';
-
   return shell(
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="bg-white rounded-2xl shadow p-6 space-y-3 self-start">
-        <h1 className="text-xl font-bold text-gray-800">{question.title}</h1>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">{question.type}</span>
-          <span className="bg-gray-100 text-gray-700 rounded-full px-2 py-0.5">{question.difficulty}</span>
-          {(question.topic || []).map((t) => <span key={t} className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{t}</span>)}
-          {code && <span className="text-gray-500">{question.timeLimitMs} ms, {Math.round(question.memoryLimitKb / 1024)} MB</span>}
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Card as="section" className="space-y-4 self-start">
+        <h1 className="font-display text-2xl font-semibold text-ink">{question.title}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="primary">{question.type}</Badge>
+          <Badge>{question.difficulty}</Badge>
+          {(question.topic || []).map((t) => <Badge key={t}>{t}</Badge>)}
+          {code && <span className="text-xs text-ink-muted">{question.timeLimitMs} ms, {Math.round(question.memoryLimitKb / 1024)} MB</span>}
         </div>
         <Markdown text={question.statement} />
         {code && (question.visibleTests || []).length > 0 && (
-          <div className="space-y-2">
-            <h2 className="font-semibold text-sm text-gray-700">Examples</h2>
+          <div className="space-y-3">
+            <h2 className="font-display text-base font-semibold text-ink">Examples</h2>
             {question.visibleTests.map((t, i) => (
-              <div key={t.id || i} className="grid grid-cols-2 gap-2 text-xs">
-                <div><div className="text-gray-500">Input</div><pre className="bg-gray-50 border rounded p-2 whitespace-pre-wrap">{t.input || '(empty)'}</pre></div>
-                <div><div className="text-gray-500">Output</div><pre className="bg-gray-50 border rounded p-2 whitespace-pre-wrap">{t.expectedOutput}</pre></div>
+              <div key={t.id || i} className="grid gap-2 text-xs sm:grid-cols-2">
+                <div><div className="mb-1 font-medium text-ink-muted">Input</div><pre className="whitespace-pre-wrap break-words rounded-xl border border-line bg-sand p-3 text-ink">{t.input || '(empty)'}</pre></div>
+                <div><div className="mb-1 font-medium text-ink-muted">Output</div><pre className="whitespace-pre-wrap break-words rounded-xl border border-line bg-sand p-3 text-ink">{t.expectedOutput}</pre></div>
               </div>
             ))}
-            {question.hiddenTestCount > 0 && <p className="text-xs text-gray-500">{question.hiddenTestCount} more hidden tests run when you submit.</p>}
+            {question.hiddenTestCount > 0 && <p className="text-xs text-ink-muted">{question.hiddenTestCount} more hidden tests run when you submit.</p>}
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="bg-white rounded-2xl shadow p-6 space-y-4">
+      <Card as="section" className="min-w-0 space-y-4">
         {code ? (
           <>
             <CodeEditor
@@ -170,27 +169,27 @@ const PracticeQuestion = () => {
               onLanguageChange={onLanguage}
               recorder={events}
             />
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-ink-muted">
               <span aria-live="polite">{saveLabel || ''}</span>
             </div>
-            <label className="block text-xs text-gray-600">Custom input (optional, used by Run instead of the visible tests)
-              <textarea value={stdin} onChange={(e) => setStdin(e.target.value)} rows={2} maxLength={16000}
-                className="w-full mt-1 border border-gray-300 rounded p-2 font-mono text-xs" />
-            </label>
+            <div>
+              <label htmlFor="pq-stdin" className="mb-1.5 block text-xs font-medium text-ink-2">Custom input (optional, used by Run instead of the visible tests)</label>
+              <Textarea id="pq-stdin" value={stdin} onChange={(e) => setStdin(e.target.value)} rows={2} maxLength={16000} className="font-mono text-xs" />
+            </div>
           </>
         ) : (
           <AnswerInput question={question} value={answer} onChange={setAnswer} />
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {code && (
-            <button type="button" className={`${btn} bg-gray-200 text-gray-800 hover:bg-gray-300`} disabled={!!busy || !source.trim()} onClick={run}>
+            <Button variant="secondary" disabled={!!busy || !source.trim()} onClick={run}>
               {busy === 'run' ? 'Running...' : 'Run'}
-            </button>
+            </Button>
           )}
-          <button type="button" className={`${btn} bg-indigo-600 text-white hover:bg-indigo-700`} disabled={!!busy || !canSubmit} onClick={submit}>
+          <Button disabled={!!busy || !canSubmit} onClick={submit}>
             {busy === 'submit' ? 'Submitting...' : 'Submit'}
-          </button>
+          </Button>
         </div>
 
         {unavailable && <UnavailableNotice message={unavailable.message} />}
@@ -198,10 +197,10 @@ const PracticeQuestion = () => {
 
         {history.length > 0 && (
           <div>
-            <h2 className="font-semibold text-sm text-gray-700 mb-1">This session</h2>
-            <ul className="text-xs text-gray-600 space-y-1">
+            <h2 className="mb-2 font-display text-base font-semibold text-ink">This session</h2>
+            <ul className="space-y-1.5 text-xs text-ink-2">
               {history.map((h, i) => (
-                <li key={i} className="flex items-center gap-2">
+                <li key={i} className="flex flex-wrap items-center gap-2">
                   <span>{h.at.toLocaleTimeString()}</span>
                   <span className="capitalize">{h.kind}</span>
                   <VerdictBadge verdict={h.verdict} size="sm" />
@@ -211,7 +210,7 @@ const PracticeQuestion = () => {
             </ul>
           </div>
         )}
-      </section>
+      </Card>
     </div>
   );
 };

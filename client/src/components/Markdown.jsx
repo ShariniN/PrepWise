@@ -13,7 +13,7 @@ const inline = (text, keyBase) => {
     if (m.index > last) out.push(text.slice(last, m.index));
     const tok = m[0];
     const key = `${keyBase}-${i++}`;
-    if (tok.startsWith('`')) out.push(<code key={key} className="bg-gray-100 rounded px-1 text-[0.9em]">{tok.slice(1, -1)}</code>);
+    if (tok.startsWith('`')) out.push(<code key={key} className="bg-sand rounded px-1 text-[0.9em]">{tok.slice(1, -1)}</code>);
     else if (tok.startsWith('**')) out.push(<strong key={key}>{tok.slice(2, -2)}</strong>);
     else out.push(<em key={key}>{tok.slice(1, -1)}</em>);
     last = m.index + tok.length;
@@ -34,10 +34,10 @@ const Markdown = ({ text = '' }) => {
       i += 1;
       while (i < lines.length && !/^```/.test(lines[i])) code.push(lines[i++]);
       i += 1;
-      blocks.push(<pre key={k++} className="bg-gray-50 border rounded p-3 text-sm overflow-x-auto whitespace-pre">{code.join('\n')}</pre>);
+      blocks.push(<pre key={k++} className="bg-sand border border-line rounded-2xl p-4 text-sm overflow-x-auto whitespace-pre">{code.join('\n')}</pre>);
     } else if (/^#{1,4}\s/.test(line)) {
       const level = line.match(/^#+/)[0].length;
-      const cls = level <= 2 ? 'text-lg font-semibold mt-3' : 'font-semibold mt-2';
+      const cls = level <= 2 ? 'font-display text-lg font-semibold text-ink mt-3' : 'font-semibold text-ink mt-2';
       blocks.push(<div key={k++} role="heading" aria-level={level + 1} className={cls}>{inline(line.replace(/^#+\s/, ''), `h${k}`)}</div>);
       i += 1;
     } else if (/^\s*[-*]\s+/.test(line)) {
@@ -56,7 +56,7 @@ const Markdown = ({ text = '' }) => {
       blocks.push(<p key={k++} className="whitespace-pre-wrap">{inline(para.join('\n'), `p${k}`)}</p>);
     }
   }
-  return <div className="space-y-2 text-sm text-gray-800 break-words">{blocks}</div>;
+  return <div className="space-y-2 text-sm text-ink-2 break-words">{blocks}</div>;
 };
 
 export default Markdown;

@@ -29,7 +29,7 @@ class MonacoBoundary extends React.Component {
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-const selectCls = 'border border-gray-300 rounded px-2 py-1 text-xs bg-white';
+const selectCls = 'rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-600/15';
 
 // Monaco wrapper. `recorder` is optional ({ recordChange, record }) from useEditEvents.
 const CodeEditor = ({
@@ -81,13 +81,13 @@ const CodeEditor = ({
       onFocus={() => recorderRef.current?.record?.('focus')}
       onBlur={() => recorderRef.current?.record?.('blur')}
       style={{ height, fontSize: prefs.fontSize, tabSize: prefs.tabSize }}
-      className="w-full font-mono border border-gray-300 rounded p-2 bg-gray-50 text-gray-900"
+      className="w-full font-mono border border-line rounded-2xl p-3 bg-sand text-ink"
     />
   );
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
         {onLanguageChange && (
           <label className="flex items-center gap-1">Language
             <select className={selectCls} value={language} onChange={(e) => onLanguageChange(e.target.value)}>
@@ -105,16 +105,16 @@ const CodeEditor = ({
             {[2, 4, 8].map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </label>
-        <button type="button" className={`${selectCls} hover:bg-gray-100`}
+        <button type="button" className={`${selectCls} hover:border-primary-300 hover:bg-primary-50`}
           onClick={() => setPref({ theme: prefs.theme === 'dark' ? 'light' : 'dark' })}>
           Theme: {prefs.theme}
         </button>
-        {failed && <span className="text-amber-700">Editor failed to load, using a plain text box.</span>}
+        {failed && <span className="text-sun-700">Editor failed to load, using a plain text box.</span>}
       </div>
       {failed ? fallback : (
         <MonacoBoundary onFail={() => setFailed(true)}>
-          <Suspense fallback={<div className="text-sm text-gray-500 p-3 border rounded" style={{ height }}>Loading editor...</div>}>
-            <div className="border border-gray-300 rounded overflow-hidden" aria-label={ariaLabel}>
+          <Suspense fallback={<div className="text-sm text-ink-muted p-3 border border-line rounded-2xl" style={{ height }}>Loading editor...</div>}>
+            <div className="border border-line rounded-2xl overflow-hidden" aria-label={ariaLabel}>
               <Editor
                 height={height}
                 language={language}
@@ -123,7 +123,7 @@ const CodeEditor = ({
                 theme={prefs.theme === 'dark' ? 'vs-dark' : 'light'}
                 onChange={handleChange}
                 onMount={handleMount}
-                loading={<div className="text-sm text-gray-500 p-3">Loading editor...</div>}
+                loading={<div className="text-sm text-ink-muted p-3">Loading editor...</div>}
                 options={{
                   minimap: { enabled: false },
                   fontSize: prefs.fontSize,

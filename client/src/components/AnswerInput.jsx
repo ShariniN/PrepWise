@@ -11,17 +11,17 @@ const AnswerInput = ({ question, value, onChange }) => {
     };
     return (
       <fieldset className="space-y-2">
-        <legend className="text-sm text-gray-600 mb-1">{question.multi ? 'Select all that apply' : 'Select one answer'}</legend>
+        <legend className="text-sm font-medium text-ink mb-1">{question.multi ? 'Select all that apply' : 'Select one answer'}</legend>
         {(question.options || []).map((opt, i) => (
-          <label key={i} className="flex items-start gap-2 border rounded p-2 hover:bg-gray-50 cursor-pointer">
+          <label key={i} className="flex items-start gap-3 border border-line rounded-2xl p-3 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition">
             <input
               type={question.multi ? 'checkbox' : 'radio'}
               name="mcq"
               checked={selected.includes(i)}
               onChange={() => toggle(i)}
-              className="mt-1"
+              className="mt-1 accent-primary-600"
             />
-            <span className="text-sm text-gray-800 whitespace-pre-wrap">{opt}</span>
+            <span className="text-sm text-ink whitespace-pre-wrap">{opt}</span>
           </label>
         ))}
       </fieldset>
@@ -30,7 +30,7 @@ const AnswerInput = ({ question, value, onChange }) => {
   const trace = question.type === 'trace';
   return (
     <div>
-      <label className="text-sm text-gray-600" htmlFor="answer-text">
+      <label className="text-sm font-medium text-ink" htmlFor="answer-text">
         {trace ? 'What does the program print?' : 'Your answer'}
       </label>
       <textarea
@@ -39,9 +39,9 @@ const AnswerInput = ({ question, value, onChange }) => {
         onChange={(e) => onChange(e.target.value)}
         maxLength={8000}
         rows={trace ? 6 : 10}
-        className={`w-full mt-1 border border-gray-300 rounded p-2 text-sm ${trace ? 'font-mono' : ''}`}
+        className={`w-full mt-1.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink focus:outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-600/15 ${trace ? 'font-mono' : ''}`}
       />
-      {!trace && <p className="text-xs text-gray-500 text-right">{(value || '').length}/8000</p>}
+      {!trace && <p className="text-xs text-ink-muted text-right">{(value || '').length}/8000</p>}
     </div>
   );
 };

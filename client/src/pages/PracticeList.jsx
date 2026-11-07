@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import NavBar from '../components/NavBar';
+import AppShell from '../components/AppShell';
+import { Badge, Card, EmptyState, Input, Select, Skeleton } from '../components/ui';
 import { listQuestions } from '../api/practice';
 import { errorMessage } from '../api/client';
 import { QUESTION_TYPES as TYPES, DIFFICULTIES as DIFFS } from '../utils/practice';
 
-const DIFF_CLS = { easy: 'bg-green-100 text-green-800', medium: 'bg-yellow-100 text-yellow-800', hard: 'bg-red-100 text-red-800' };
+const DIFF_TONE = { easy: 'success', medium: 'warning', hard: 'danger' };
 
 const PracticeList = () => {
   const [filters, setFilters] = useState({ topic: '', difficulty: '', type: '', unseen: false });
@@ -49,67 +50,67 @@ const PracticeList = () => {
   const reload = () => { setQuestions(null); setTick((n) => n + 1); };
   const set = (patch) => { setQuestions(null); setFilters((f) => ({ ...f, ...patch })); };
 
-  const sel = 'border border-gray-300 rounded px-2 py-1.5 text-sm bg-white';
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <section className="bg-white rounded-2xl shadow p-6">
-          <h1 className="text-2xl font-bold text-gray-800">Practice</h1>
-          <p className="text-sm text-gray-500 mt-1">Pick a question, write your answer and get instant feedback.</p>
-          <div className="mt-4 flex flex-wrap items-end gap-3">
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Topic
-              <input className={sel} value={topic} onChange={(e) => { setQuestions(null); setTopic(e.target.value); }} placeholder="e.g. arrays" />
-            </label>
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Difficulty
-              <select className={sel} value={filters.difficulty} onChange={(e) => set({ difficulty: e.target.value })}>
-                <option value="">All</option>
-                {DIFFS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </label>
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Type
-              <select className={sel} value={filters.type} onChange={(e) => set({ type: e.target.value })}>
-                <option value="">All</option>
-                {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
-            <label className="text-sm text-gray-700 flex items-center gap-2 pb-1.5">
-              <input type="checkbox" checked={filters.unseen} onChange={(e) => set({ unseen: e.target.checked })} />
-              Unseen only
-            </label>
+    <AppShell width="narrow" title="Practice" subtitle="Pick a question, write your answer and get instant feedback.">
+      <div className="space-y-5">
+        <Card className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_auto]">
+          <div>
+            <label htmlFor="pl-topic" className="mb-1.5 block text-sm font-medium text-ink">Topic</label>
+            <Input id="pl-topic" value={topic} onChange={(e) => { setQuestions(null); setTopic(e.target.value); }} placeholder="e.g. arrays" />
           </div>
-        </section>
+          <div>
+            <label htmlFor="pl-diff" className="mb-1.5 block text-sm font-medium text-ink">Difficulty</label>
+            <Select id="pl-diff" value={filters.difficulty} onChange={(e) => set({ difficulty: e.target.value })}>
+              <option value="">All</option>
+              {DIFFS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="pl-type" className="mb-1.5 block text-sm font-medium text-ink">Type</label>
+            <Select id="pl-type" value={filters.type} onChange={(e) => set({ type: e.target.value })}>
+              <option value="">All</option>
+              {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 pb-2.5 text-sm font-medium text-ink">
+            <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={filters.unseen} onChange={(e) => set({ unseen: e.target.checked })} />
+            Unseen only
+          </label>
+        </Card>
 
-        <section className="bg-white rounded-2xl shadow p-4">
-          {questions === null && <p className="p-4 text-gray-500" role="status">Loading questions...</p>}
-          {error && (
-            <div role="alert" className="p-4 text-red-700 text-sm">
-              {error} <button type="button" className="underline ml-2" onClick={reload}>Retry</button>
-            </div>
-          )}
-          {questions && !error && questions.length === 0 && (
-            <p className="p-4 text-gray-500">No questions match these filters.</p>
-          )}
-          {questions && questions.length > 0 && (
-            <ul className="divide-y">
-              {questions.map((q) => (
-                <li key={q.id}>
-                  <Link to={`/practice/${q.id}`} className="flex flex-wrap items-center gap-2 p-3 hover:bg-gray-50 rounded">
-                    <span className="font-medium text-gray-800 flex-1 min-w-[12rem]">{q.title}</span>
-                    {q.solved && <span className="text-xs bg-green-600 text-white rounded-full px-2 py-0.5">Solved</span>}
-                    <span className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">{q.type}</span>
-                    <span className={`text-xs rounded-full px-2 py-0.5 ${DIFF_CLS[q.difficulty] || 'bg-gray-100 text-gray-700'}`}>{q.difficulty}</span>
-                    {(q.topic || []).map((t) => <span key={t} className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{t}</span>)}
-                    {q.estimatedMinutes ? <span className="text-xs text-gray-500">{q.estimatedMinutes} min</span> : null}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
-    </div>
+        {questions === null && (
+          <div role="status" aria-label="Loading questions" className="space-y-3">
+            {[0, 1, 2, 3].map((n) => <Skeleton key={n} className="h-16 w-full" rounded="rounded-3xl" />)}
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="rounded-2xl border border-danger-100 bg-danger-100 p-4 text-sm text-danger-700">
+            {error} <button type="button" className="ml-2 font-semibold underline" onClick={reload}>Retry</button>
+          </div>
+        )}
+        {questions && !error && questions.length === 0 && (
+          <EmptyState title="No questions match these filters." />
+        )}
+        {questions && questions.length > 0 && (
+          <ul className="space-y-3">
+            {questions.map((q) => (
+              <li key={q.id}>
+                <Link to={`/practice/${q.id}`} className="block rounded-3xl focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/25">
+                  <Card lift className="flex flex-wrap items-center gap-2 !py-4">
+                    <span className="min-w-[12rem] flex-1 font-display text-lg font-semibold text-ink">{q.title}</span>
+                    {q.solved && <Badge tone="success" dot>Solved</Badge>}
+                    <Badge tone="primary">{q.type}</Badge>
+                    <Badge tone={DIFF_TONE[q.difficulty] || 'neutral'}>{q.difficulty}</Badge>
+                    {(q.topic || []).map((t) => <Badge key={t}>{t}</Badge>)}
+                    {q.estimatedMinutes ? <span className="text-xs text-ink-muted">{q.estimatedMinutes} min</span> : null}
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </AppShell>
   );
 };
 

@@ -3,8 +3,8 @@ import VerdictBadge from './VerdictBadge';
 
 const Block = ({ label, text }) => (
   <div>
-    <div className="text-xs text-gray-500">{label}</div>
-    <pre className="bg-gray-50 border rounded p-2 text-xs whitespace-pre-wrap break-words max-h-40 overflow-auto">{text === '' ? '(empty)' : text}</pre>
+    <div className="text-xs font-medium text-ink-muted">{label}</div>
+    <pre className="bg-sand border border-line rounded-xl p-2 text-xs text-ink whitespace-pre-wrap break-words max-h-40 overflow-auto">{text === '' ? '(empty)' : text}</pre>
   </div>
 );
 
@@ -14,13 +14,13 @@ const TestPanel = ({ tests = [] }) => {
   return (
     <ul className="space-y-2">
       {tests.map((t) => (
-        <li key={t.index} className={`border rounded p-2 ${t.passed ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+        <li key={t.index} className={`border rounded-2xl p-3 ${t.passed ? 'border-success-100 bg-success-100/50' : 'border-danger-100 bg-danger-100/50'}`}>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-medium">{t.visible ? `Test ${t.index}` : `Hidden test ${t.index}`}</span>
-            <span className={t.passed ? 'text-green-700' : 'text-red-700'}>{t.passed ? 'Passed' : 'Failed'}</span>
+            <span className="font-medium text-ink">{t.visible ? `Test ${t.index}` : `Hidden test ${t.index}`}</span>
+            <span className={t.passed ? 'text-success-700 font-semibold' : 'text-danger-700 font-semibold'}>{t.passed ? 'Passed' : 'Failed'}</span>
             {!t.passed && t.verdict && t.verdict !== 'wrong_answer' && <VerdictBadge verdict={t.verdict} size="sm" />}
-            {t.timeMs != null && <span className="text-xs text-gray-500">{t.timeMs} ms</span>}
-            {t.memoryKb != null && <span className="text-xs text-gray-500">{t.memoryKb} KB</span>}
+            {t.timeMs != null && <span className="text-xs text-ink-muted">{t.timeMs} ms</span>}
+            {t.memoryKb != null && <span className="text-xs text-ink-muted">{t.memoryKb} KB</span>}
           </div>
           {t.visible && (!t.passed || t.input !== undefined) && (
             <div className="mt-2 grid gap-2 sm:grid-cols-3">

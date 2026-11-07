@@ -1,9 +1,9 @@
 import React from 'react';
 
 const UnavailableNotice = ({ message }) => (
-  <div role="alert" className="rounded-lg border border-gray-300 bg-gray-100 p-3 text-sm text-gray-800">
+  <div role="alert" className="rounded-2xl border border-sun-200 bg-sun-100 p-4 text-sm text-ink">
     <p className="font-semibold">Code execution is currently unavailable - your work has not been scored.</p>
-    <p className="text-gray-600 mt-1">{message || 'You can keep editing; your draft is still saved. Try again in a few minutes.'}</p>
+    <p className="text-ink-2 mt-1">{message || 'You can keep editing; your draft is still saved. Try again in a few minutes.'}</p>
   </div>
 );
 
