@@ -3,6 +3,7 @@ import { lecturer } from '../../api/analytics';
 import useAnalyticsData from '../../hooks/useAnalyticsData';
 import { ErrorState, LoadingState, EmptyState } from './EmptyState';
 import ExcludedNote from './ExcludedNote';
+import { Badge, Button, Card, Field, Input } from '../ui';
 
 const DEFAULTS = { inactiveDays: 14, declineWindow: 3, declineMin: 10, compileErrors: 3, compileWindow: 5 };
 const FIELDS = [
@@ -12,8 +13,6 @@ const FIELDS = [
   { key: 'compileErrors', label: 'Compile errors' },
   { key: 'compileWindow', label: 'Out of last (submissions)' },
 ];
-
-const inputCls = 'w-24 bg-gray-100 rounded-md px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
 
 const StudentsNeedingHelp = ({ courseId, cohortId }) => {
   const [draft, setDraft] = useState(DEFAULTS);
@@ -29,27 +28,31 @@ const StudentsNeedingHelp = ({ courseId, cohortId }) => {
   };
 
   return (
-    <section className="space-y-4" aria-labelledby="sn-h">
+    <section className="space-y-5" aria-labelledby="sn-h">
       <div>
-        <h2 id="sn-h" className="text-lg font-semibold text-gray-800">Who to contact</h2>
-        <p className="text-sm text-gray-500">
+        <h2 id="sn-h" className="font-display text-xl font-semibold text-ink">Who to contact</h2>
+        <p className="mt-1 max-w-2xl text-sm text-ink-2">
           Students with at least one reason to check in. There is no score and no ranking: the list is alphabetical and
           each chip says why the student appears.
         </p>
       </div>
 
-      <form onSubmit={apply} className="flex flex-wrap gap-3 items-end rounded-xl border border-gray-200 bg-white p-4">
-        {FIELDS.map((f) => (
-          <label key={f.key} className="text-xs text-gray-600">
-            <span className="block mb-1">{f.label}</span>
-            <input type="number" min="1" className={inputCls} value={draft[f.key]}
-              onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })} />
-          </label>
-        ))}
-        <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md px-3 py-2">Apply thresholds</button>
-        <button type="button" className="text-sm underline text-gray-600"
-          onClick={() => { setDraft(DEFAULTS); setApplied(DEFAULTS); }}>Reset</button>
-      </form>
+      <Card as="form" tone="sand" onSubmit={apply} className="!p-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {FIELDS.map((f) => (
+            <Field key={f.key} label={f.label}>
+              {(p) => (
+                <Input {...p} type="number" min="1" value={draft[f.key]}
+                  onChange={(e) => setDraft({ ...draft, [f.key]: e.target.value })} />
+              )}
+            </Field>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button type="submit" size="sm">Apply thresholds</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setDraft(DEFAULTS); setApplied(DEFAULTS); }}>Reset</Button>
+        </div>
+      </Card>
 
       {loading && <LoadingState />}
       {error && <ErrorState message={error} onRetry={reload} />}
@@ -60,20 +63,21 @@ const StudentsNeedingHelp = ({ courseId, cohortId }) => {
             <EmptyState title="No one to contact right now">No student matches the thresholds above.</EmptyState>
           ) : (
             <>
-              <p className="text-sm text-gray-600">{data.students.length} student{data.students.length === 1 ? '' : 's'} listed, alphabetically.</p>
+              <p className="text-sm text-ink-2">{data.students.length} student{data.students.length === 1 ? '' : 's'} listed, alphabetically.</p>
               <ul className="space-y-2">
                 {data.students.map((s) => (
-                  <li key={s.studentId} className="rounded-xl border border-gray-200 bg-white p-4">
+                  <li key={s.studentId} className="rounded-2xl border border-line bg-surface p-4">
                     <div className="flex flex-wrap items-baseline gap-x-3">
-                      <span className="font-semibold text-gray-800">{s.name}</span>
-                      <a href={`mailto:${s.email}`} className="text-sm text-indigo-700 underline">{s.email}</a>
+                      <span className="font-semibold text-ink">{s.name}</span>
+                      <a href={`mailto:${s.email}`} className="break-all text-sm font-medium text-primary-700 underline underline-offset-2">{s.email}</a>
                     </div>
                     <ul className="flex flex-wrap gap-2 mt-2">
                       {s.reasons.map((r, i) => (
-                        <li key={`${r.code}-${i}`} className="text-xs rounded-full bg-indigo-50 text-indigo-900 border border-indigo-100 px-2.5 py-1"
-                          title={r.scores ? `Scores: ${r.scores.join(', ')}` : undefined}>
-                          {r.message}
-                          {r.code === 'declining_topic' && r.scores ? ` (${r.scores.join(' > ')})` : ''}
+                        <li key={`${r.code}-${i}`} title={r.scores ? `Scores: ${r.scores.join(', ')}` : undefined}>
+                          <Badge tone="primary" className="!whitespace-normal">
+                            {r.message}
+                            {r.code === 'declining_topic' && r.scores ? ` (${r.scores.join(' > ')})` : ''}
+                          </Badge>
                         </li>
                       ))}
                     </ul>

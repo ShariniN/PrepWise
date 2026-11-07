@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import AppShell from '../components/AppShell';
+import { Button, Card, Field, Select } from '../components/ui';
 import ConfirmDialog from '../components/analytics/ConfirmDialog';
 import { BarList } from '../components/analytics/Charts';
 import { EmptyState, ErrorState, LoadingState } from '../components/analytics/EmptyState';
@@ -38,26 +39,26 @@ const Evidence = () => {
   const start = () => (includeStudents ? setDialog(true) : run());
 
   return (
-    <section className="bg-white rounded-2xl shadow p-6 space-y-3" aria-labelledby="ev-h">
+    <Card as="section" className="space-y-4" aria-labelledby="ev-h">
       <div>
-        <h2 id="ev-h" className="text-lg font-semibold text-gray-800">Evidence for renewal</h2>
-        <p className="text-sm text-gray-500">Counts by cohort and institution. Student names are left out unless you ask for them.</p>
+        <h2 id="ev-h" className="font-display text-xl font-semibold text-ink">Evidence for renewal</h2>
+        <p className="mt-1 text-sm text-ink-2">Counts by cohort and institution. Student names are left out unless you ask for them.</p>
       </div>
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="text-sm text-gray-600">
-          Format{' '}
-          <select value={format} onChange={(e) => setFormat(e.target.value)} className="bg-gray-100 rounded-md px-2 py-1 ml-1">
-            <option value="csv">CSV</option><option value="json">JSON</option>
-          </select>
-        </label>
-        <label className="text-sm text-gray-700 flex items-center gap-2">
-          <input type="checkbox" checked={includeStudents} onChange={(e) => setIncludeStudents(e.target.checked)} />
+      <div className="flex flex-wrap items-end gap-4">
+        <Field label="Format" className="w-32">
+          {(p) => (
+            <Select {...p} value={format} onChange={(e) => setFormat(e.target.value)}>
+              <option value="csv">CSV</option><option value="json">JSON</option>
+            </Select>
+          )}
+        </Field>
+        <label className="flex min-h-[2.75rem] items-center gap-2 text-sm text-ink">
+          <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={includeStudents} onChange={(e) => setIncludeStudents(e.target.checked)} />
           Include students (names, emails, activity)
         </label>
-        <button type="button" onClick={start} disabled={busy}
-          className="inline-flex items-center gap-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 disabled:opacity-60">
-          <Download size={14} aria-hidden="true" /> Download evidence
-        </button>
+        <Button variant="dark" loading={busy} onClick={start} icon={<Download size={16} aria-hidden="true" />}>
+          Download evidence
+        </Button>
       </div>
       {dialog && (
         <ConfirmDialog title="Export with student details?" confirmLabel="Export students" busy={busy} onConfirm={run} onCancel={() => setDialog(false)}>
@@ -65,7 +66,7 @@ const Evidence = () => {
           <p className="font-semibold">The export is written to the audit log.</p>
         </ConfirmDialog>
       )}
-    </section>
+    </Card>
   );
 };
 
@@ -76,25 +77,24 @@ const AdminOverview = () => {
   const ai = data?.aiUsage;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <header className="bg-white rounded-2xl shadow p-6">
-          <h1 className="text-2xl font-bold text-gray-800">Overview: is the platform being used and is it working?</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Adoption against your contract, learning gains per cohort, and AI usage.{' '}
-            <Link to="/manage-people" className="text-indigo-700 underline">Manage people</Link>
-          </p>
-        </header>
-
+    <AppShell
+      title="Overview: is the platform being used and is it working?"
+      subtitle={(
+        <>
+          Adoption against your contract, learning gains per cohort, and AI usage.{' '}
+          <Link to="/manage-people" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Manage people</Link>
+        </>
+      )}
+    >
+      <div className="space-y-6">
         {loading && <LoadingState />}
         {error && <ErrorState message={error} onRetry={reload} />}
 
         {data && (
           <>
-            <section className="bg-white rounded-2xl shadow p-6 space-y-3" aria-labelledby="ad-h">
-              <h2 id="ad-h" className="text-lg font-semibold text-gray-800">Adoption against the contracted limit</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card as="section" className="space-y-4" aria-labelledby="ad-h">
+              <h2 id="ad-h" className="font-display text-xl font-semibold text-ink">Adoption against the contracted limit</h2>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <StatCard label="Active, last 7 days" value={a.activeStudents7d} />
                 <StatCard label="Active, last 30 days" value={a.activeStudents30d} />
                 <StatCard label="Registered students" value={a.registeredActiveStudents} />
@@ -105,44 +105,44 @@ const AdminOverview = () => {
                 <BarList caption="Students active in 30 days as a share of the contracted limit"
                   items={[{ label: 'Active 30 days / limit', value: a.percentOfLimitActive30d, detail: `${a.activeStudents30d} of ${a.contractedStudentLimit}` }]} />
               )}
-              <p className="text-xs text-gray-500">Active means a run, a submission or a mock interview in the window.</p>
-            </section>
+              <p className="text-xs text-ink-2">Active means a run, a submission or a mock interview in the window.</p>
+            </Card>
 
-            <section className="bg-white rounded-2xl shadow p-6 space-y-3" aria-labelledby="im-h">
-              <h2 id="im-h" className="text-lg font-semibold text-gray-800">Improvement per cohort</h2>
-              <p className="text-sm text-gray-500">{imp.definition}</p>
-              <p className="text-xs text-gray-500">{imp.excludedAttempts} attempt{imp.excludedAttempts === 1 ? '' : 's'} not counted (fallback or unconfirmed AI scores).</p>
+            <Card as="section" className="space-y-4" aria-labelledby="im-h">
+              <h2 id="im-h" className="font-display text-xl font-semibold text-ink">Improvement per cohort</h2>
+              <p className="text-sm text-ink-2">{imp.definition}</p>
+              <p className="text-xs text-ink-2">{imp.excludedAttempts} attempt{imp.excludedAttempts === 1 ? '' : 's'} not counted (fallback or unconfirmed AI scores).</p>
               {!imp.cohorts?.length && <EmptyState title="No cohorts yet" />}
               {imp.cohorts?.map((c) => (
-                <div key={c.cohortId} className="rounded-xl border border-gray-200 p-4 space-y-2">
-                  <h3 className="font-semibold text-gray-800">{c.courseCode} / {c.cohort}</h3>
+                <div key={c.cohortId} className="space-y-3 rounded-2xl border border-line bg-paper p-4 sm:p-5">
+                  <h3 className="font-display text-base font-semibold text-ink">{c.courseCode} / {c.cohort}</h3>
                   {c.insufficientData ? (
                     <InsufficientData n={c.n} minimum={c.minimum} notice={c.notice} />
                   ) : (
                     <>
                       <BarList caption={`First vs latest mean score (${c.students} students, ${c.pairs} question pairs)`}
                         items={[{ label: 'First attempt', value: c.meanFirst }, { label: 'Latest attempt', value: c.meanLatest }]} />
-                      <p className="text-sm text-gray-700">Change: {c.delta > 0 ? '+' : ''}{c.delta} points. {c.excluded} not counted.</p>
+                      <p className="text-sm text-ink">Change: {c.delta > 0 ? '+' : ''}{c.delta} points. {c.excluded} not counted.</p>
                     </>
                   )}
                 </div>
               ))}
-            </section>
+            </Card>
 
-            <section className="bg-white rounded-2xl shadow p-6 space-y-3" aria-labelledby="au-h">
-              <h2 id="au-h" className="text-lg font-semibold text-gray-800">AI usage against the monthly cap</h2>
+            <Card as="section" className="space-y-4" aria-labelledby="au-h">
+              <h2 id="au-h" className="font-display text-xl font-semibold text-ink">AI usage against the monthly cap</h2>
               <BarList caption={`AI calls in ${ai.month}`} max={100}
                 items={[{ label: 'Share of cap used', value: ai.percentOfCap, detail: `${ai.calls} of ${ai.cap} calls` }]} />
               {ai.percentOfCap >= 80 && (
-                <p className="text-sm text-amber-800">Near the cap: once reached, AI features pause and manual grading remains available.</p>
+                <p className="rounded-2xl bg-sun-50 p-3 text-sm text-ink">Near the cap: once reached, AI features pause and manual grading remains available.</p>
               )}
-            </section>
+            </Card>
           </>
         )}
 
         <Evidence />
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 };
 

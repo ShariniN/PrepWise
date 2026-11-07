@@ -4,19 +4,18 @@ import { toast } from 'react-toastify';
 import { grading } from '../../api/analytics';
 import { errorCode, errorMessage } from '../../api/client';
 import { ErrorState, LoadingState } from './EmptyState';
-
-const inputCls = 'w-20 bg-gray-100 rounded-md px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
+import { Button, Input, Textarea } from '../ui';
 
 const FinalView = ({ final }) => (
-  <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm space-y-2">
-    <p className="font-semibold text-green-900">Confirmed by a human: {final.total} / {final.maxTotal}</p>
+  <div className="rounded-2xl border border-success-200 bg-success-50 p-4 text-sm space-y-2 text-ink">
+    <p className="font-semibold text-success-700">Confirmed by a human: {final.total} / {final.maxTotal}</p>
     <ul className="list-disc ml-5">
       {final.criteria.map((c) => (
         <li key={c.name}>{c.name}: {c.points} / {c.maxPoints}{c.comment ? ` - ${c.comment}` : ''}</li>
       ))}
     </ul>
     {final.comment && <p>Comment: {final.comment}</p>}
-    <p className="text-xs text-green-800">
+    <p className="text-xs text-ink-2">
       {final.acceptedAiSuggestion ? 'AI suggestion accepted as-is.' : 'Scored by the lecturer.'}{final.overrodeAi ? ' The AI suggestion was overridden.' : ''}
     </p>
   </div>
@@ -111,15 +110,15 @@ const GradingDetail = ({ id, onChanged }) => {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800">{item.questionTitle}</h2>
-        <p className="text-xs text-gray-500">{item.studentName} | {item.questionType} | submitted {new Date(item.submittedAt).toLocaleString()}</p>
+        <h2 className="font-display text-xl font-semibold text-ink">{item.questionTitle}</h2>
+        <p className="mt-1 text-xs text-ink-2">{item.studentName} | {item.questionType} | submitted {new Date(item.submittedAt).toLocaleString()}</p>
       </div>
 
-      <section aria-label="Question" className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm whitespace-pre-wrap">{item.question?.statement}</section>
+      <section aria-label="Question" className="rounded-2xl bg-sand p-4 text-sm whitespace-pre-wrap text-ink">{item.question?.statement}</section>
 
       <section aria-label="Student answer">
-        <h3 className="text-sm font-semibold text-gray-700">Student answer</h3>
-        <div className="rounded-lg border border-gray-200 p-3 text-sm whitespace-pre-wrap bg-white">{item.answer}</div>
+        <h3 className="mb-1.5 text-sm font-semibold text-ink">Student answer</h3>
+        <div className="rounded-2xl border border-line bg-surface p-4 text-sm whitespace-pre-wrap text-ink">{item.answer}</div>
       </section>
 
       {!rubric && (
@@ -128,15 +127,15 @@ const GradingDetail = ({ id, onChanged }) => {
 
       {rubric && (
         <section aria-label="Rubric">
-          <h3 className="text-sm font-semibold text-gray-700">Rubric (total {item.rubricTotal})</h3>
-          <ul className="text-sm text-gray-600 list-disc ml-5">
+          <h3 className="mb-1.5 text-sm font-semibold text-ink">Rubric (total {item.rubricTotal})</h3>
+          <ul className="ml-5 list-disc space-y-0.5 text-sm text-ink-2">
             {rubric.map((r) => <li key={r.name}><strong>{r.name}</strong> ({r.maxPoints} pts){r.description ? `: ${r.description}` : ''}</li>)}
           </ul>
         </section>
       )}
 
       {problem && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-800" role="alert">
+        <div className="rounded-2xl border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700" role="alert">
           <p>{problem.message}</p>
           {problem.manual && <p className="font-semibold mt-1">Manual grading is still available below.</p>}
         </div>
@@ -146,55 +145,53 @@ const GradingDetail = ({ id, onChanged }) => {
 
       {!reviewed && rubric && (
         <>
-          <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 space-y-2" aria-label="AI suggestion">
+          <section className="rounded-2xl border border-primary-100 bg-primary-50 p-4 space-y-3" aria-label="AI suggestion">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-indigo-900 flex items-center gap-1"><Sparkles size={14} aria-hidden="true" /> AI suggestion - not a grade</p>
-              <button type="button" onClick={suggest} disabled={busy === 'suggest'}
-                className="text-sm rounded-md bg-white border border-indigo-300 px-3 py-1.5 hover:bg-indigo-100 disabled:opacity-60">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-primary-800"><Sparkles size={14} aria-hidden="true" /> AI suggestion - not a grade</p>
+              <Button size="sm" variant="secondary" loading={busy === 'suggest'} onClick={suggest}>
                 {busy === 'suggest' ? 'Asking...' : ai ? 'Get a new AI suggestion' : 'Get AI suggestion'}
-              </button>
+              </Button>
             </div>
             {ai ? (
-              <div className="text-sm text-indigo-950 space-y-2">
+              <div className="text-sm text-ink space-y-2">
                 <p>Suggested {ai.total} / {ai.maxTotal}. It becomes a score only when you confirm it.</p>
                 <ul className="space-y-1">
                   {ai.criteria.map((c) => (
-                    <li key={c.name}><strong>{c.name}</strong>: {c.points} / {c.maxPoints}<br /><span className="text-indigo-900">Reason: {c.reason}</span></li>
+                    <li key={c.name}><strong>{c.name}</strong>: {c.points} / {c.maxPoints}<br /><span className="text-ink-2">Reason: {c.reason}</span></li>
                   ))}
                 </ul>
                 {ai.summary && <p>Summary: {ai.summary}</p>}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button type="button" onClick={copySuggestion} className="text-sm underline">Copy into the inputs below to edit</button>
-                  <button type="button" disabled={busy === 'confirm'}
-                    onClick={() => submit({ acceptAiSuggestion: true }, 'Suggestion confirmed as the grade')}
-                    className="text-sm rounded-md bg-indigo-600 text-white px-3 py-1.5 hover:bg-indigo-700 disabled:opacity-60">
+                  <Button size="sm" variant="ghost" onClick={copySuggestion}>Copy into the inputs below to edit</Button>
+                  <Button size="sm" loading={busy === 'confirm'}
+                    onClick={() => submit({ acceptAiSuggestion: true }, 'Suggestion confirmed as the grade')}>
                     Confirm the AI suggestion as the grade
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-indigo-900">No suggestion yet. Asking counts against the university&apos;s monthly AI allowance; you can always grade manually.</p>
+              <p className="text-sm text-ink-2">No suggestion yet. Asking counts against the university&apos;s monthly AI allowance; you can always grade manually.</p>
             )}
           </section>
 
           <form onSubmit={confirmManual} className="space-y-3" aria-label="Manual grade">
-            <h3 className="text-sm font-semibold text-gray-700">Your grade (confirm or override)</h3>
+            <h3 className="text-sm font-semibold text-ink">Your grade (confirm or override)</h3>
             {rubric.map((r) => (
-              <div key={r.name} className="grid sm:grid-cols-[1fr_auto_2fr] gap-2 items-center">
-                <label htmlFor={`pts-${r.name}`} className="text-sm text-gray-700">{r.name} (max {r.maxPoints})</label>
-                <input id={`pts-${r.name}`} type="number" min="0" max={r.maxPoints} step="any" className={inputCls}
+              <div key={r.name} className="grid items-center gap-2 sm:grid-cols-[1fr_5.5rem_2fr]">
+                <label htmlFor={`pts-${r.name}`} className="text-sm font-medium text-ink">{r.name} (max {r.maxPoints})</label>
+                <Input id={`pts-${r.name}`} type="number" min="0" max={r.maxPoints} step="any"
                   value={points[r.name] ?? ''} onChange={(e) => setPoints({ ...points, [r.name]: e.target.value })} />
-                <input type="text" aria-label={`Comment for ${r.name}`} placeholder="Optional comment" className="bg-gray-100 rounded-md px-2 py-1 text-sm"
+                <Input type="text" aria-label={`Comment for ${r.name}`} placeholder="Optional comment"
                   value={comments[r.name] ?? ''} onChange={(e) => setComments({ ...comments, [r.name]: e.target.value })} />
               </div>
             ))}
-            <textarea aria-label="Overall comment" placeholder="Overall comment (optional)" rows={2} className="w-full bg-gray-100 rounded-md px-2 py-1 text-sm"
+            <Textarea aria-label="Overall comment" placeholder="Overall comment (optional)" rows={2}
               value={overall} onChange={(e) => setOverall(e.target.value)} />
             <div className="flex items-center gap-3">
-              <button type="submit" disabled={busy === 'confirm'} className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-md px-4 py-2 disabled:opacity-60">
+              <Button type="submit" loading={busy === 'confirm'}>
                 {busy === 'confirm' ? 'Saving...' : 'Confirm grade'}
-              </button>
-              <span className="text-sm text-gray-500">Total {total} / {item.rubricTotal}</span>
+              </Button>
+              <span className="text-sm text-ink-2">Total {total} / {item.rubricTotal}</span>
             </div>
           </form>
         </>

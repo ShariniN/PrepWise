@@ -2,28 +2,29 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { addTest, updateTest, deleteTest } from '../../api/questions';
 import { errorMessage } from '../../api/client';
+import { Button, Input, Select, Table, THead, TBody, Tr, Th, Td, Textarea } from '../ui';
 
 const MODES = ['trim', 'exact', 'tokens'];
-const inp = 'w-full border border-gray-300 rounded px-2 py-1 text-xs font-mono bg-white disabled:bg-gray-100';
+const mono = '!rounded-xl !px-3 !py-2 font-mono text-xs';
 
 const toRow = (t) => ({ id: t.id, input: t.input || '', expectedOutput: t.expectedOutput || '', visible: !!t.visible, weight: t.weight ?? 1, comparison: t.comparison || 'trim', dirty: false });
 
 const TestRow = ({ row, onChange, onSave, onDelete, disabled, busy }) => (
-  <tr className="align-top border-t">
-    <td className="p-1"><textarea className={inp} rows={3} disabled={disabled} value={row.input} onChange={(e) => onChange({ input: e.target.value })} aria-label="Test input" /></td>
-    <td className="p-1"><textarea className={inp} rows={3} disabled={disabled} value={row.expectedOutput} onChange={(e) => onChange({ expectedOutput: e.target.value })} aria-label="Expected output" /></td>
-    <td className="p-1 text-center"><input type="checkbox" disabled={disabled} checked={row.visible} onChange={(e) => onChange({ visible: e.target.checked })} aria-label="Visible to students" /></td>
-    <td className="p-1"><input type="number" min="0" max="100" className={inp} disabled={disabled} value={row.weight} onChange={(e) => onChange({ weight: e.target.value })} aria-label="Weight" /></td>
-    <td className="p-1">
-      <select className={inp} disabled={disabled} value={row.comparison} onChange={(e) => onChange({ comparison: e.target.value })} aria-label="Comparison mode">
+  <Tr className="align-top">
+    <Td className="!p-2"><Textarea className={mono} rows={3} disabled={disabled} value={row.input} onChange={(e) => onChange({ input: e.target.value })} aria-label="Test input" /></Td>
+    <Td className="!p-2"><Textarea className={mono} rows={3} disabled={disabled} value={row.expectedOutput} onChange={(e) => onChange({ expectedOutput: e.target.value })} aria-label="Expected output" /></Td>
+    <Td className="!p-2 text-center"><input type="checkbox" className="h-4 w-4 accent-primary-600" disabled={disabled} checked={row.visible} onChange={(e) => onChange({ visible: e.target.checked })} aria-label="Visible to students" /></Td>
+    <Td className="!p-2"><Input type="number" min="0" max="100" className="!px-3 !py-2" disabled={disabled} value={row.weight} onChange={(e) => onChange({ weight: e.target.value })} aria-label="Weight" /></Td>
+    <Td className="!p-2">
+      <Select className="!px-3 !py-2" disabled={disabled} value={row.comparison} onChange={(e) => onChange({ comparison: e.target.value })} aria-label="Comparison mode">
         {MODES.map((m) => <option key={m}>{m}</option>)}
-      </select>
-    </td>
-    <td className="p-1 whitespace-nowrap">
-      <button type="button" disabled={disabled || busy || !row.dirty} onClick={onSave} className="text-xs px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-40">{row.id ? 'Save' : 'Add'}</button>
-      <button type="button" disabled={disabled || busy} onClick={onDelete} className="text-xs px-2 py-1 ml-1 text-red-600 disabled:opacity-40">Delete</button>
-    </td>
-  </tr>
+      </Select>
+    </Td>
+    <Td className="!p-2 whitespace-nowrap">
+      <Button size="sm" disabled={disabled || busy || !row.dirty} onClick={onSave}>{row.id ? 'Save' : 'Add'}</Button>
+      <Button size="sm" variant="ghost" className="ml-1 !text-danger-600 hover:!bg-danger-50" disabled={disabled || busy} onClick={onDelete}>Delete</Button>
+    </Td>
+  </Tr>
 );
 
 // Test cases live on their own endpoints, so each row saves independently.
@@ -62,26 +63,24 @@ const TestCaseTable = ({ questionId, tests, disabled, onChanged }) => {
 
   const visibleCount = rows.filter((r) => r.visible).length;
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Test cases ({rows.length}/50, {visibleCount} visible)</h3>
-        <button type="button" disabled={disabled || busy || rows.length >= 50} onClick={add} className="text-xs px-2 py-1 rounded bg-gray-200 disabled:opacity-50">Add test</button>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-lg font-semibold text-ink">Test cases ({rows.length}/50, {visibleCount} visible)</h3>
+        <Button size="sm" variant="secondary" disabled={disabled || busy || rows.length >= 50} onClick={add}>Add test</Button>
       </div>
-      <p className="text-xs text-gray-500">Visible tests are shown to students with expected output; hidden tests only report pass or fail. At least one visible test is needed to publish. Changing a test on a published question moves it back to draft.</p>
-      {rows.length === 0 ? <p className="text-sm text-gray-500">No tests yet.</p> : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[640px]">
-            <thead className="text-xs text-gray-500">
-              <tr><th className="p-1">Input (stdin)</th><th className="p-1">Expected output</th><th className="p-1 text-center">Visible</th><th className="p-1 w-16">Weight</th><th className="p-1 w-24">Compare</th><th className="p-1" /></tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <TestRow key={r.id || `new-${i}`} row={r} disabled={disabled} busy={busy}
-                  onChange={(p) => patch(i, p)} onSave={() => save(i)} onDelete={() => remove(i)} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <p className="text-sm text-ink-2">Visible tests are shown to students with expected output; hidden tests only report pass or fail. At least one visible test is needed to publish. Changing a test on a published question moves it back to draft.</p>
+      {rows.length === 0 ? <p className="text-sm text-ink-2">No tests yet.</p> : (
+        <Table className="!shadow-none">
+          <THead>
+            <Tr><Th>Input (stdin)</Th><Th>Expected output</Th><Th className="text-center">Visible</Th><Th className="w-20">Weight</Th><Th className="w-28">Compare</Th><Th><span className="sr-only">Actions</span></Th></Tr>
+          </THead>
+          <TBody>
+            {rows.map((r, i) => (
+              <TestRow key={r.id || `new-${i}`} row={r} disabled={disabled} busy={busy}
+                onChange={(p) => patch(i, p)} onSave={() => save(i)} onDelete={() => remove(i)} />
+            ))}
+          </TBody>
+        </Table>
       )}
     </div>
   );

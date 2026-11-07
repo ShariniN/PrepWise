@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { getRubric, saveRubric, deleteRubric } from '../../api/questions';
 import { errorMessage } from '../../api/client';
+import { Button, Input, Skeleton } from '../ui';
 
-const inp = 'w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white disabled:bg-gray-100';
 const blank = () => ({ name: '', description: '', maxPoints: 10, levels: [] });
+const dangerBtn = '!text-danger-600 hover:!bg-danger-50';
 
 // Rubric for short / behavioural questions (stored separately from the question).
 const RubricEditor = ({ questionId, disabled }) => {
@@ -27,7 +28,7 @@ const RubricEditor = ({ questionId, disabled }) => {
     return () => { cancelled = true; };
   }, [questionId]);
 
-  if (!criteria) return <p className="text-sm text-gray-500">Loading rubric...</p>;
+  if (!criteria) return <div role="status"><Skeleton className="h-24 w-full" rounded="rounded-2xl" /><span className="sr-only">Loading rubric...</span></div>;
 
   const patch = (i, p) => setCriteria((cs) => cs.map((c, j) => (j === i ? { ...c, ...p } : c)));
   const patchLevel = (i, k, p) => patch(i, { levels: criteria[i].levels.map((l, j) => (j === k ? { ...l, ...p } : l)) });
@@ -52,31 +53,31 @@ const RubricEditor = ({ questionId, disabled }) => {
   };
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700">Rubric <span className="font-normal text-xs text-gray-500">(1-20 criteria; saved separately from the question)</span></h3>
+    <div className="space-y-4">
+      <h3 className="font-display text-lg font-semibold text-ink">Rubric <span className="font-sans text-sm font-normal text-ink-2">(1-20 criteria; saved separately from the question)</span></h3>
       {criteria.map((c, i) => (
-        <div key={i} className="border rounded-lg p-3 space-y-2">
-          <div className="grid gap-2 sm:grid-cols-[1fr_6rem_auto]">
-            <input className={inp} disabled={disabled} placeholder="Criterion name" value={c.name} onChange={(e) => patch(i, { name: e.target.value })} aria-label="Criterion name" />
-            <input type="number" min="0" max="100" className={inp} disabled={disabled} value={c.maxPoints} onChange={(e) => patch(i, { maxPoints: e.target.value })} aria-label="Max points" />
-            <button type="button" disabled={disabled} className="text-xs text-red-600" onClick={() => setCriteria(criteria.filter((_, j) => j !== i))}>Remove</button>
+        <div key={i} className="space-y-3 rounded-2xl border border-line bg-paper p-4">
+          <div className="grid gap-2 sm:grid-cols-[1fr_6rem_auto] sm:items-center">
+            <Input disabled={disabled} placeholder="Criterion name" value={c.name} onChange={(e) => patch(i, { name: e.target.value })} aria-label="Criterion name" />
+            <Input type="number" min="0" max="100" disabled={disabled} value={c.maxPoints} onChange={(e) => patch(i, { maxPoints: e.target.value })} aria-label="Max points" />
+            <Button size="sm" variant="ghost" className={dangerBtn} disabled={disabled} onClick={() => setCriteria(criteria.filter((_, j) => j !== i))}>Remove</Button>
           </div>
-          <input className={inp} disabled={disabled} placeholder="Description (optional)" value={c.description} onChange={(e) => patch(i, { description: e.target.value })} />
+          <Input disabled={disabled} placeholder="Description (optional)" value={c.description} onChange={(e) => patch(i, { description: e.target.value })} aria-label="Criterion description" />
           {c.levels.map((l, k) => (
-            <div key={k} className="grid gap-2 sm:grid-cols-[8rem_5rem_1fr_auto] pl-4">
-              <input className={inp} disabled={disabled} placeholder="Level" value={l.label} onChange={(e) => patchLevel(i, k, { label: e.target.value })} />
-              <input type="number" className={inp} disabled={disabled} value={l.points} onChange={(e) => patchLevel(i, k, { points: e.target.value })} />
-              <input className={inp} disabled={disabled} placeholder="What this level looks like" value={l.description} onChange={(e) => patchLevel(i, k, { description: e.target.value })} />
-              <button type="button" disabled={disabled} className="text-xs text-red-600" onClick={() => patch(i, { levels: c.levels.filter((_, j) => j !== k) })}>x</button>
+            <div key={k} className="grid gap-2 sm:grid-cols-[8rem_5rem_1fr_auto] sm:items-center sm:pl-4">
+              <Input disabled={disabled} placeholder="Level" value={l.label} onChange={(e) => patchLevel(i, k, { label: e.target.value })} aria-label="Level label" />
+              <Input type="number" disabled={disabled} value={l.points} onChange={(e) => patchLevel(i, k, { points: e.target.value })} aria-label="Level points" />
+              <Input disabled={disabled} placeholder="What this level looks like" value={l.description} onChange={(e) => patchLevel(i, k, { description: e.target.value })} aria-label="Level description" />
+              <Button size="sm" variant="ghost" className={dangerBtn} disabled={disabled} aria-label="Remove level" onClick={() => patch(i, { levels: c.levels.filter((_, j) => j !== k) })}>x</Button>
             </div>
           ))}
-          <button type="button" disabled={disabled} className="text-xs underline text-indigo-700" onClick={() => patch(i, { levels: [...c.levels, { label: '', points: 0, description: '' }] })}>Add level</button>
+          <Button size="sm" variant="ghost" disabled={disabled} onClick={() => patch(i, { levels: [...c.levels, { label: '', points: 0, description: '' }] })}>Add level</Button>
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={disabled || criteria.length >= 20} className="text-xs px-2 py-1 rounded bg-gray-200 disabled:opacity-50" onClick={() => setCriteria([...criteria, blank()])}>Add criterion</button>
-        <button type="button" disabled={disabled || busy} className="text-xs px-3 py-1 rounded bg-indigo-600 text-white disabled:opacity-50" onClick={save}>Save rubric</button>
-        {exists && <button type="button" disabled={disabled || busy} className="text-xs px-3 py-1 rounded bg-white border border-red-300 text-red-700" onClick={remove}>Delete rubric</button>}
+        <Button size="sm" variant="secondary" disabled={disabled || criteria.length >= 20} onClick={() => setCriteria([...criteria, blank()])}>Add criterion</Button>
+        <Button size="sm" disabled={disabled} loading={busy} onClick={save}>Save rubric</Button>
+        {exists && <Button size="sm" variant="secondary" className="!border-danger-200 !text-danger-700" disabled={disabled || busy} onClick={remove}>Delete rubric</Button>}
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ const CopyLinkButton = ({ link, className = '' }) => {
     }
   };
   return (
-    <button type="button" onClick={copy} className={`inline-flex items-center gap-1 text-indigo-700 hover:underline text-sm ${className}`}>
+    <button type="button" onClick={copy} className={`inline-flex items-center gap-1 text-sm font-medium text-primary-700 hover:underline ${className}`}>
       <Copy size={14} aria-hidden="true" /> Copy invite link
     </button>
   );

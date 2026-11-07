@@ -6,6 +6,7 @@ import TopicHeatmap from './TopicHeatmap';
 import StudentsNeedingHelp from './StudentsNeedingHelp';
 import QuestionQuality from './QuestionQuality';
 import ActivityTab from './ActivityTab';
+import { Card, Tabs, TabPanel } from '../ui';
 
 const TABS = [
   { id: 'reteach', label: 'What to re-teach', Comp: FailurePatterns },
@@ -22,28 +23,23 @@ const LecturerDashboard = () => {
   const Current = TABS.find((t) => t.id === tab).Comp;
 
   return (
-    <div className="space-y-4">
-      <div role="tablist" aria-label="Lecturer views" className="flex flex-wrap gap-1 border-b border-gray-300">
-        {TABS.map((t) => (
-          <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-            className={`px-3 py-2 text-sm font-medium rounded-t-md ${tab === t.id ? 'bg-white text-indigo-700 border border-b-white border-gray-300 -mb-px' : 'text-gray-600 hover:text-indigo-600'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-5">
+      <Tabs tabs={TABS.map(({ id, label }) => ({ id, label }))} value={tab} onChange={setTab} idBase="lect" ariaLabel="Lecturer views" />
 
       {tab === 'courses' ? (
-        <CoursesPanel />
+        <TabPanel id="courses" value={tab} idBase="lect"><CoursesPanel /></TabPanel>
       ) : (
         <>
-          <div className="bg-white rounded-2xl shadow p-4">
+          <Card tone="sand" className="!p-4">
             <CourseCohortPicker value={scope} onChange={setScope} />
-          </div>
-          <div className="bg-white rounded-2xl shadow p-6" role="tabpanel">
-            {scope.courseId
-              ? <Current key={tab} courseId={scope.courseId} cohortId={scope.cohortId} />
-              : <p className="text-sm text-gray-500">Choose a course to see this view.</p>}
-          </div>
+          </Card>
+          <TabPanel id={tab} value={tab} idBase="lect">
+            <Card>
+              {scope.courseId
+                ? <Current key={tab} courseId={scope.courseId} cohortId={scope.cohortId} />
+                : <p className="text-sm text-ink-2">Choose a course to see this view.</p>}
+            </Card>
+          </TabPanel>
         </>
       )}
     </div>

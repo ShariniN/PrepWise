@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import AppShell from '../components/AppShell';
+import { Button, Card, Field, Table, THead, TBody, Tr, Th, Td } from '../components/ui';
 import CourseCohortPicker from '../components/analytics/CourseCohortPicker';
 import { BarList } from '../components/analytics/Charts';
 import { EmptyState, ErrorState, LoadingState } from '../components/analytics/EmptyState';
@@ -19,23 +20,22 @@ const SkillsGap = ({ scope }) => {
   const { data, error, loading, reload } = useAnalyticsData(
     () => careers.skillsGap(scope, threshold), `${scope.courseId}|${scope.cohortId}|${threshold}`);
   return (
-    <section className="bg-white rounded-2xl shadow p-6 space-y-3" aria-labelledby="sg-h">
+    <Card as="section" className="space-y-4" aria-labelledby="sg-h">
       <div>
-        <h2 id="sg-h" className="text-lg font-semibold text-gray-800">Which skills to build workshops for</h2>
-        <p className="text-sm text-gray-500">
+        <h2 id="sg-h" className="font-display text-xl font-semibold text-ink">Which skills to build workshops for</h2>
+        <p className="mt-1 max-w-2xl text-sm text-ink-2">
           Self-reported proficiency (1 to 10) from students&apos; latest CV skills analysis. A skill appears only when at least 5 students have it.
         </p>
       </div>
-      <label className="text-sm text-gray-600 block">
-        <span className="block mb-1">Gap threshold: mean below {threshold}</span>
-        <input type="range" min="1" max="10" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} />
-      </label>
+      <Field label={`Gap threshold: mean below ${threshold}`} className="max-w-sm">
+        {(p) => <input id={p.id} type="range" min="1" max="10" value={threshold} className="w-full accent-primary-600" onChange={(e) => setThreshold(Number(e.target.value))} />}
+      </Field>
       {loading && <LoadingState />}
       {error && <ErrorState message={error} onRetry={reload} />}
       {data?.insufficientData && <InsufficientData n={data.n} minimum={data.minimum} notice={data.notice} />}
       {data && !data.insufficientData && (
         <>
-          <p className="text-xs text-gray-500">{data.students} students assessed. {data.note}</p>
+          <p className="text-xs text-ink-2">{data.students} students assessed. {data.note}</p>
           {!data.gaps?.length ? (
             <EmptyState title="No skill gaps at this threshold" />
           ) : (
@@ -44,7 +44,7 @@ const SkillsGap = ({ scope }) => {
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 };
 
@@ -52,8 +52,8 @@ const CohortBlock = ({ programme, cohort }) => {
   const [open, setOpen] = useState(false);
   const mean = cohort.meanInterviewAverages;
   return (
-    <div className="rounded-xl border border-gray-200 p-4 space-y-3">
-      <h4 className="font-semibold text-gray-800">{programme.code} / {cohort.name} <span className="text-sm font-normal text-gray-500">({cohort.studentCount} students)</span></h4>
+    <div className="space-y-4 rounded-2xl border border-line bg-paper p-4 sm:p-5">
+      <h4 className="font-display text-base font-semibold text-ink">{programme.code} / {cohort.name} <span className="text-sm font-normal text-ink-2">({cohort.studentCount} students)</span></h4>
       <BarList caption="Share of the cohort with each readiness step"
         items={[
           { label: 'CV analysed', value: cohort.withCvAnalysisPercent },
@@ -62,36 +62,34 @@ const CohortBlock = ({ programme, cohort }) => {
           { label: 'Solved a practice question', value: cohort.withPracticeSolvedPercent },
         ]} />
       {mean && (
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-ink-2">
           Mean interview scores (0-100, scored interviews only): behavioural {mean.behavioralSkills ?? 'n/a'}, technical {mean.technicalKnowledge ?? 'n/a'},
           coding {mean.codingAbility ?? 'n/a'}, communication {mean.communication ?? 'n/a'}.
         </p>
       )}
-      <button type="button" className="text-sm text-indigo-700 underline" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <Button size="sm" variant="secondary" aria-expanded={open} onClick={() => setOpen(!open)}>
         {open ? 'Hide students' : `Show ${cohort.students?.length || 0} students (who is ready for what)`}
-      </button>
+      </Button>
       {open && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <Table className="!shadow-none">
             <caption className="sr-only">Students in {cohort.name}, listed alphabetically</caption>
-            <thead>
-              <tr className="text-left text-gray-500">
-                <th className="py-1">Student</th><th>CV analyses</th><th>Interviews (scored / completed)</th><th>Practice solved</th>
-                <th>Behav.</th><th>Tech.</th><th>Coding</th><th>Comm.</th>
-              </tr>
-            </thead>
-            <tbody>
+            <THead>
+              <Tr>
+                <Th>Student</Th><Th>CV analyses</Th><Th>Interviews (scored / completed)</Th><Th>Practice solved</Th>
+                <Th>Behav.</Th><Th>Tech.</Th><Th>Coding</Th><Th>Comm.</Th>
+              </Tr>
+            </THead>
+            <TBody>
               {cohort.students.map((s) => (
-                <tr key={s.studentId} className="border-t border-gray-100">
-                  <td className="py-1">{s.name}<br /><span className="text-gray-500">{s.email}</span></td>
-                  <td>{s.cvAnalyses}</td><td>{s.mockInterviewsScored} / {s.mockInterviewsCompleted}</td><td>{s.practiceSolved}</td>
-                  <td>{s.interviewAverages?.behavioralSkills ?? '-'}</td><td>{s.interviewAverages?.technicalKnowledge ?? '-'}</td>
-                  <td>{s.interviewAverages?.codingAbility ?? '-'}</td><td>{s.interviewAverages?.communication ?? '-'}</td>
-                </tr>
+                <Tr key={s.studentId}>
+                  <Td className="whitespace-nowrap">{s.name}<br /><span className="text-ink-2">{s.email}</span></Td>
+                  <Td>{s.cvAnalyses}</Td><Td>{s.mockInterviewsScored} / {s.mockInterviewsCompleted}</Td><Td>{s.practiceSolved}</Td>
+                  <Td>{s.interviewAverages?.behavioralSkills ?? '-'}</Td><Td>{s.interviewAverages?.technicalKnowledge ?? '-'}</Td>
+                  <Td>{s.interviewAverages?.codingAbility ?? '-'}</Td><Td>{s.interviewAverages?.communication ?? '-'}</Td>
+                </Tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TBody>
+          </Table>
       )}
     </div>
   );
@@ -118,24 +116,23 @@ const CareerReadiness = () => {
   const { data, error, loading, reload } = readiness;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <header className="bg-white rounded-2xl shadow p-6 space-y-3">
-          <h1 className="text-2xl font-bold text-gray-800">Career readiness: who is ready for what</h1>
-          <p className="text-sm text-gray-500">By programme and cohort. No CV text, interview answers or source code are shown here.</p>
+    <AppShell
+      title="Career readiness: who is ready for what"
+      subtitle="By programme and cohort. No CV text, interview answers or source code are shown here."
+    >
+      <div className="space-y-6">
+        <Card tone="sand" className="space-y-4">
           <CourseCohortPicker value={scope} onChange={setScope} includeAllCourses />
           <div>
-            <button type="button" onClick={download} disabled={exporting}
-              className="inline-flex items-center gap-2 text-sm rounded-md bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 disabled:opacity-60">
-              <Download size={14} aria-hidden="true" /> {exporting ? 'Preparing...' : 'Download readiness CSV'}
-            </button>
-            <p className="text-xs text-gray-500 mt-1">The export contains student names and emails. Every download is recorded in the audit log.</p>
+            <Button variant="dark" loading={exporting} onClick={download} icon={<Download size={16} aria-hidden="true" />}>
+              {exporting ? 'Preparing...' : 'Download readiness CSV'}
+            </Button>
+            <p className="mt-2 text-xs text-ink-2">The export contains student names and emails. Every download is recorded in the audit log.</p>
           </div>
-        </header>
+        </Card>
 
         {inst && (
-          <section aria-label="Institution coverage" className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <section aria-label="Institution coverage" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard label="Students" value={inst.students} />
             <StatCard label="CV analysed" value={pct(inst.withCvAnalysisPercent)} />
             <StatCard label="Mock interview" value={pct(inst.withMockInterviewPercent)} />
@@ -145,32 +142,32 @@ const CareerReadiness = () => {
         )}
         {coverage.error && <ErrorState message={coverage.error} onRetry={coverage.reload} />}
 
-        <section className="bg-white rounded-2xl shadow p-6 space-y-4" aria-labelledby="rd-h">
-          <h2 id="rd-h" className="text-lg font-semibold text-gray-800">Readiness by programme and cohort</h2>
+        <Card as="section" className="space-y-5" aria-labelledby="rd-h">
+          <h2 id="rd-h" className="font-display text-xl font-semibold text-ink">Readiness by programme and cohort</h2>
           {loading && <LoadingState />}
           {error && <ErrorState message={error} onRetry={reload} />}
           {data && (
             <>
               <ExcludedNote excluded={data.excluded} note={data.note} />
               {data.excluded && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-ink-2">
                   Fallback interviews: {data.excluded.fallbackInterviews}. Unconfirmed or fallback practice attempts: {data.excluded.unconfirmedOrFallbackAttempts}.
                 </p>
               )}
               {!data.programmes?.length && <EmptyState title="No programmes in this scope" />}
               {data.programmes?.map((p) => (
                 <div key={p.courseId} className="space-y-3">
-                  <h3 className="font-semibold text-gray-700">{p.code} - {p.title}</h3>
+                  <h3 className="font-display text-lg font-semibold text-ink">{p.code} - {p.title}</h3>
                   {p.cohorts.map((c) => <CohortBlock key={c.cohortId} programme={p} cohort={c} />)}
                 </div>
               ))}
             </>
           )}
-        </section>
+        </Card>
 
         <SkillsGap scope={scope} />
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 };
 

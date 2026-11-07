@@ -3,10 +3,10 @@ import CodeEditor from '../CodeEditor';
 
 // Reference solution (must pass every test) and optional wrong solution (must fail at least one).
 const SolutionEditors = ({ form, set, disabled, aiDrafted }) => (
-  <div className="space-y-4">
+  <div className="space-y-6">
     <div>
-      <h3 className="text-sm font-semibold text-gray-700">Reference solution</h3>
-      <p className="text-xs text-gray-500 mb-1">Must pass every test during validation. Java must use <code>public class Main</code>.</p>
+      <h3 className="font-display text-lg font-semibold text-ink">Reference solution</h3>
+      <p className="mb-2 text-sm text-ink-2">Must pass every test during validation. Java must use <code className="rounded bg-sand px-1 font-mono text-xs">public class Main</code>.</p>
       <CodeEditor
         height="260px"
         value={form.referenceSolution.source}
@@ -18,8 +18,8 @@ const SolutionEditors = ({ form, set, disabled, aiDrafted }) => (
       />
     </div>
     <div>
-      <h3 className="text-sm font-semibold text-gray-700">Wrong solution {aiDrafted ? '(required for AI drafts)' : '(optional)'}</h3>
-      <p className="text-xs text-gray-500 mb-1">A plausible but incorrect program. Validation checks that it fails at least one test, which proves the tests can catch mistakes.</p>
+      <h3 className="font-display text-lg font-semibold text-ink">Wrong solution {aiDrafted ? '(required for AI drafts)' : '(optional)'}</h3>
+      <p className="mb-2 text-sm text-ink-2">A plausible but incorrect program. Validation checks that it fails at least one test, which proves the tests can catch mistakes.</p>
       <CodeEditor
         height="220px"
         value={form.wrongSolution.source}
