@@ -31,6 +31,7 @@ const NavBar = () => {
         { to: '/careers', label: 'Careers' },
         { to: '/questions', label: 'Questions' },
         { to: '/assessments/manage', label: 'Assessments' },
+        { to: '/integrity', label: 'Integrity review' },
       ]
     : role === ROLES.STUDENT
       ? [
@@ -47,6 +48,7 @@ const NavBar = () => {
             { to: '/grading', label: 'Grading' },
             { to: '/questions', label: 'Questions' },
             { to: '/assessments/manage', label: 'Assessments' },
+            { to: '/integrity', label: 'Integrity review' },
           ]
         : role === ROLES.CAREER_OFFICER
           ? [{ to: '/staff', label: 'My courses' }, { to: '/careers', label: 'Career readiness' }]

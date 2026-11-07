@@ -19,7 +19,7 @@ import QuestionBank from './pages/QuestionBank'
 import QuestionEditor from './pages/QuestionEditor'
 import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
-import { ROLES, ASSESSMENT_ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES, CAREER_ROLES } from './utils/roles'
+import { ROLES, ASSESSMENT_ROLES, INTEGRITY_ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES, CAREER_ROLES } from './utils/roles'
 import GradingQueue from './pages/GradingQueue'
 import CareerReadiness from './pages/CareerReadiness'
 import AdminOverview from './pages/AdminOverview'
@@ -29,6 +29,7 @@ import AssessmentSession from './pages/AssessmentSession'
 import AssessmentResults from './pages/AssessmentResults'
 import AssessmentManage from './pages/AssessmentManage'
 import AssessmentEditor from './pages/AssessmentEditor'
+import IntegrityQueue from './pages/IntegrityQueue'
 
 
 
@@ -67,6 +68,8 @@ const App = () => {
 
         <Route path='/assessments/manage/new' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
         <Route path='/assessments/manage/:id' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
+
+        <Route path='/integrity' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityQueue/></ProtectedRoute>}/>
 
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/careers' element={<ProtectedRoute allow={CAREER_ROLES}><CareerReadiness/></ProtectedRoute>}/>

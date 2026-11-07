@@ -79,3 +79,36 @@ export const STATUS_STYLES = {
   open: 'bg-green-100 text-green-800',
   closed: 'bg-gray-200 text-gray-700',
 };
+
+// Review-case wording. Deliberately neutral: reasons to look, never findings.
+export const CASE_STATUS_LABELS = { open: 'Open', dismissed: 'Dismissed', escalated: 'Escalated to student', resolved: 'Resolved' };
+export const CASE_STATUS_STYLES = {
+  open: 'bg-blue-100 text-blue-800',
+  escalated: 'bg-amber-100 text-amber-800',
+  dismissed: 'bg-gray-200 text-gray-700',
+  resolved: 'bg-green-100 text-green-800',
+};
+export const CASE_TRANSITIONS = {
+  open: ['dismissed', 'escalated', 'resolved'],
+  escalated: ['dismissed', 'resolved'],
+  dismissed: ['open'],
+  resolved: ['open'],
+};
+export const OUTCOMES = {
+  no_action: 'No action',
+  technical_issue: 'Technical issue',
+  informal_warning: 'Informal conversation',
+  referred_formal: 'Referred to formal process',
+  inconclusive: 'Inconclusive',
+};
+export const REASON_LABELS = {
+  left_page: 'Left the page',
+  fullscreen_exit: 'Left full screen',
+  large_paste: 'Large paste',
+  clipboard_out: 'Copied or cut often',
+  typing_speed: 'Typing speed change',
+  devtools_hint: 'Developer tools hint (low confidence)',
+  multiple_screens_hint: 'Multiple screens hint (low confidence)',
+  similar_submission: 'Similar to other submissions',
+};
+export const FLAGS_NOTE = 'Flags are reasons to look, not findings. Short solutions, shared lecture examples and ordinary technical problems can look the same. A person decides.';
