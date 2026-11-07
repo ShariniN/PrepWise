@@ -57,13 +57,13 @@ const SavedAnalysis = () => {
 
   return (
     <div className="mx-auto">
-      <h2 className="text-2xl text-gray-800 font-bold mb-4 mt-8">Saved CV Analyses</h2>
+      <h2 className="text-2xl text-ink font-semibold mb-4 mt-8">Saved CV Analyses</h2>
       {savedAnalyses.map((entry, i) => (
-        <div key={i} className="bg-white shadow-md rounded-xl p-4 mb-6">
-          <p className="text-sm text-blue-600 font-semibold mb-2">Saved on: {new Date(entry.createdAt).toLocaleString()}</p>
+        <div key={i} className="bg-surface shadow-md rounded-2xl p-4 mb-6">
+          <p className="text-sm text-primary-600 font-semibold mb-2">Saved on: {new Date(entry.createdAt).toLocaleString()}</p>
               <div className="mb-4">
                 <p className="font-semibold mb-1">Resume Name:</p>
-                <p className="mb-2 text-gray-700">{entry.resumeText}</p>
+                <p className="mb-2 text-ink-2">{entry.resumeText}</p>
               </div>
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
             <div className="sm:w-1/2">
@@ -71,7 +71,7 @@ const SavedAnalysis = () => {
               {entry.jobDescriptions.map((jd, idx) => (
                 <div
                   key={idx}
-                  className="bg-gray-50 p-3 rounded-md text-sm text-gray-700 mb-3 whitespace-pre-wrap"
+                  className="bg-sand p-3 rounded-xl text-sm text-ink-2 mb-3 whitespace-pre-wrap"
                   dangerouslySetInnerHTML={{ __html: jd }}
                 />
               ))}
@@ -80,10 +80,10 @@ const SavedAnalysis = () => {
             <div className="sm:w-1/2"> 
               <p className="font-semibold sm:mt-4 mb-2">Results:</p>
               {entry.results.map((result, idx) => (
-                <div key={idx} className="border border-gray-300 bg-gray-50 rounded-lg p-3 mb-3">
-                  <p className="font-medium text-blue-600">Match: {result.matchPercentage}%</p>
+                <div key={idx} className="border border-line bg-sand rounded-xl p-3 mb-3">
+                  <p className="font-medium text-primary-600">Match: {result.matchPercentage}%</p>
                   <div
-                    className="prose prose-sm max-w-none mt-2 text-sm text-gray-800"
+                    className="prose prose-sm max-w-none mt-2 text-sm text-ink"
                     dangerouslySetInnerHTML={{ __html: result.suggestions }}
                   />
                 </div>
@@ -92,7 +92,7 @@ const SavedAnalysis = () => {
           </div>
           <button
             onClick={() => handleDelete(entry._id)}
-            className="mt-3 mb-3 text-sm font-semibold text-red-600 hover:text-red-700"
+            className="mt-3 mb-3 text-sm font-semibold text-danger-600 hover:text-danger-700"
           >
             Remove Analysis
           </button>

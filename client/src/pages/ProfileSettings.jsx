@@ -5,7 +5,7 @@ import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import NavBar from "../components/NavBar";
+import AppShell from "../components/AppShell";
 import PrivacyTab from "../components/PrivacyTab";
 
 const UserProfile = () => {
@@ -819,17 +819,17 @@ const UserProfile = () => {
   };
 
   const getMatchScoreColor = (percentage) => {
-    if (percentage >= 80) return 'text-green-800 bg-green-100';
-    if (percentage >= 60) return 'text-yellow-800 bg-yellow-100';
-    if (percentage >= 40) return 'text-orange-800 bg-orange-100';
-    return 'text-red-800 bg-red-100';
+    if (percentage >= 80) return 'text-success-700 bg-success-100';
+    if (percentage >= 60) return 'text-sun-700 bg-sun-100';
+    if (percentage >= 40) return 'text-sun-700 bg-sun-100';
+    return 'text-danger-700 bg-danger-100';
   };
 
   const getScoreColor = (score) => {
-    if (score >= 90) return 'text-green-800 bg-green-100';
-    if (score >= 70) return 'text-blue-800 bg-blue-100';
-    if (score >= 50) return 'text-yellow-800 bg-yellow-100';
-    return 'text-red-800 bg-red-100';
+    if (score >= 90) return 'text-success-700 bg-success-100';
+    if (score >= 70) return 'text-primary-800 bg-primary-100';
+    if (score >= 50) return 'text-sun-700 bg-sun-100';
+    return 'text-danger-700 bg-danger-100';
   };
 
   const formatFileSize = (bytes) => {
@@ -843,51 +843,51 @@ const UserProfile = () => {
   // Show loading spinner while page is loading
   if (pageLoading || !localUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   const renderProfileTab = () => (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-surface p-6 rounded-xl shadow">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <User className="mr-2" size={20} />
           Profile Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Name</label>
             <input
               type="text"
               value={localUser.name || ''}
               onChange={(e) => setLocalUser(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Phone Number</label>
             <input
               type="text"
               value={localUser.phoneNumber || ''}
               onChange={(e) => setLocalUser(prev => ({ ...prev, phoneNumber: e.target.value }))}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
             <input
               type="email"
               value={localUser.email || ''}
               disabled
-              className="w-full p-2 border border-gray-300 rounded-md bg-gray-50"
+              className="w-full p-2 border border-line rounded-xl bg-sand"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Account Status</label>
             <div className="flex items-center">
-              <span className={`px-2 py-1 rounded-full text-xs ${localUser.isAccountVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <span className={`px-2 py-1 rounded-full text-xs ${localUser.isAccountVerified ? 'bg-success-100 text-success-700' : 'bg-danger-100 text-danger-700'}`}>
                 {localUser.isAccountVerified ? 'Verified' : 'Unverified'}
               </span>
             </div>
@@ -896,7 +896,7 @@ const UserProfile = () => {
         <button 
           onClick={updateProfile}
           disabled={loading}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+          className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 flex items-center"
         >
           <Save className="mr-2" size={16} />
           {loading ? 'Updating...' : 'Update Profile'}
@@ -908,52 +908,52 @@ const UserProfile = () => {
   const renderSecurityTab = () => (
     <div className="space-y-6">
       {/* Change Password */}
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-surface p-6 rounded-xl shadow">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
           <Lock className="mr-2" size={20} />
           Change Password
         </h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Current Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={passwords.currentPassword}
                 onChange={(e) => setPasswords(prev => ({ ...prev, currentPassword: e.target.value }))}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-ink-muted hover:text-ink-2"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">New Password</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={passwords.newPassword}
               onChange={(e) => setPasswords(prev => ({ ...prev, newPassword: e.target.value }))}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Confirm New Password</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={passwords.confirmPassword}
               onChange={(e) => setPasswords(prev => ({ ...prev, confirmPassword: e.target.value }))}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
           <button
             onClick={handlePasswordChange}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50"
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>
@@ -967,7 +967,7 @@ const UserProfile = () => {
 const renderCVTab = () => (
   <div className="space-y-6">
     {/* CV Upload/Management Section */}
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-surface p-6 rounded-xl shadow">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <FileText className="mr-2" size={20} />
         CV Management
@@ -975,25 +975,25 @@ const renderCVTab = () => (
       
       {cvLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2 text-gray-600">Loading CV information...</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <span className="ml-2 text-ink-2">Loading CV information...</span>
         </div>
       ) : cvData ? (
         // CV exists - show details and management options
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-success-50 border border-success-100 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <CheckCircle className="text-green-600" size={24} />
+                <CheckCircle className="text-success-600" size={24} />
                 <div>
-                  <h4 className="text-lg font-medium text-green-800">CV Uploaded Successfully</h4>
-                  <p className="text-sm text-green-600">Your CV is ready for analysis</p>
+                  <h4 className="text-lg font-medium text-success-700">CV Uploaded Successfully</h4>
+                  <p className="text-sm text-success-600">Your CV is ready for analysis</p>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={refreshCV}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                  className="p-2 text-ink-2 hover:bg-sand rounded-xl"
                   title="Refresh CV Info"
                 >
                   <RefreshCw size={16} />
@@ -1003,51 +1003,51 @@ const renderCVTab = () => (
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h5 className="font-medium text-gray-800 mb-3">CV Details</h5>
+            <div className="bg-sand rounded-xl p-4">
+              <h5 className="font-medium text-ink mb-3">CV Details</h5>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">File Name:</span>
+                  <span className="text-ink-2">File Name:</span>
                   <span className="font-medium">{cvData.fileName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">File Size:</span>
+                  <span className="text-ink-2">File Size:</span>
                   <span className="font-medium">{formatFileSize(cvData.fileSize)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Uploaded:</span>
+                  <span className="text-ink-2">Uploaded:</span>
                   <span className="font-medium">
                     {new Date(cvData.uploadedAt).toLocaleDateString()}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="font-medium text-green-600">
+                  <span className="text-ink-2">Status:</span>
+                  <span className="font-medium text-success-600">
                     {cvData.hasText ? 'Ready for Analysis' : 'Processing...'}
                   </span>
                 </div>
                 {cvData.textLength && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Text Length:</span>
+                    <span className="text-ink-2">Text Length:</span>
                     <span className="font-medium">{cvData.textLength} characters</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h5 className="font-medium text-blue-800 mb-3">Quick Actions</h5>
+            <div className="bg-primary-50 rounded-xl p-4">
+              <h5 className="font-medium text-primary-800 mb-3">Quick Actions</h5>
               <div className="space-y-2">
                 <button
                   onClick={() => navigate('/cv-analyzer')}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
+                  className="w-full px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 flex items-center justify-center"
                 >
                   <Target className="mr-2" size={16} />
                   Analyze CV Against Jobs
                 </button>
                 <button
                   onClick={() => navigate('/swot')}
-                  className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center"
+                  className="w-full px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700 flex items-center justify-center"
                 >
                   <Brain className="mr-2" size={16} />
                   Skills Assessment
@@ -1058,7 +1058,7 @@ const renderCVTab = () => (
 
           {/* Update/Replace CV Section */}
           <div className="border-t pt-4">
-            <h5 className="font-medium text-gray-800 mb-3">Update CV</h5>
+            <h5 className="font-medium text-ink mb-3">Update CV</h5>
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <input
@@ -1066,10 +1066,10 @@ const renderCVTab = () => (
                   id="cv-update"
                   accept=".pdf"
                   onChange={handleFileSelect}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 {selectedFile && (
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-ink-2 mt-1">
                     Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
                   </p>
                 )}
@@ -1078,7 +1078,7 @@ const renderCVTab = () => (
                 <button
                   onClick={uploadCV}
                   disabled={!selectedFile || uploadingCV}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 flex items-center"
                 >
                   {uploadingCV ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -1090,14 +1090,14 @@ const renderCVTab = () => (
                 <button
                   onClick={deleteCV}
                   disabled={cvLoading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 bg-danger-600 text-white rounded-xl hover:bg-danger-700 disabled:opacity-50 flex items-center"
                 >
                   <Trash2 className="mr-2" size={16} />
                   Delete CV
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-ink-muted mt-2">
               Updating will replace your current CV. Only PDF files are supported. Maximum file size: 10MB
             </p>
           </div>
@@ -1105,10 +1105,10 @@ const renderCVTab = () => (
       ) : (
         // No CV uploaded - show upload form
         <div className="text-center py-8">
-          <div className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-8">
-            <File className="mx-auto h-16 w-16 text-blue-400 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No CV Uploaded</h4>
-            <p className="text-gray-600 mb-6">Upload your CV to start analyzing it against job descriptions</p>
+          <div className="bg-primary-50 border-2 border-dashed border-primary-200 rounded-xl p-8">
+            <File className="mx-auto h-16 w-16 text-primary-400 mb-4" />
+            <h4 className="text-lg font-medium text-ink mb-2">No CV Uploaded</h4>
+            <p className="text-ink-2 mb-6">Upload your CV to start analyzing it against job descriptions</p>
             
             <div className="max-w-md mx-auto">
               <input
@@ -1116,17 +1116,17 @@ const renderCVTab = () => (
                 id="cv-upload"
                 accept=".pdf"
                 onChange={handleFileSelect}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+                className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-4"
               />
               {selectedFile && (
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-ink-2 mb-4">
                   Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
                 </p>
               )}
               <button
                 onClick={uploadCV}
                 disabled={!selectedFile || uploadingCV}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+                className="w-full px-6 py-3 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center"
               >
                 {uploadingCV ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -1135,7 +1135,7 @@ const renderCVTab = () => (
                 )}
                 {uploadingCV ? 'Uploading CV...' : 'Upload CV'}
               </button>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-ink-muted mt-2">
                 Only PDF files are supported. Maximum file size: 10MB
               </p>
             </div>
@@ -1145,20 +1145,20 @@ const renderCVTab = () => (
     </div>
 
     {/* CV Usage Information */}
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-      <h4 className="text-lg font-semibold text-blue-800 mb-3">How Your CV is Used</h4>
+    <div className="bg-primary-50 border border-primary-200 rounded-xl p-6">
+      <h4 className="text-lg font-semibold text-primary-800 mb-3">How Your CV is Used</h4>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <h5 className="font-medium text-gray-900 mb-2">CV Analyzer</h5>
-          <p className="text-gray-600">Your CV text is compared against job descriptions to identify matches, gaps, and improvement opportunities.</p>
+        <div className="bg-surface rounded-xl p-4 shadow-sm">
+          <h5 className="font-medium text-ink mb-2">CV Analyzer</h5>
+          <p className="text-ink-2">Your CV text is compared against job descriptions to identify matches, gaps, and improvement opportunities.</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow-sm">
-          <h5 className="font-medium text-gray-900 mb-2">Skills Assessment</h5>
-          <p className="text-gray-600">The system extracts your skills and experience to provide personalized technology proficiency assessments.</p>
+        <div className="bg-surface rounded-xl p-4 shadow-sm">
+          <h5 className="font-medium text-ink mb-2">Skills Assessment</h5>
+          <p className="text-ink-2">The system extracts your skills and experience to provide personalized technology proficiency assessments.</p>
         </div>
       </div>
-      <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-        <p className="text-xs text-blue-800">
+      <div className="mt-4 p-3 bg-primary-100 rounded-xl">
+        <p className="text-xs text-primary-800">
           <strong>Privacy:</strong> Your CV data is stored securely and only used for analysis purposes. 
           You can delete your CV at any time, and it will be permanently removed from our servers.
         </p>
@@ -1168,19 +1168,19 @@ const renderCVTab = () => (
 );
 
   const renderSkillsTab = () => (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-surface p-6 rounded-xl shadow">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <Brain className="mr-2" size={20} />
         Skills Assessment Results ({skillsAssessments.length})
       </h3>
       {skillsAssessments.length === 0 ? (
         <div className="text-center py-8">
-          <Brain className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-2">No skills assessments completed yet.</p>
-          <p className="text-sm text-gray-500">Complete a SWOT analysis to see your technology proficiency results here.</p>
+          <Brain className="mx-auto h-12 w-12 text-ink-muted mb-4" />
+          <p className="text-ink-2 mb-2">No skills assessments completed yet.</p>
+          <p className="text-sm text-ink-muted">Complete a SWOT analysis to see your technology proficiency results here.</p>
           <button 
             onClick={() => navigate('/swot')}
-            className="mt-3 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            className="mt-3 px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700"
           >
             Start Skills Assessment
           </button>
@@ -1188,17 +1188,17 @@ const renderCVTab = () => (
       ) : (
         <div className="space-y-4">
           {skillsAssessments.map((assessment) => (
-            <div key={assessment.id} className="border border-gray-200 rounded-lg">
+            <div key={assessment.id} className="border border-line rounded-xl">
               <div className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-medium text-lg text-gray-900">{assessment.assessmentType}</h4>
+                      <h4 className="font-medium text-lg text-ink">{assessment.assessmentType}</h4>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        assessment.level === 'Expert' ? 'bg-purple-100 text-purple-800' :
-                        assessment.level === 'Advanced' ? 'bg-blue-100 text-blue-800' :
-                        assessment.level === 'Intermediate' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                        assessment.level === 'Expert' ? 'bg-primary-100 text-primary-800' :
+                        assessment.level === 'Advanced' ? 'bg-primary-100 text-primary-800' :
+                        assessment.level === 'Intermediate' ? 'bg-success-100 text-success-700' :
+                        'bg-sand text-ink'
                       }`}>
                         {assessment.level}
                       </span>
@@ -1206,29 +1206,29 @@ const renderCVTab = () => (
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                       <div className="text-center">
-                        <div className={`text-lg font-bold px-2 py-1 rounded ${getScoreColor(assessment.score)}`}>
+                        <div className={`text-lg font-semibold px-2 py-1 rounded ${getScoreColor(assessment.score)}`}>
                           {assessment.score}/100
                         </div>
-                        <div className="text-xs text-gray-500">Overall Score</div>
+                        <div className="text-xs text-ink-muted">Overall Score</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-gray-900">{assessment.totalTechnologies}</div>
-                        <div className="text-xs text-gray-500">Technologies</div>
+                        <div className="text-lg font-semibold text-ink">{assessment.totalTechnologies}</div>
+                        <div className="text-xs text-ink-muted">Technologies</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{assessment.expertCount}</div>
-                        <div className="text-xs text-gray-500">Expert Level</div>
+                        <div className="text-lg font-semibold text-success-600">{assessment.expertCount}</div>
+                        <div className="text-xs text-ink-muted">Expert Level</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-blue-600">{assessment.proficientCount}</div>
-                        <div className="text-xs text-gray-500">Proficient</div>
+                        <div className="text-lg font-semibold text-primary-600">{assessment.proficientCount}</div>
+                        <div className="text-xs text-ink-muted">Proficient</div>
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-500 mb-3">
+                    <p className="text-sm text-ink-muted mb-3">
                       Completed on {new Date(assessment.completedAt).toLocaleDateString()}
                       {assessment.isRecent && (
-                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        <span className="ml-2 px-2 py-1 bg-success-100 text-success-700 text-xs rounded-full">
                           Recent
                         </span>
                       )}
@@ -1237,21 +1237,21 @@ const renderCVTab = () => (
                     {/* Top Technologies Preview */}
                     {assessment.topTechnologies && assessment.topTechnologies.length > 0 && (
                       <div className="mb-3">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Top Skills:</p>
+                        <p className="text-sm font-medium text-ink-2 mb-2">Top Skills:</p>
                         <div className="flex flex-wrap gap-2">
                           {assessment.topTechnologies.slice(0, 5).map((tech, idx) => (
-                            <div key={`tech-preview-${assessment.id}-${idx}-${tech.name}`} className="flex items-center space-x-1 bg-gray-100 rounded-full px-3 py-1">
+                            <div key={`tech-preview-${assessment.id}-${idx}-${tech.name}`} className="flex items-center space-x-1 bg-sand rounded-full px-3 py-1">
                               <span className="text-sm font-medium">{tech.name}</span>
                               <div className="flex">
                                 {[...Array(10)].map((_, i) => (
                                   <Star 
                                     key={`star-preview-${assessment.id}-${tech.name}-${i}`}
                                     size={10} 
-                                    className={i < tech.confidence ? 'text-yellow-400 fill-current' : 'text-gray-300'} 
+                                    className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'} 
                                   />
                                 ))}
                               </div>
-                              <span className="text-xs text-gray-600">{tech.confidence}/10</span>
+                              <span className="text-xs text-ink-2">{tech.confidence}/10</span>
                             </div>
                           ))}
                         </div>
@@ -1262,21 +1262,21 @@ const renderCVTab = () => (
                   <div className="flex space-x-2 ml-4">
                     <button 
                       onClick={() => setExpandedAssessment(expandedAssessment === assessment.id ? null : assessment.id)}
-                      className="p-2 text-gray-600 hover:bg-gray-50 rounded-md"
+                      className="p-2 text-ink-2 hover:bg-sand rounded-xl"
                       title="View Details"
                     >
                       {expandedAssessment === assessment.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                     <button 
                       onClick={() => downloadAnalysis(assessment.id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                      className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl"
                       title="Download Report"
                     >
                       <Download size={16} />
                     </button>
                     <button 
                       onClick={() => deleteAssessment(assessment.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+                      className="p-2 text-danger-600 hover:bg-danger-50 rounded-xl"
                       title="Delete Assessment"
                     >
                       <Trash2 size={16} />
@@ -1287,30 +1287,30 @@ const renderCVTab = () => (
 
               {/* Expanded Assessment Details */}
               {expandedAssessment === assessment.id && (
-                <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="border-t border-line p-4 bg-sand">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Confidence Distribution */}
                     <div>
-                      <h5 className="font-medium text-gray-800 mb-3 flex items-center">
+                      <h5 className="font-medium text-ink mb-3 flex items-center">
                         <TrendingUp className="mr-2" size={16} />
                         Confidence Distribution
                       </h5>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Expert (8-10)</span>
-                          <span className="font-medium text-purple-600">{assessment.expertCount} skills</span>
+                          <span className="text-sm text-ink-2">Expert (8-10)</span>
+                          <span className="font-medium text-primary-600">{assessment.expertCount} skills</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Proficient (6-7)</span>
-                          <span className="font-medium text-blue-600">{assessment.proficientCount} skills</span>
+                          <span className="text-sm text-ink-2">Proficient (6-7)</span>
+                          <span className="font-medium text-primary-600">{assessment.proficientCount} skills</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Learning (1-5)</span>
-                          <span className="font-medium text-green-600">{assessment.learningCount} skills</span>
+                          <span className="text-sm text-ink-2">Learning (1-5)</span>
+                          <span className="font-medium text-success-600">{assessment.learningCount} skills</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t">
-                          <span className="text-sm font-medium text-gray-700">Average Confidence</span>
-                          <span className="font-bold text-gray-900">{assessment.averageConfidence.toFixed(1)}/10</span>
+                          <span className="text-sm font-medium text-ink-2">Average Confidence</span>
+                          <span className="font-semibold text-ink">{assessment.averageConfidence.toFixed(1)}/10</span>
                         </div>
                       </div>
                     </div>
@@ -1318,17 +1318,17 @@ const renderCVTab = () => (
                     {/* All Technologies */}
                     {assessment.topTechnologies && assessment.topTechnologies.length > 0 && (
                       <div>
-                        <h5 className="font-medium text-gray-800 mb-3 flex items-center">
+                        <h5 className="font-medium text-ink mb-3 flex items-center">
                           <Award className="mr-2" size={16} />
                           All Technologies ({assessment.totalTechnologies})
                         </h5>
                         <div className="max-h-48 overflow-y-auto space-y-2">
                           {assessment.topTechnologies.map((tech, idx) => (
-                            <div key={`all-tech-${assessment.id}-${idx}-${tech.name}`} className="flex items-center justify-between p-2 bg-white rounded border">
+                            <div key={`all-tech-${assessment.id}-${idx}-${tech.name}`} className="flex items-center justify-between p-2 bg-surface rounded border">
                               <div className="flex-1">
                                 <span className="text-sm font-medium">{tech.name}</span>
                                 {tech.category && (
-                                  <span className="text-xs text-gray-500 ml-2">({tech.category})</span>
+                                  <span className="text-xs text-ink-muted ml-2">({tech.category})</span>
                                 )}
                               </div>
                               <div className="flex items-center space-x-2">
@@ -1337,11 +1337,11 @@ const renderCVTab = () => (
                                     <Star 
                                       key={`detail-star-${assessment.id}-${tech.name}-${i}`}
                                       size={12} 
-                                      className={i < tech.confidence ? 'text-yellow-400 fill-current' : 'text-gray-300'} 
+                                      className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'} 
                                     />
                                   ))}
                                 </div>
-                                <span className="text-xs text-gray-600 min-w-[30px]">{tech.confidence}/10</span>
+                                <span className="text-xs text-ink-2 min-w-[30px]">{tech.confidence}/10</span>
                               </div>
                             </div>
                           ))}
@@ -1353,18 +1353,18 @@ const renderCVTab = () => (
                     {(assessment.strengths?.length > 0 || assessment.weaknesses?.length > 0 || 
                       assessment.opportunities?.length > 0 || assessment.threats?.length > 0) && (
                       <div className="col-span-2">
-                        <h5 className="font-medium text-gray-800 mb-3 flex items-center">
+                        <h5 className="font-medium text-ink mb-3 flex items-center">
                           <Target className="mr-2" size={16} />
                           SWOT Analysis Details
                         </h5>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {assessment.strengths?.length > 0 && (
                             <div>
-                              <h6 className="font-medium text-green-700 mb-2">Strengths</h6>
+                              <h6 className="font-medium text-success-700 mb-2">Strengths</h6>
                               <ul className="text-sm space-y-1">
                                 {assessment.strengths.slice(0, 3).map((item, idx) => (
                                   <li key={`swot-strength-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                                    <div className="w-2 h-2 bg-success-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                                     {item}
                                   </li>
                                 ))}
@@ -1373,11 +1373,11 @@ const renderCVTab = () => (
                           )}
                           {assessment.weaknesses?.length > 0 && (
                             <div>
-                              <h6 className="font-medium text-red-700 mb-2">Weaknesses</h6>
+                              <h6 className="font-medium text-danger-700 mb-2">Weaknesses</h6>
                               <ul className="text-sm space-y-1">
                                 {assessment.weaknesses.slice(0, 3).map((item, idx) => (
                                   <li key={`swot-weakness-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                                    <div className="w-2 h-2 bg-danger-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                                     {item}
                                   </li>
                                 ))}
@@ -1386,11 +1386,11 @@ const renderCVTab = () => (
                           )}
                           {assessment.opportunities?.length > 0 && (
                             <div>
-                              <h6 className="font-medium text-blue-700 mb-2">Opportunities</h6>
+                              <h6 className="font-medium text-primary-700 mb-2">Opportunities</h6>
                               <ul className="text-sm space-y-1">
                                 {assessment.opportunities.slice(0, 3).map((item, idx) => (
                                   <li key={`swot-opportunity-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                                    <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                                     {item}
                                   </li>
                                 ))}
@@ -1399,11 +1399,11 @@ const renderCVTab = () => (
                           )}
                           {assessment.threats?.length > 0 && (
                             <div>
-                              <h6 className="font-medium text-orange-700 mb-2">Threats</h6>
+                              <h6 className="font-medium text-sun-700 mb-2">Threats</h6>
                               <ul className="text-sm space-y-1">
                                 {assessment.threats.slice(0, 3).map((item, idx) => (
                                   <li key={`swot-threat-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
+                                    <div className="w-2 h-2 bg-sun-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
                                     {item}
                                   </li>
                                 ))}
@@ -1416,8 +1416,8 @@ const renderCVTab = () => (
                   </div>
 
                   {/* Assessment Stats */}
-                  <div className="mt-4 pt-4 border-t border-gray-300">
-                    <div className="flex items-center justify-between text-sm text-gray-600">
+                  <div className="mt-4 pt-4 border-t border-line">
+                    <div className="flex items-center justify-between text-sm text-ink-2">
                       <span>Assessment ID: {assessment.id.slice(-8)}</span>
                       <span>Overall Proficiency: {assessment.level}</span>
                     </div>
@@ -1432,19 +1432,19 @@ const renderCVTab = () => (
   );
 
   const renderSettingsTab = () => (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-surface p-6 rounded-xl shadow">
       <h3 className="text-lg font-semibold mb-4 flex items-center">
         <Settings className="mr-2" size={20} />
         Account Settings
       </h3>
       
       <div className="space-y-6">
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Account Actions</h4>
-          <p className="text-sm text-gray-600 mb-4">Manage your account access and session.</p>
+        <div className="border border-line rounded-xl p-4">
+          <h4 className="font-medium text-ink mb-2">Account Actions</h4>
+          <p className="text-sm text-ink-2 mb-4">Manage your account access and session.</p>
           <button 
             onClick={handleLogout}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700"
           >
             Logout
           </button>
@@ -1463,24 +1463,23 @@ const renderCVTab = () => (
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-          <NavBar />
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <AppShell title="Profile settings" subtitle="Manage your profile, CV and privacy.">
+    <div>
+      <div>
         {/* Header */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-surface rounded-xl shadow p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-16 h-16 bg-primary-600 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
                 {localUser.name ? localUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{localUser.name}</h1>
-                <p className="text-gray-600">{localUser.email}</p>
+                <h2 className="font-display text-2xl font-semibold text-ink">{localUser.name}</h2>
+                <p className="text-ink-2">{localUser.email}</p>
                 <div className="flex items-center space-x-2 mt-1">
                   {/* NEW: CV Status indicator */}
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    cvData ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+                    cvData ? 'bg-success-100 text-success-700' : 'bg-sun-100 text-sun-700'
                   }`}>
                     {cvData ? 'CV Uploaded ✓' : 'No CV'}
                   </span>
@@ -1494,13 +1493,13 @@ const renderCVTab = () => (
                 <>
                   <button 
                     onClick={() => navigate('/cv-analyzer')}
-                    className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-3 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700"
                   >
                     CV Analyzer
                   </button>
                   <button 
                     onClick={() => navigate('/swot')}
-                    className="px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                    className="px-3 py-2 text-sm bg-success-600 text-white rounded-xl hover:bg-success-700"
                   >
                     Skills Assessment
                   </button>
@@ -1508,7 +1507,7 @@ const renderCVTab = () => (
               ) : (
                 <button 
                   onClick={() => setActiveTab('cv')}
-                  className="px-3 py-2 text-sm bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center"
+                  className="px-3 py-2 text-sm bg-sun-600 text-white rounded-xl hover:bg-sun-700 flex items-center"
                 >
                   <Upload className="mr-1" size={16} />
                   Upload CV
@@ -1521,7 +1520,7 @@ const renderCVTab = () => (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
-            <nav className="bg-white rounded-lg shadow p-4">
+            <nav className="bg-surface rounded-xl shadow p-4">
               <ul className="space-y-2">
                 {tabs.map(tab => {
                   const Icon = tab.icon;
@@ -1529,25 +1528,25 @@ const renderCVTab = () => (
                     <li key={tab.id}>
                       <button
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full text-left px-3 py-2 rounded-md flex items-center space-x-3 transition-colors ${
+                        className={`w-full text-left px-4 py-2.5 rounded-full flex items-center space-x-3 transition-colors ${
                           activeTab === tab.id 
-                            ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-700' 
-                            : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-primary-100 text-primary-800 font-semibold' 
+                            : 'text-ink-2 hover:bg-sand'
                         }`}
                       >
                         <Icon size={18} />
                         <span>{tab.label}</span>
                         {/* NEW: Add indicator badges */}
                         {tab.id === 'cv' && !cvData && (
-                          <AlertCircle className="text-orange-500" size={14} />
+                          <AlertCircle className="text-sun-500" size={14} />
                         )}
                         {tab.id === 'cv' && savedAnalyses.length > 0 && (
-                          <span className="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          <span className="bg-primary-100 text-primary-800 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                             {savedAnalyses.length}
                           </span>
                         )}
                         {tab.id === 'skills' && skillsAssessments.length > 0 && (
-                          <span className="bg-green-100 text-green-800 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                          <span className="bg-success-100 text-success-700 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
                             {skillsAssessments.length}
                           </span>
                         )}
@@ -1572,7 +1571,7 @@ const renderCVTab = () => (
         </div>
       </div>
     </div>
-  </div>
+  </AppShell>
   );
 };
 
