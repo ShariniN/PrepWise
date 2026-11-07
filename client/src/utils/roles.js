@@ -10,6 +10,10 @@ export const STAFF_ROLES = [ROLES.LECTURER, ROLES.CAREER_OFFICER];
 // Roles that may author questions (the career officer cannot).
 export const QUESTION_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
+// Phase 3B screens.
+export const GRADING_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
+export const CAREER_ROLES = [ROLES.CAREER_OFFICER, ROLES.ADMIN];
+
 export const ROLE_LABELS = {
   student: 'Student',
   lecturer: 'Lecturer',
