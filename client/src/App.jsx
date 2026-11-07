@@ -28,6 +28,7 @@ import AssessmentIntro from './pages/AssessmentIntro'
 import AssessmentSession from './pages/AssessmentSession'
 import AssessmentResults from './pages/AssessmentResults'
 import AssessmentManage from './pages/AssessmentManage'
+import AssessmentEditor from './pages/AssessmentEditor'
 
 
 
@@ -63,6 +64,9 @@ const App = () => {
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
 
         <Route path='/assessments/manage' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentManage/></ProtectedRoute>}/>
+
+        <Route path='/assessments/manage/new' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
+        <Route path='/assessments/manage/:id' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
 
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/careers' element={<ProtectedRoute allow={CAREER_ROLES}><CareerReadiness/></ProtectedRoute>}/>
