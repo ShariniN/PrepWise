@@ -1,0 +1,63 @@
+# Judge0 CE v1.13.1 for local demos. See README.md before using: it needs cgroup v1.
+# Start:  cp .env.example .env   (then put real random passwords in .env)   docker compose up -d
+# The API listens on 127.0.0.1:2358 only; nothing is exposed to the network.
+name: prepwise-judge0
+
+x-judge0-env: &judge0-env
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: judge0
+  POSTGRES_USER: judge0
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+  # Student code must never reach the network. Both switches are off: submissions cannot turn networking on.
+  ENABLE_NETWORK: "false"
+  ALLOW_ENABLE_NETWORK: "false"
+  # Sensible limits for classroom exercises (the per-question limits sent by PrepWise are capped by these)
+  CPU_TIME_LIMIT: "5"
+  MAX_CPU_TIME_LIMIT: "10"
+  MEMORY_LIMIT: "256000"
+  MAX_MEMORY_LIMIT: "512000"
+  MAX_PROCESSES_AND_OR_THREADS: "60"
+  MAX_QUEUE_SIZE: "200"
+  RAILS_ENV: production
+
+services:
+  server:
+    image: judge0/judge0:1.13.1
+    environment: *judge0-env
+    ports:
+      - "127.0.0.1:2358:2358"
+    privileged: true # required by the isolate sandbox
+    depends_on: [db, redis]
+    restart: unless-stopped
+
+  worker:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    environment: *judge0-env
+    privileged: true
+    depends_on: [db, redis]
+    restart: unless-stopped
+
+  db:
+    image: postgres:16.2
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - judge0-postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2.4
+    command: ["bash", "-c", "docker-entrypoint.sh --appendonly no --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    restart: unless-stopped
+
+volumes:
+  judge0-postgres:
