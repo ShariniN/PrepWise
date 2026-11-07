@@ -3,6 +3,7 @@ import userAuth from '../middleware/userAuth.js';
 import requireRole from '../middleware/requireRole.js';
 import * as lecturer from '../analytics/lecturerController.js';
 import * as careers from '../analytics/careersController.js';
+import * as admin from '../analytics/adminController.js';
 
 // Express 5 forwards rejected promises from async handlers to the error handler.
 const analyticsRouter = express.Router();
@@ -21,5 +22,9 @@ analyticsRouter.get('/careers/readiness', careerRole, careers.readiness);
 analyticsRouter.get('/careers/readiness.csv', careerRole, careers.readinessCsv);
 analyticsRouter.get('/careers/coverage', careerRole, careers.coverage);
 analyticsRouter.get('/careers/skills-gap', careerRole, careers.skillsGap);
+
+const adminOnly = requireRole('university_admin');
+analyticsRouter.get('/admin/overview', adminOnly, admin.overview);
+analyticsRouter.get('/admin/evidence', adminOnly, admin.evidence);
 
 export default analyticsRouter;
