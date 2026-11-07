@@ -4,6 +4,7 @@ import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from './services/aiService.js';
 import { generateStarterCode, selectBestLanguage } from './services/codeGenerationService.js';
+import { verifyCodeServerSide } from '../services/interviewExecution.js';
 import { generateFallbackFeedback } from './services/fallbackFeedbackService.js';
 import { 
   validateAndSanitizeInput, 
@@ -436,7 +437,7 @@ export const getNextQuestion = async (req, res) => {
     const nextQuestion = interview.questions[answeredCount];
     res.json({
       success: true,
-      question: nextQuestion,
+      question: nextQuestion?.toObject ? (({ tests, ...safe }) => safe)(nextQuestion.toObject()) : (({ tests, ...safe }) => safe)(nextQuestion),
       progress: {
         current: answeredCount + 1,
         total: interview.questions.length,
@@ -452,7 +453,8 @@ export const getNextQuestion = async (req, res) => {
 export const submitAnswer = async (req, res) => {
   try {
     const { interviewId } = req.params;
-    const { questionId, responseTime, answerMode, responseText, code, language, skipped, executionResults } = req.body;
+    const { questionId, responseTime, answerMode, responseText, code, language, skipped } = req.body;
+    // req.body.executionResults is deliberately never read: only the server's own sandbox run counts.
     const userId = req.user?.userId || req.user?.id || req.user?._id;
 
     const interview = await InterviewModel.findOne({ _id: interviewId, userId });
@@ -513,6 +515,11 @@ export const submitAnswer = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Response text is required' });
     }
 
+    const verified = question.type === 'coding' && sanitizedCode
+      ? await verifyCodeServerSide({ question, code: sanitizedCode, language: validatedLanguage })
+      : { executionResults: null, forFeedback: undefined, executionSource: 'none' };
+    const executionResults = verified.executionResults;
+
     let analysis;
     try {
       analysis = await generateAIFeedback(
@@ -521,13 +528,14 @@ export const submitAnswer = async (req, res) => {
         sanitizedResponseText,
         sanitizedCode,
         validatedLanguage,
-        executionResults
+        verified.forFeedback
       );
       analysis = { ...analysis, source: 'ai' };
     } catch (error) {
       console.error('AI feedback failed:', error.message);
-      analysis = { ...generateFallbackFeedback(question.type, sanitizedResponseText, sanitizedCode, validatedLanguage, executionResults), source: 'fallback' };
+      analysis = { ...generateFallbackFeedback(question.type, sanitizedResponseText, sanitizedCode, validatedLanguage, verified.forFeedback), source: 'fallback' };
     }
+    analysis.executionSource = verified.executionSource;
 
     const response = {
       questionId,
@@ -542,7 +550,7 @@ export const submitAnswer = async (req, res) => {
       submittedAt: new Date(),
       feedback: analysis,
       skipped: false,
-      executionResults: executionResults || null
+      executionResults
     };
 
     interview.responses.push(response);

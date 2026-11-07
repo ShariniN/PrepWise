@@ -15,6 +15,8 @@ const questionSchema = new mongoose.Schema({
     enum: ['easy', 'medium', 'hard'] 
   },
   expectedDuration: { type: Number, default: 120 }, 
+  // Optional hidden tests for coding questions. Never sent to the client (see getNextQuestion).
+  tests: { type: [new mongoose.Schema({ input: String, expectedOutput: String, comparison: String }, { _id: true })], default: undefined },
   followUpQuestions: [{ type: String }],
   starterCode: {
     type: mongoose.Schema.Types.Mixed,
@@ -33,6 +35,12 @@ const executionResultsSchema = new mongoose.Schema({
   memory: { type: String },
   success: { type: Boolean, default: false },
   statusCode: { type: Number },
+  // Set by the server when it re-runs the code. Anything the browser sends for these fields is discarded.
+  verdict: { type: String },
+  serverVerified: { type: Boolean, default: false },
+  unavailable: { type: Boolean, default: false },
+  testsPassed: { type: Number },
+  testsTotal: { type: Number },
   executedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
@@ -74,7 +82,9 @@ const responseSchema = new mongoose.Schema({
     codeQuality: { type: Number, min: 0, max: 10 },
     timeEfficiency: { type: Number, min: 0, max: 10 },
     // Where this score came from. Dashboards must exclude 'fallback'.
-    source: { type: String, enum: ['tests', 'ai', 'human', 'fallback'] }
+    source: { type: String, enum: ['tests', 'ai', 'human', 'fallback'] },
+    // Whether the coding result behind this feedback was verified by the server sandbox
+    executionSource: { type: String, enum: ['server', 'unavailable', 'none'] }
   }
 });
 
