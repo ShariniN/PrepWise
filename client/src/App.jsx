@@ -25,6 +25,8 @@ import CareerReadiness from './pages/CareerReadiness'
 import AdminOverview from './pages/AdminOverview'
 import AssessmentList from './pages/AssessmentList'
 import AssessmentIntro from './pages/AssessmentIntro'
+import AssessmentSession from './pages/AssessmentSession'
+import AssessmentResults from './pages/AssessmentResults'
 
 
 
@@ -51,6 +53,8 @@ const App = () => {
         <Route path='/practice/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeQuestion/></ProtectedRoute>}/>
 
         <Route path='/assessments' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentList/></ProtectedRoute>}/>
+        <Route path='/assessments/session/:sessionId' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentSession/></ProtectedRoute>}/>
+        <Route path='/assessments/session/:sessionId/results' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentResults/></ProtectedRoute>}/>
         <Route path='/assessments/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentIntro/></ProtectedRoute>}/>
 
         {/* Staff and admin routes */}
