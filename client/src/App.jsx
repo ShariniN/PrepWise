@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import EmailVerify from './pages/EmailVerify'
@@ -35,6 +35,9 @@ import IntegrityReplay from './pages/IntegrityReplay'
 import MyCases from './pages/MyCases'
 
 
+
+// Dev-only component gallery; the import is dropped from production builds.
+const UiKit = import.meta.env.DEV ? lazy(() => import('./pages/UiKit')) : null;
 
 const App = () => {
   return (
@@ -88,6 +91,8 @@ const App = () => {
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>
+
+        {UiKit && <Route path='/ui-kit' element={<Suspense fallback={null}><UiKit/></Suspense>}/>}
 
         <Route path='*' element={<Login/>}/>
       </Routes>
