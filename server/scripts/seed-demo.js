@@ -19,7 +19,7 @@ export const randomPassword = () => `Aa1!${crypto.randomBytes(6).toString('base6
 export const studentNames = (n) =>
   Array.from({ length: n }, (_, i) => ({ first: FIRST[i % FIRST.length], last: LAST[Math.floor(i / FIRST.length) % LAST.length] }));
 
-const main = async () => {
+export const main = async () => {
   if (process.env.NODE_ENV === 'production') {
     console.error('Refusing to seed demo data: NODE_ENV is production.');
     process.exitCode = 1;

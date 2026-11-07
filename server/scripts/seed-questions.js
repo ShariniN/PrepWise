@@ -3,7 +3,7 @@
 import { connect, isMain, run } from './_db.js';
 import { loadSeedFiles, upsertSeeds } from '../services/seedQuestions.js';
 
-const main = async () => {
+export const main = async () => {
   const seeds = loadSeedFiles();
   await connect();
   const { default: questionRepo } = await import('../repositories/questionRepo.js');
