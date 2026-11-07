@@ -13,6 +13,7 @@
     "seed:demo": "node scripts/seed-demo.js",
     "seed:questions": "node scripts/seed-questions.js",
     "validate:seed": "node scripts/validate-seed.js",
+    "purge:evidence": "node scripts/purge-evidence.js",
     "build:seed": "node tests/seed-build/build.js"
   },
   "author": "",
