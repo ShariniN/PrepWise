@@ -1,20 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import { ArrowLeft } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Badge, Button, Card as UiCard, Skeleton } from '../components/ui';
 import CaseTimeline from '../components/integrity/CaseTimeline';
 import ReasonList from '../components/integrity/ReasonList';
 import CaseActions from '../components/integrity/CaseActions';
 import SimilarityPanel from '../components/integrity/SimilarityPanel';
 import { getCase, analyseSession } from '../api/integrity';
 import { errorMessage } from '../api/client';
-import { fmtDateTime, CASE_STATUS_LABELS, CASE_STATUS_STYLES, FLAGS_NOTE } from '../utils/assessment';
+import { fmtDateTime, CASE_STATUS_LABELS, FLAGS_NOTE } from '../utils/assessment';
+
+const CASE_TONES = { open: 'primary', escalated: 'warning', dismissed: 'neutral', resolved: 'success' };
 
 const Card = ({ title, children }) => (
-  <section className="bg-white rounded-2xl shadow p-6 space-y-3">
-    <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+  <UiCard as="section" className="min-w-0 space-y-4">
+    <h2 className="font-display text-xl font-semibold text-ink">{title}</h2>
     {children}
-  </section>
+  </UiCard>
 );
 
 const IntegrityCase = () => {
@@ -42,37 +46,36 @@ const IntegrityCase = () => {
   }, [data]);
 
   const shell = (children) => (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <Link to="/integrity" className="text-sm text-indigo-700 hover:underline">&larr; Review queue</Link>
+    <AppShell width="default">
+      <div className="space-y-5">
+        <Button as={Link} to="/integrity" variant="ghost" size="sm" icon={<ArrowLeft size={16} aria-hidden="true" />}>Review queue</Button>
         {children}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 
-  if (error) return shell(<p role="alert" className="bg-white rounded-2xl shadow p-6 text-red-700">{error}</p>);
-  if (!data) return shell(<p className="text-gray-500" role="status">Loading case...</p>);
+  if (error) return shell(<UiCard role="alert" tone="sand" className="text-danger-700">{error}</UiCard>);
+  if (!data) return shell(<UiCard role="status" aria-label="Loading case" className="space-y-3"><Skeleton className="h-8 w-1/3" /><Skeleton className="h-24 w-full" /></UiCard>);
   const c = data.case;
 
   return shell(
     <>
-      <section className="bg-white rounded-2xl shadow p-6 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-800 flex-1 min-w-[12rem]">{c.studentName}</h1>
-          <span className={`text-xs rounded-full px-2 py-1 ${CASE_STATUS_STYLES[c.status] || ''}`}>{CASE_STATUS_LABELS[c.status] || c.status}</span>
+      <UiCard as="section" className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="min-w-[12rem] flex-1 font-display text-3xl font-semibold text-ink">{c.studentName}</h1>
+          <Badge tone={CASE_TONES[c.status] || 'neutral'} dot>{CASE_STATUS_LABELS[c.status] || c.status}</Badge>
         </div>
-        <p className="text-sm text-gray-600">{c.studentEmail} &middot; {c.assessmentTitle} &middot; opened {fmtDateTime(c.createdAt)}</p>
-        <p className="text-sm rounded bg-slate-50 border border-slate-200 p-2 text-slate-700">{FLAGS_NOTE}</p>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <button type="button" onClick={reanalyse} disabled={busy} className="underline text-indigo-700 disabled:opacity-50">Re-check this session</button>
+        <p className="text-sm text-ink-2">{c.studentEmail} &middot; {c.assessmentTitle} &middot; opened {fmtDateTime(c.createdAt)}</p>
+        <p className="rounded-2xl bg-sand p-3 text-sm text-ink-2">{FLAGS_NOTE}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" onClick={reanalyse} loading={busy}>Re-check this session</Button>
           {replayQuestions.map((q, i) => (
-            <Link key={q} className="underline text-indigo-700" to={`/integrity/replay/${c.sessionId}?questionId=${q}`}>
+            <Button as={Link} size="sm" variant="secondary" key={q} to={`/integrity/replay/${c.sessionId}?questionId=${q}`}>
               Replay code{replayQuestions.length > 1 ? ` (question ${i + 1})` : ''}
-            </Link>
+            </Button>
           ))}
         </div>
-      </section>
+      </UiCard>
 
       <Card title="Reasons to look">
         <ReasonList reasons={c.reasons || []} technical={c.technical} />
@@ -86,8 +89,8 @@ const IntegrityCase = () => {
 
       <Card title="Student response">
         {c.studentResponse?.text
-          ? <><p className="text-sm text-gray-800 whitespace-pre-wrap">{c.studentResponse.text}</p><p className="text-xs text-gray-500">Written {fmtDateTime(c.studentResponse.at)}</p></>
-          : <p className="text-sm text-gray-600">{c.status === 'escalated' ? 'The student has not responded yet.' : 'The student can respond only after a case is escalated.'}</p>}
+          ? <><p className="whitespace-pre-wrap text-sm text-ink">{c.studentResponse.text}</p><p className="text-xs text-ink-2">Written {fmtDateTime(c.studentResponse.at)}</p></>
+          : <p className="text-sm text-ink-2">{c.status === 'escalated' ? 'The student has not responded yet.' : 'The student can respond only after a case is escalated.'}</p>}
       </Card>
 
       <Card title="Review">
@@ -96,7 +99,7 @@ const IntegrityCase = () => {
 
       {(c.history || []).length > 0 && (
         <Card title="History">
-          <ul className="text-sm text-gray-700 space-y-1">
+          <ul className="space-y-1 text-sm text-ink-2">
             {c.history.map((h, i) => (
               <li key={i}>{fmtDateTime(h.at)} - {h.action}{h.from || h.to ? ` (${h.from || 'none'} to ${h.to || 'none'})` : ''}</li>
             ))}

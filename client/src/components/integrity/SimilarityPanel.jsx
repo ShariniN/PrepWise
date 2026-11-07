@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import ConfirmDialog from '../analytics/ConfirmDialog';
+import { Button, Card, Modal, Skeleton } from '../ui';
 import { getSimilarity, runSimilarity } from '../../api/integrity';
 import { errorMessage } from '../../api/client';
 
@@ -9,7 +9,7 @@ const RangeStrip = ({ ranges }) => {
   return (
     <svg viewBox="0 0 200 14" className="w-full h-3.5" role="img"
       aria-label={`Matching lines: ${(ranges || []).map((r) => `${r.startLine} to ${r.endLine}`).join(', ') || 'none'}`}>
-      <rect x="0" y="4" width="200" height="6" rx="3" fill="#e4e3df" />
+      <rect x="0" y="4" width="200" height="6" rx="3" fill="var(--viz-grid, #e4e3df)" />
       {(ranges || []).map((r, i) => (
         <rect key={i} x={((r.startLine - 1) / max) * 200} y="2" rx="2" height="10"
           width={Math.max(3, ((r.endLine - r.startLine + 1) / max) * 200)} fill="#6250d6" />
@@ -20,10 +20,10 @@ const RangeStrip = ({ ranges }) => {
 
 const Side = ({ s, self }) => (
   <div className="min-w-0 space-y-1">
-    <p className="text-sm font-medium text-gray-800 truncate">{s.name || 'Student'}{self ? ' (this case)' : ''}</p>
-    <p className="text-xs text-gray-500 truncate">{s.email}</p>
+    <p className="truncate text-sm font-medium text-ink">{s.name || 'Student'}{self ? ' (this case)' : ''}</p>
+    <p className="truncate text-xs text-ink-2">{s.email}</p>
     <RangeStrip ranges={s.ranges} />
-    <p className="text-xs text-gray-700">Matching lines: {(s.ranges || []).map((r) => (r.startLine === r.endLine ? `${r.startLine}` : `${r.startLine}-${r.endLine}`)).join(', ') || 'none'}</p>
+    <p className="text-xs text-ink-2">Matching lines: {(s.ranges || []).map((r) => (r.startLine === r.endLine ? `${r.startLine}` : `${r.startLine}-${r.endLine}`)).join(', ') || 'none'}</p>
   </div>
 );
 
@@ -51,27 +51,27 @@ const SimilarityPanel = ({ c, stored }) => {
   };
 
   return (
-    <section className="bg-white rounded-2xl shadow p-6 space-y-3">
+    <Card as="section" className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold text-gray-800 flex-1">Similarity to other submissions</h2>
-        <button type="button" onClick={() => setConfirm(true)} className="text-sm px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300">Run similarity for this assessment</button>
+        <h2 className="font-display text-xl font-semibold text-ink flex-1">Similarity to other submissions</h2>
+        <Button size="sm" variant="secondary" onClick={() => setConfirm(true)}>Run similarity for this assessment</Button>
       </div>
-      <p className="text-xs text-gray-600">
+      <p className="text-sm text-ink-2">
         Similarity is a lead for a person to read, not proof. Short solutions and shared lecture examples look alike without any copying, and restructured copying can score low.
         Only submitted code is compared, within this cohort.
       </p>
-      {pairs === null && <p className="text-sm text-gray-500" role="status">Loading...</p>}
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {pairs === null && <div role="status" aria-label="Loading"><Skeleton className="h-10 w-full" /></div>}
+      {error && <p role="alert" className="text-sm text-danger-700">{error}</p>}
       {pairs && !error && pairs.length === 0 && (
-        <p className="text-sm text-gray-600">{stored.length ? 'No flagged pairs include this student in the latest run.' : 'No flagged pairs for this student. Run similarity after the assessment closes to compare the cohort.'}</p>
+        <p className="text-sm text-ink-2">{stored.length ? 'No flagged pairs include this student in the latest run.' : 'No flagged pairs for this student. Run similarity after the assessment closes to compare the cohort.'}</p>
       )}
       <ul className="space-y-3">
         {(pairs || []).map((p) => {
           const mineA = p.a.userId === c.userId;
           const me = mineA ? p.a : p.b; const other = mineA ? p.b : p.a;
           return (
-            <li key={p.id} className="border border-slate-200 rounded-lg p-3 space-y-2">
-              <p className="text-sm text-gray-700">
+            <li key={p.id} className="rounded-2xl border border-line bg-paper p-4 space-y-3">
+              <p className="text-sm text-ink-2">
                 {Math.round(p.containment * 100)}% of the shorter submission matches ({p.sharedFingerprints} shared fragments; overlap {Math.round(p.jaccard * 100)}%). Question {String(p.questionId).slice(-4)}.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -83,17 +83,21 @@ const SimilarityPanel = ({ c, stored }) => {
         })}
       </ul>
       {summary && (
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-ink-2">
           Last run: {summary.pairsStored} pairs stored, {summary.flaggedPairs} flagged, {summary.sessionsFlagged} sessions listed. {summary.limits}
         </p>
       )}
       {confirm && (
-        <ConfirmDialog title="Run similarity" confirmLabel="Run" busy={busy} onConfirm={run} onCancel={() => setConfirm(false)}>
-          <p>This compares the last submitted code of every student in the assessment and replaces the stored pairs. It can add a reason to other students&apos; cases.</p>
-          <p className="text-gray-600">If students are still sitting, partial work is compared. Best run after it closes.</p>
-        </ConfirmDialog>
+        <Modal open onClose={() => setConfirm(false)} title="Run similarity"
+          footer={(<><Button variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button><Button loading={busy} onClick={run}>Run</Button></>)}>
+          <div className="space-y-2 text-sm">
+            <p className="text-ink">This compares the last submitted code of every student in the assessment and replaces the stored pairs. It can add a reason to other students&apos; cases.</p>
+            <p className="text-ink-2">If students are still sitting, partial work is compared. Best run after it closes.</p>
+          </div>
+        </Modal>
       )}
-    </section>
+
+    </Card>
   );
 };
 

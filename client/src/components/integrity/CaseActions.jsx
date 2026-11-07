@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import ConfirmDialog from '../analytics/ConfirmDialog';
+import { Button, Field, Modal, Select, Textarea } from '../ui';
 import { updateCase } from '../../api/integrity';
 import { errorMessage } from '../../api/client';
 import { CASE_TRANSITIONS, CASE_STATUS_LABELS, OUTCOMES } from '../../utils/assessment';
@@ -40,34 +40,45 @@ const CaseActions = ({ c, onUpdated }) => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium text-gray-700" htmlFor="case-notes">Private notes (staff only, never shown to the student)</label>
-        <textarea id="case-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} maxLength={4000}
-          className="w-full mt-1 border border-gray-300 rounded p-2 text-sm" />
-        <button type="button" onClick={saveNotes} disabled={savingNotes || notes === (c.notes || '')}
-          className="mt-1 text-xs px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50">{savingNotes ? 'Saving...' : 'Save notes'}</button>
+      <div className="space-y-2">
+        <Field label="Private notes (staff only, never shown to the student)">
+          {(p) => <Textarea {...p} value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} maxLength={4000} />}
+        </Field>
+        <Button size="sm" variant="secondary" onClick={saveNotes} loading={savingNotes} disabled={notes === (c.notes || '')}>{savingNotes ? 'Saving...' : 'Save notes'}</Button>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-sm text-gray-600">Move case:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-ink-2">Move case:</span>
         {(CASE_TRANSITIONS[c.status] || []).map((s) => (
-          <button key={s} type="button" onClick={() => { setErr(''); setTarget(s); }}
-            className="text-sm px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700">{VERBS[s]}</button>
+          <Button key={s} size="sm" variant={s === 'escalated' ? 'primary' : 'secondary'} onClick={() => { setErr(''); setTarget(s); }}>{VERBS[s]}</Button>
         ))}
       </div>
-      {c.outcome && <p className="text-sm text-gray-700">Outcome recorded: <strong>{OUTCOMES[c.outcome] || c.outcome}</strong>. An outcome is a record for the institution; it never changes a mark.</p>}
+      {c.outcome && <p className="text-sm text-ink-2">Outcome recorded: <strong className="text-ink">{OUTCOMES[c.outcome] || c.outcome}</strong>. An outcome is a record for the institution; it never changes a mark.</p>}
       {target && (
-        <ConfirmDialog title={VERBS[target]} confirmLabel={VERBS[target]} busy={busy} onConfirm={move} onCancel={() => setTarget(null)}>
-          {CONFIRM[target] && <p>{CONFIRM[target]}</p>}
-          {target === 'resolved' && (
-            <label className="block text-sm">Outcome (required)
-              <select value={outcome} onChange={(e) => setOutcome(e.target.value)} className="mt-1 w-full border border-gray-300 rounded px-2 py-1.5">
-                {Object.entries(OUTCOMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-              <span className="block text-xs text-gray-500 mt-1">A record only. It does not change the student&apos;s mark.</span>
-            </label>
+        <Modal
+          open
+          onClose={() => setTarget(null)}
+          title={VERBS[target]}
+          footer={(
+            <>
+              <Button variant="ghost" onClick={() => setTarget(null)}>Cancel</Button>
+              <Button loading={busy} onClick={move}>{VERBS[target]}</Button>
+            </>
           )}
-          {err && <p role="alert" className="text-red-700">{err}</p>}
-        </ConfirmDialog>
+        >
+          <div className="space-y-4 text-sm">
+            {CONFIRM[target] && <p className="text-ink-2">{CONFIRM[target]}</p>}
+            {target === 'resolved' && (
+              <Field label="Outcome (required)" hint="A record only. It does not change the student's mark.">
+                {(p) => (
+                  <Select {...p} value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+                    {Object.entries(OUTCOMES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </Select>
+                )}
+              </Field>
+            )}
+            {err && <p role="alert" className="text-danger-700">{err}</p>}
+          </div>
+        </Modal>
       )}
     </div>
   );

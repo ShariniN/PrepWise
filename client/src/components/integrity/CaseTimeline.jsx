@@ -55,7 +55,7 @@ const CaseTimeline = ({ items, truncated }) => {
     }
     if (it.kind === 'editing') {
       const x1 = x(it.at); const x2 = Math.max(x(it.until ?? it.at), x1 + 3);
-      return <rect {...common} x={x1} y={lane('editing') - 7} width={x2 - x1} height={14} rx={3} fill={COLORS.editing} fillOpacity={it.pasteCount ? 1 : 0.55} stroke="#fff" strokeWidth={1} />;
+      return <rect {...common} x={x1} y={lane('editing') - 7} width={x2 - x1} height={14} rx={3} fill={COLORS.editing} fillOpacity={it.pasteCount ? 1 : 0.55} stroke="var(--surface, #fff)" strokeWidth={1} />;
     }
     const cx = x(it.at); const cy = lane('attempt');
     return <path {...common} d={`M${cx} ${cy - 7} L${cx + 7} ${cy} L${cx} ${cy + 7} L${cx - 7} ${cy} Z`} fill={it.type === 'submit' ? COLORS.attempt : '#fff'} stroke={COLORS.attempt} strokeWidth={2} />;
@@ -63,7 +63,8 @@ const CaseTimeline = ({ items, truncated }) => {
 
   return (
     <div className="space-y-2">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="group" aria-label="Session timeline">
+      <div className="viz-root overflow-x-auto rounded-2xl border border-line bg-surface p-3">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full min-w-[640px]" role="group" aria-label="Session timeline">
         {ticks.map((t) => (
           <g key={t}>
             <line x1={x(t)} x2={x(t)} y1={8} y2={H - 30} stroke={COLORS.grid} />
@@ -78,25 +79,25 @@ const CaseTimeline = ({ items, truncated }) => {
         ))}
         {items.map((it, i) => (it.kind === 'editing' ? null : mark(it, i)))}
         {items.map((it, i) => (it.kind === 'editing' ? mark(it, i) : null))}
-      </svg>
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Legend">
+      </svg></div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2" aria-label="Legend">
         <li><span style={{ background: COLORS.integrity }} className="inline-block w-2.5 h-2.5 rounded-full mr-1" />Page / clipboard event (larger = paste of 500+ characters)</li>
         <li><span style={{ borderColor: COLORS.technical }} className="inline-block w-2.5 h-2.5 rounded-full mr-1 border-2" />Technical (connection), never a reason</li>
         <li><span style={{ background: COLORS.editing }} className="inline-block w-3 h-2.5 rounded-sm mr-1" />Editing batch (solid = contains a paste)</li>
         <li><span style={{ borderColor: COLORS.attempt }} className="inline-block w-2.5 h-2.5 rotate-45 mr-1 border-2" />Run (hollow) or submit (filled)</li>
         <li>Dashed line: deadline</li>
       </ul>
-      <p className="text-sm text-gray-800 min-h-[1.25rem]" aria-live="polite">
+      <p className="min-h-[1.25rem] text-sm text-ink" aria-live="polite">
         {active ? `${fmtOffset(active.at)} - ${describe(active)}` : 'Hover or focus a mark for details.'}
       </p>
-      {truncated && <p className="text-xs text-amber-800">The timeline was cut at 3,000 items; very early or late activity may be missing.</p>}
+      {truncated && <p className="text-xs text-sun-700">The timeline was cut at 3,000 items; very early or late activity may be missing.</p>}
       <details className="text-sm">
-        <summary className="cursor-pointer text-indigo-700">Table view</summary>
+        <summary className="cursor-pointer font-semibold text-primary-700">Table view</summary>
         <div className="max-h-64 overflow-auto mt-2">
           <table className="w-full text-xs">
-            <thead><tr className="text-left text-gray-500"><th className="pr-3">Time</th><th>What</th></tr></thead>
+            <thead><tr className="text-left text-ink-2"><th className="pr-3">Time</th><th>What</th></tr></thead>
             <tbody>
-              {items.map((it, i) => (<tr key={i} className="border-t"><td className="pr-3 font-mono">{fmtOffset(it.at)}</td><td>{describe(it)}</td></tr>))}
+              {items.map((it, i) => (<tr key={i} className="border-t border-line"><td className="pr-3 font-mono">{fmtOffset(it.at)}</td><td>{describe(it)}</td></tr>))}
             </tbody>
           </table>
         </div>
