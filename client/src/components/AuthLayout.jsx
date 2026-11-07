@@ -25,7 +25,7 @@ const AuthLayout = ({ title, subtitle, footer, children }) => (
       </div>
     </div>
 
-    <aside className="relative m-3 hidden overflow-hidden rounded-[2.5rem] bg-ink-deep p-12 text-white lg:flex lg:flex-col lg:justify-between" aria-hidden="true">
+    <aside className="relative m-3 hidden overflow-hidden rounded-[2.5rem] bg-ink-deep p-10 text-white lg:flex lg:flex-col lg:justify-between lg:max-h-[calc(100vh-1.5rem)] lg:sticky lg:top-3" aria-hidden="true">
       <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-primary-600/50 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-sun-400/25 blur-3xl" />
       <div className="relative">
@@ -33,7 +33,7 @@ const AuthLayout = ({ title, subtitle, footer, children }) => (
         <h2 className="mt-4 max-w-md font-display text-5xl font-semibold leading-[1.02] tracking-tight">Know who is ready - before the interview does.</h2>
       </div>
       <div className="relative mx-auto my-10 w-full max-w-sm space-y-4">
-        <div className="glass animate-float-slow rounded-3xl p-5 text-ink">
+        <div className="glass !bg-white/90 animate-float-slow rounded-3xl p-5 text-ink">
           <div className="flex items-center gap-5">
             <Gauge value={82} size={96} />
             <ul className="m-0 list-none space-y-2 p-0 text-xs text-ink-2">
@@ -43,7 +43,7 @@ const AuthLayout = ({ title, subtitle, footer, children }) => (
             </ul>
           </div>
         </div>
-        <div className="glass ml-10 animate-float rounded-3xl p-4 text-ink [animation-delay:-2s]">
+        <div className="glass !bg-white/90 ml-10 animate-float rounded-3xl p-4 text-ink [animation-delay:-2s]">
           <p className="mb-2 text-xs font-semibold">Cohort heatmap</p>
           <Heatmap />
         </div>
