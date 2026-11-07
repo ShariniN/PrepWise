@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { Button, Input, Select, Table, TBody, THead, Td, Th, Tr } from '../ui';
 import { putAccommodation, deleteAccommodation } from '../../api/assessments';
 import { errorMessage } from '../../api/client';
 import { ALL_SIGNALS, SIGNAL_LABELS } from '../../utils/assessment';
@@ -27,31 +28,36 @@ const Row = ({ acc, student, assessmentId, locked, onSaved }) => {
   const toggle = (s) => setOff((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
 
   return (
-    <tr className="border-t align-top">
-      <td className="py-2 pr-3 text-sm"><span className="font-medium">{student?.name || acc.userId}</span><br /><span className="text-xs text-gray-500">{student?.email}</span></td>
-      <td className="pr-3">
-        <input type="number" min="0" max="200" value={pct} onChange={(e) => setPct(e.target.value)} disabled={locked}
-          className="w-20 border border-gray-300 rounded px-2 py-1 text-sm" aria-label="Extra time percent" /> %
-      </td>
-      <td className="pr-3">
+    <Tr className="align-top">
+      <Td><span className="font-medium">{student?.name || acc.userId}</span><br /><span className="text-xs text-ink-2">{student?.email}</span></Td>
+      <Td>
+        <div className="flex items-center gap-1.5">
+          <Input type="number" min="0" max="200" value={pct} onChange={(e) => setPct(e.target.value)} disabled={locked}
+            className="w-24" aria-label="Extra time percent" /> %
+        </div>
+      </Td>
+      <Td>
         <details>
-          <summary className="text-xs cursor-pointer text-indigo-700">{off.length} signal{off.length === 1 ? '' : 's'} off</summary>
-          <div className="mt-1 grid gap-0.5">
+          <summary className="cursor-pointer text-xs font-semibold text-primary-700">{off.length} signal{off.length === 1 ? '' : 's'} off</summary>
+          <div className="mt-2 grid gap-1">
             {ALL_SIGNALS.map((s) => (
-              <label key={s} className="text-xs flex items-center gap-1">
-                <input type="checkbox" checked={off.includes(s)} onChange={() => toggle(s)} disabled={locked} /> {SIGNAL_LABELS[s]}
+              <label key={s} className="flex items-center gap-2 text-xs text-ink">
+                <input type="checkbox" className="accent-primary-600" checked={off.includes(s)} onChange={() => toggle(s)} disabled={locked} /> {SIGNAL_LABELS[s]}
               </label>
             ))}
           </div>
         </details>
-      </td>
-      <td className="pr-3"><input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} disabled={locked}
-        className="w-full min-w-[8rem] border border-gray-300 rounded px-2 py-1 text-sm" aria-label="Note" /></td>
-      <td className="whitespace-nowrap space-x-1">
-        <button type="button" disabled={busy || locked} onClick={save} className="text-xs px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50">Save</button>
-        <button type="button" disabled={busy || locked} onClick={remove} className="text-xs px-2 py-1 rounded bg-gray-200 disabled:opacity-50">Remove</button>
-      </td>
-    </tr>
+      </Td>
+      <Td>
+        <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} disabled={locked} className="min-w-[10rem]" aria-label="Note" />
+      </Td>
+      <Td className="whitespace-nowrap">
+        <div className="flex gap-2">
+          <Button size="sm" disabled={busy || locked} onClick={save}>Save</Button>
+          <Button size="sm" variant="secondary" disabled={busy || locked} onClick={remove}>Remove</Button>
+        </div>
+      </Td>
+    </Tr>
   );
 };
 
@@ -73,24 +79,22 @@ const AccommodationsTable = ({ assessment, students, locked, onChanged }) => {
   };
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-gray-600">Applies to attempts started afterwards. For a student who is already sitting, use Extend time on the Sessions panel. Turning a signal off means it is not recorded for that student at all.</p>
+    <div className="space-y-3">
+      <p className="text-sm text-ink-2">Applies to attempts started afterwards. For a student who is already sitting, use Extend time on the Sessions panel. Turning a signal off means it is not recorded for that student at all.</p>
       {accs.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead><tr className="text-left text-xs text-gray-500"><th>Student</th><th>Extra time</th><th>Signals</th><th>Note</th><th /></tr></thead>
-            <tbody>{accs.map((a) => <Row key={`${a.userId}-${a.extraTimePercent}-${(a.disabledSignals || []).join()}`} acc={a} student={byId[a.userId]}
-              assessmentId={assessment.id} locked={locked} onSaved={onChanged} />)}</tbody>
-          </table>
-        </div>
+        <Table>
+          <THead><Tr><Th>Student</Th><Th>Extra time</Th><Th>Signals</Th><Th>Note</Th><Th><span className="sr-only">Actions</span></Th></Tr></THead>
+          <TBody>{accs.map((a) => <Row key={`${a.userId}-${a.extraTimePercent}-${(a.disabledSignals || []).join()}`} acc={a} student={byId[a.userId]}
+            assessmentId={assessment.id} locked={locked} onSaved={onChanged} />)}</TBody>
+        </Table>
       )}
       {!locked && (
-        <div className="flex gap-2 items-center">
-          <select value={pick} onChange={(e) => setPick(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm" aria-label="Student">
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={pick} onChange={(e) => setPick(e.target.value)} className="w-auto min-w-[14rem]" aria-label="Student">
             <option value="">Add a student...</option>
             {available.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.email})</option>)}
-          </select>
-          <button type="button" disabled={!pick || busy} onClick={add} className="text-xs px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50">Add</button>
+          </Select>
+          <Button size="sm" variant="secondary" disabled={!pick} loading={busy} onClick={add}>Add</Button>
         </div>
       )}
     </div>

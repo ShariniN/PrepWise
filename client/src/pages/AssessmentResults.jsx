@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import NavBar from '../components/NavBar';
+import { ArrowLeft } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Button, Card, Skeleton } from '../components/ui';
 import VerdictBadge from '../components/VerdictBadge';
 import { getSessionResults } from '../api/assessments';
 import { errorMessage, errorCode } from '../api/client';
@@ -27,32 +29,34 @@ const AssessmentResults = () => {
   }, [sessionId]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <Link to="/assessments" className="text-sm text-indigo-700 hover:underline">&larr; All assessments</Link>
-        <section className="bg-white rounded-2xl shadow p-6 space-y-3">
-          <h1 className="text-2xl font-bold text-gray-800">Results</h1>
-          {error && <p role="status" className="text-sm text-gray-700">{error}</p>}
-          {!error && !results && <p className="text-gray-500" role="status">Loading...</p>}
-          {results && (
-            <ul className="divide-y">
-              {results.map((r) => (
-                <li key={r.questionId} className="py-3 flex flex-wrap items-center gap-3">
-                  <span className="flex-1 min-w-[10rem] text-gray-800">{r.index + 1}. {r.title}</span>
-                  {!r.answered ? <span className="text-sm text-gray-500">Not answered</span>
-                    : r.pendingReview ? <VerdictBadge verdict="pending_review" size="sm" />
-                    : <>
-                        <VerdictBadge verdict={r.verdict} size="sm" />
-                        {typeof r.score === 'number' && <span className="text-sm font-semibold">{r.score}/100</span>}
-                      </>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </main>
-    </div>
+    <AppShell
+      width="narrow"
+      eyebrow="Assessment"
+      title="Results"
+      actions={<Button as={Link} to="/assessments" variant="ghost" size="sm" icon={<ArrowLeft size={16} aria-hidden="true" />}>All assessments</Button>}
+    >
+      <Card>
+        {error && <p role="status" className="text-sm text-ink-2">{error}</p>}
+        {!error && !results && (
+          <div role="status" aria-label="Loading results" className="space-y-3"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+        )}
+        {results && (
+          <ul className="divide-y divide-line">
+            {results.map((r) => (
+              <li key={r.questionId} className="flex flex-wrap items-center gap-3 py-3.5">
+                <span className="min-w-[10rem] flex-1 text-ink">{r.index + 1}. {r.title}</span>
+                {!r.answered ? <span className="text-sm text-ink-2">Not answered</span>
+                  : r.pendingReview ? <VerdictBadge verdict="pending_review" size="sm" />
+                  : <>
+                      <VerdictBadge verdict={r.verdict} size="sm" />
+                      {typeof r.score === 'number' && <span className="text-sm font-semibold text-ink">{r.score}/100</span>}
+                    </>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </AppShell>
   );
 };
 

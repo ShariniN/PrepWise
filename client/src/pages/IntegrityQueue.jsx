@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import NavBar from '../components/NavBar';
+import { ShieldCheck } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Badge, Button, Card, Chip, EmptyState, Field, Select, Skeleton } from '../components/ui';
 import ReasonChips from '../components/integrity/ReasonChips';
 import { listCases } from '../api/integrity';
 import { listAssessments } from '../api/assessments';
 import { errorMessage } from '../api/client';
-import { fmtDateTime, CASE_STATUS_LABELS, CASE_STATUS_STYLES, FLAGS_NOTE, OUTCOMES } from '../utils/assessment';
+import { fmtDateTime, CASE_STATUS_LABELS, FLAGS_NOTE, OUTCOMES } from '../utils/assessment';
+
+const CASE_TONES = { open: 'primary', escalated: 'warning', dismissed: 'neutral', resolved: 'success' };
 
 const STATUSES = ['open', 'escalated', 'dismissed', 'resolved'];
 
@@ -50,57 +54,62 @@ const IntegrityQueue = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <section className="bg-white rounded-2xl shadow p-6 space-y-3">
-          <h1 className="text-2xl font-bold text-gray-800">Integrity review</h1>
-          <p className="text-sm text-gray-600">{FLAGS_NOTE}</p>
-          <div className="flex flex-wrap items-end gap-4">
-            <fieldset className="flex flex-wrap gap-3">
-              <legend className="text-xs text-gray-600 mb-1">Status</legend>
-              {STATUSES.map((s) => (
-                <label key={s} className="text-sm flex items-center gap-1">
-                  <input type="checkbox" checked={statuses.includes(s)} onChange={() => toggle(s)} /> {CASE_STATUS_LABELS[s]}
-                </label>
-              ))}
-            </fieldset>
-            <label className="text-xs text-gray-600 flex flex-col gap-1">Assessment
-              <select value={assessmentId} onChange={(e) => update({ assessmentId: e.target.value })} className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white">
+    <AppShell
+      eyebrow="Lecturer"
+      title="Integrity review"
+      subtitle={FLAGS_NOTE}
+    >
+      <div className="space-y-5">
+        <Card className="flex flex-wrap items-end gap-6">
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="mb-2 text-xs font-medium text-ink-2">Status</legend>
+            {STATUSES.map((s) => (
+              <Chip key={s} selected={statuses.includes(s)} onClick={() => toggle(s)}>{CASE_STATUS_LABELS[s]}</Chip>
+            ))}
+          </fieldset>
+          <Field label="Assessment" className="min-w-[14rem]">
+            {(p) => (
+              <Select {...p} value={assessmentId} onChange={(e) => update({ assessmentId: e.target.value })}>
                 <option value="">All assessments</option>
                 {assessments.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
-              </select>
-            </label>
-          </div>
-        </section>
+              </Select>
+            )}
+          </Field>
+        </Card>
 
-        <section className="bg-white rounded-2xl shadow">
-          {cases === null && <p className="p-6 text-gray-500" role="status">Loading cases...</p>}
-          {error && <p role="alert" className="p-4 text-sm text-red-700">{error} <button type="button" className="underline ml-2" onClick={() => setTick((n) => n + 1)}>Retry</button></p>}
-          {cases && !error && cases.length === 0 && <p className="p-6 text-gray-500">No cases match. A case exists only when a session has something a reviewer may want to read.</p>}
+        <Card className="p-2 sm:p-3">
+          {cases === null && <div role="status" aria-label="Loading cases" className="space-y-3 p-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>}
+          {error && (
+            <p role="alert" className="flex flex-wrap items-center gap-3 p-4 text-sm text-danger-700">
+              {error} <Button size="sm" variant="secondary" onClick={() => setTick((n) => n + 1)}>Retry</Button>
+            </p>
+          )}
+          {cases && !error && cases.length === 0 && (
+            <EmptyState icon={<ShieldCheck size={24} aria-hidden="true" />} title="No cases to review" description="No cases match. A case exists only when a session has something a reviewer may want to read." className="border-0" />
+          )}
           {cases && cases.length > 0 && (
-            <ul className="divide-y">
+            <ul className="divide-y divide-line">
               {cases.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/integrity/${c.id}`} className="block p-4 hover:bg-gray-50 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-gray-800">{c.studentName}</span>
-                      <span className="text-xs text-gray-500">{c.studentEmail}</span>
+                  <Link to={`/integrity/${c.id}`} className="block space-y-2 rounded-2xl p-4 transition hover:bg-primary-50/60">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-semibold text-ink">{c.studentName}</span>
+                      <span className="text-xs text-ink-2">{c.studentEmail}</span>
                       <span className="flex-1" />
-                      {c.hasStudentResponse && <span className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">Student responded</span>}
-                      <span className={`text-xs rounded-full px-2 py-0.5 ${CASE_STATUS_STYLES[c.status] || ''}`}>{CASE_STATUS_LABELS[c.status] || c.status}</span>
-                      {c.outcome && <span className="text-xs text-gray-600">{OUTCOMES[c.outcome] || c.outcome}</span>}
+                      {c.hasStudentResponse && <Badge tone="primary">Student responded</Badge>}
+                      <Badge tone={CASE_TONES[c.status] || 'neutral'} dot>{CASE_STATUS_LABELS[c.status] || c.status}</Badge>
+                      {c.outcome && <span className="text-xs text-ink-2">{OUTCOMES[c.outcome] || c.outcome}</span>}
                     </div>
-                    <div className="text-sm text-gray-600">{c.assessmentTitle} &middot; updated {fmtDateTime(c.updatedAt)}</div>
+                    <div className="text-sm text-ink-2">{c.assessmentTitle} &middot; updated {fmtDateTime(c.updatedAt)}</div>
                     <ReasonChips codes={c.reasonCodes} />
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </section>
-      </main>
-    </div>
+        </Card>
+      </div>
+    </AppShell>
   );
 };
 

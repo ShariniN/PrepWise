@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import NavBar from '../components/NavBar';
-import ConfirmDialog from '../components/analytics/ConfirmDialog';
+import { Clock } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Button, Card, Modal, Skeleton } from '../components/ui';
 import QuestionNavigator from '../components/assessment/QuestionNavigator';
 import SessionQuestion from '../components/assessment/SessionQuestion';
 import { ReturnedBanner, OfflineBanner, TimeWarning, TimeUpPanel } from '../components/assessment/SessionBanners';
@@ -112,21 +113,21 @@ const ActiveSession = ({ initial, sessionId }) => {
           <TimeUpPanel finished={phase === 'ended' || finishCalled.current}
             releaseResults={session.releaseResults} resultsHref={`/assessments/session/${sessionId}/results`} listHref="/assessments" />
         ) : (
-          <div className="rounded-2xl bg-white shadow p-6 text-center space-y-3">
-            <h2 className="text-xl font-bold text-gray-800">Your attempt is submitted</h2>
-            <p className="text-sm text-gray-700">
+          <Card className="mx-auto max-w-xl space-y-3 text-center">
+            <h2 className="font-display text-2xl font-semibold text-ink">Your attempt is submitted</h2>
+            <p className="text-sm text-ink-2">
               {session.releaseResults
                 ? 'You can look at your results now.'
                 : 'Your lecturer will release results later. There is nothing more to do.'}
             </p>
-            <div className="flex justify-center gap-4 text-sm">
-              {session.releaseResults && <Link className="text-indigo-700 underline" to={`/assessments/session/${sessionId}/results`}>View results</Link>}
-              <Link className="text-indigo-700 underline" to="/assessments">Back to assessments</Link>
+            <div className="flex flex-wrap justify-center gap-3 pt-1">
+              {session.releaseResults && <Button as={Link} to={`/assessments/session/${sessionId}/results`}>View results</Button>}
+              <Button as={Link} to="/assessments" variant="secondary">Back to assessments</Button>
             </div>
-          </div>
+          </Card>
         )}
         {phase === 'ended' && endedCode === 'ASSESSMENT_CLOSED' && (
-          <p className="text-sm text-gray-600 text-center">Your lecturer closed this assessment. Answers you had already saved were kept.</p>
+          <p className="text-sm text-ink-2 text-center">Your lecturer closed this assessment. Answers you had already saved were kept.</p>
         )}
       </div>
     );
@@ -134,13 +135,16 @@ const ActiveSession = ({ initial, sessionId }) => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl shadow p-4 flex flex-wrap items-center gap-3 sticky top-0 z-10">
-        <h1 className="font-bold text-gray-800 flex-1 min-w-[10rem]">{session.title}</h1>
-        <div className={`font-mono text-lg font-semibold ${lowTime ? 'text-red-700' : 'text-gray-800'}`} role="timer" aria-label="Time remaining">
+      <div className="sticky top-2 z-10 flex items-center gap-2 rounded-3xl border border-line bg-surface/95 p-3 pl-5 shadow-card backdrop-blur sm:top-4">
+        <h1 className="min-w-0 flex-1 truncate font-display text-base sm:text-lg font-semibold text-ink">{session.title}</h1>
+        <div
+          className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 font-mono text-lg sm:px-4 sm:text-xl font-semibold tabular-nums ${lowTime ? 'bg-sun-100 text-sun-700' : 'bg-sand text-ink'}`}
+          role="timer" aria-label="Time remaining"
+        >
+          <Clock size={18} aria-hidden="true" />
           {fmtClock(remainingSeconds)}
         </div>
-        <button type="button" onClick={() => { setFinishError(''); setConfirm(true); }}
-          className="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-semibold hover:bg-gray-900">Finish</button>
+        <Button variant="dark" onClick={() => { setFinishError(''); setConfirm(true); }}>Finish</Button>
       </div>
 
       <TimeWarning minutes={warn} onDismiss={() => setWarn(0)} />
@@ -149,7 +153,7 @@ const ActiveSession = ({ initial, sessionId }) => {
 
       <div className="flex flex-wrap items-center gap-3">
         <QuestionNavigator questions={questions} current={current} submitted={submitted} onSelect={setCurrent} />
-        <span className="text-xs text-gray-500">Question {current + 1} of {questions.length}</span>
+        <span className="text-sm text-ink-2">Question {current + 1} of {questions.length}</span>
       </div>
 
       {q && (
@@ -158,24 +162,33 @@ const ActiveSession = ({ initial, sessionId }) => {
       )}
 
       <div className="flex justify-between">
-        <button type="button" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)}
-          className="px-3 py-2 rounded-lg bg-white border text-sm disabled:opacity-40">Previous</button>
-        <button type="button" disabled={current >= questions.length - 1} onClick={() => setCurrent((c) => c + 1)}
-          className="px-3 py-2 rounded-lg bg-white border text-sm disabled:opacity-40">Next</button>
+        <Button variant="secondary" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)}>Previous</Button>
+        <Button variant="secondary" disabled={current >= questions.length - 1} onClick={() => setCurrent((c) => c + 1)}>Next</Button>
       </div>
 
       {confirm && (
-        <ConfirmDialog title="Finish this attempt?" confirmLabel="Finish and submit" busy={finishing}
-          onConfirm={finish} onCancel={() => setConfirm(false)}>
-          <p>You will not be able to change your answers afterwards.</p>
-          {missing.length > 0 && (
-            <p className="text-amber-800">
-              No submitted answer yet for: {missing.map((m) => `question ${m.index + 1}`).join(', ')}.
-              Code that is only auto-saved as a draft is kept, but pressing Submit on a question makes sure it is marked.
-            </p>
+        <Modal
+          open
+          onClose={() => setConfirm(false)}
+          title="Finish this attempt?"
+          footer={(
+            <>
+              <Button variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>
+              <Button loading={finishing} onClick={finish}>Finish and submit</Button>
+            </>
           )}
-          {finishError && <p role="alert" className="text-red-700">{finishError}</p>}
-        </ConfirmDialog>
+        >
+          <div className="space-y-3 text-sm text-ink-2">
+            <p>You will not be able to change your answers afterwards.</p>
+            {missing.length > 0 && (
+              <p className="rounded-2xl bg-sun-50 p-3 text-ink">
+                No submitted answer yet for: {missing.map((m) => `question ${m.index + 1}`).join(', ')}.
+                Code that is only auto-saved as a draft is kept, but pressing Submit on a question makes sure it is marked.
+              </p>
+            )}
+            {finishError && <p role="alert" className="text-danger-700">{finishError}</p>}
+          </div>
+        </Modal>
       )}
     </div>
   );
@@ -200,27 +213,30 @@ const AssessmentSession = () => {
   }, [sessionId]);
 
   let body;
-  if (error) body = <div role="alert" className="bg-white rounded-2xl shadow p-6 text-red-700">{error}</div>;
-  else if (!session) body = <p className="text-gray-500" role="status">Loading your attempt...</p>;
-  else if (session.status === 'submitted' || session.remainingSeconds <= 0) {
+  if (error) {
     body = (
-      <div className="bg-white rounded-2xl shadow p-6 text-center space-y-2">
-        <h1 className="text-xl font-bold text-gray-800">This attempt has ended</h1>
-        <p className="text-sm text-gray-700">Your saved answers were submitted.</p>
-        <div className="flex justify-center gap-4 text-sm">
-          {session.releaseResults && <Link className="text-indigo-700 underline" to={`/assessments/session/${sessionId}/results`}>View results</Link>}
-          <Link className="text-indigo-700 underline" to="/assessments">Back to assessments</Link>
+      <Card role="alert" tone="sand" className="mx-auto max-w-xl space-y-3 text-center">
+        <p className="text-danger-700">{error}</p>
+        <Button as={Link} to="/assessments" variant="secondary">Back to assessments</Button>
+      </Card>
+    );
+  } else if (!session) {
+    body = <Card role="status" aria-label="Loading your attempt" className="space-y-3"><Skeleton className="h-8 w-1/2" /><Skeleton className="h-64 w-full" /></Card>;
+  } else if (session.status === 'submitted' || session.remainingSeconds <= 0) {
+    body = (
+      <Card className="mx-auto max-w-xl space-y-3 text-center">
+        <h1 className="font-display text-2xl font-semibold text-ink">This attempt has ended</h1>
+        <p className="text-sm text-ink-2">Your saved answers were submitted.</p>
+        <div className="flex flex-wrap justify-center gap-3 pt-1">
+          {session.releaseResults && <Button as={Link} to={`/assessments/session/${sessionId}/results`}>View results</Button>}
+          <Button as={Link} to="/assessments" variant="secondary">Back to assessments</Button>
         </div>
-      </div>
+      </Card>
     );
   } else body = <ActiveSession initial={session} sessionId={sessionId} />;
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4">{body}</main>
-    </div>
-  );
+  // Focused exam layout: no site navigation while the attempt is on screen.
+  return <AppShell nav={false} width="wide">{body}</AppShell>;
 };
 
 export default AssessmentSession;
