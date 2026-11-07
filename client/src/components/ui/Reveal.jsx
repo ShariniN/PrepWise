@@ -10,7 +10,8 @@ const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(pre
  * Props: as, delay (ms), stagger (ms), threshold, className. Disabled by prefers-reduced-motion.
  * Use sparingly: hero, section headers, grids. Not for dense app tables or forms.
  */
-const Reveal = ({ as: Tag = 'div', delay = 0, stagger, threshold = 0.15, className, style, children, ...rest }) => {
+const Reveal = ({ as = 'div', delay = 0, stagger, threshold = 0.15, className, style, children, ...rest }) => {
+  const Tag = as;
   const ref = useRef(null);
   const [shown, setShown] = useState(() => reduced() || typeof IntersectionObserver === 'undefined');
 

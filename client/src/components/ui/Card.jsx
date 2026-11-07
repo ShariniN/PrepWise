@@ -9,7 +9,8 @@ const TONES = {
 };
 
 /** Rounded-3xl surface. Props: tone (surface|sand|primary|ink), padded (default true), lift (hover raise). */
-const Card = React.forwardRef(function Card({ as: Tag = 'div', tone = 'surface', padded = true, lift = false, className, ...rest }, ref) {
+const Card = React.forwardRef(function Card({ as = 'div', tone = 'surface', padded = true, lift = false, className, ...rest }, ref) {
+  const Tag = as;
   return (
     <Tag
       ref={ref}
