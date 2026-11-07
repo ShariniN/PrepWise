@@ -4,6 +4,10 @@ import { Mic, MicOff, Play, Pause, ChevronRight, Clock, User, FileText, Brain,
   Trophy, Download, Type, Headphones, Upload, FileCheck, Target, TrendingUp,
   Zap, MessageCircle } from 'lucide-react';
 import NavBar from "../components/NavBar";
+import CodeEditor from '../components/CodeEditor';
+import VerdictBadge from '../components/VerdictBadge';
+import UnavailableNotice from '../components/UnavailableNotice';
+import ExecutionInfo from '../components/ExecutionInfo';
 
 // Custom hooks
 import { useInterview } from '../hooks/useInterview';
@@ -883,7 +887,7 @@ const MockInterviewSystem = () => {
                   <Code className="w-5 h-5 text-purple-600" />
                   Code Editor
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-normal">
-                    JDoodle Powered
+                    Sandboxed execution
                   </span>
                 </h3>
                 <div className="flex items-center gap-3">
@@ -921,13 +925,12 @@ const MockInterviewSystem = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Your Code:</label>
-                  <textarea
+                  <CodeEditor
                     value={codeEditor.code}
-                    onChange={(e) => codeEditor.setCode(e.target.value)}
-                    className="w-full h-64 px-4 py-3 border-2 border-gray-300 rounded-lg text-sm bg-white focus:border-purple-500 focus:outline-none resize-none"
-                    placeholder={`Write your ${SUPPORTED_LANGUAGES.find(l => l.value === codeEditor.language)?.label || codeEditor.language} code here...`}
-                    style={{ fontFamily: 'monospace' }}
-                    spellCheck="false"
+                    onChange={codeEditor.setCode}
+                    language={codeEditor.monacoLanguage}
+                    height="288px"
+                    ariaLabel="Your code"
                   />
                 </div>
 
@@ -944,6 +947,9 @@ const MockInterviewSystem = () => {
                     style={{ fontFamily: 'monospace' }}
                   />
                 </div>
+
+                {codeEditor.unavailable && <UnavailableNotice />}
+                {codeEditor.verdict && !codeEditor.unavailable && <VerdictBadge verdict={codeEditor.verdict} />}
 
                 {codeEditor.codeOutput && (
                   <div>
@@ -1064,6 +1070,7 @@ const MockInterviewSystem = () => {
                       </div>
                       
                       <p className="text-gray-600 text-xs mb-3">{interview.questions[index]?.question}</p>
+                      <ExecutionInfo execution={fb.execution} source={fb.executionSource} />
                       
                       {fb.strengths?.length > 0 && (
                         <div className="mb-2">

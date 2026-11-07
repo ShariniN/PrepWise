@@ -85,7 +85,9 @@ export const processFeedback = (rawFeedback, isCodingQuestion) => {
     communicationClarity: feedback.communicationClarity || 5,
     technicalAccuracy: feedback.technicalAccuracy || 5,
     questionRelevance: feedback.questionRelevance || 5,
-    responseType: feedback.responseType || 'submitted'
+    responseType: feedback.responseType || 'submitted',
+    execution: feedback.execution,
+    executionSource: feedback.executionSource
   };
 
   if (!isCodingQuestion) {

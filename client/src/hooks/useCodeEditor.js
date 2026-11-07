@@ -6,6 +6,11 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
   const [codeOutput, setCodeOutput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [isRunningCode, setIsRunningCode] = useState(false);
+  const [verdict, setVerdict] = useState('');
+  const [unavailable, setUnavailable] = useState(false);
+
+  // Monaco language ids differ from the interview language values for two entries.
+  const monacoLanguage = { nodejs: 'javascript', python3: 'python' }[language] || language;
 
   const executeCode = useCallback(async () => {
     if (!code.trim()) {
@@ -15,7 +20,9 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
 
     try {
       setIsRunningCode(true);
-      setCodeOutput('Executing code on JDoodle servers...\n');
+      setVerdict('');
+      setUnavailable(false);
+      setCodeOutput('Executing code in the sandbox...\n');
       addDebugLog(`Executing ${language} code`);
 
       const selectedLang = supportedLanguages.find(l => l.value === language);
@@ -38,15 +45,24 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (response.status === 503) {
+        setUnavailable(true);
+        setVerdict('unavailable');
+        setCodeOutput('');
+        addDebugLog('Code execution unavailable', 'error');
+        return;
+      }
+      if (!response.ok && response.status !== 200) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || body.message || `HTTP ${response.status}`);
       }
 
       const result = await response.json();
-
-      if (!result.success) {
+      // success is false for any non-accepted verdict, so only reject results with no verdict at all.
+      if (!result.success && !result.verdict) {
         throw new Error(result.error || 'Code execution failed');
       }
+      setVerdict(result.verdict || '');
 
       let output = '';
       
@@ -89,6 +105,8 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
     
     setCodeOutput('');
     setCodeInput('');
+    setVerdict('');
+    setUnavailable(false);
   }, [code, language, supportedLanguages]);
 
   const resetCodeEditor = useCallback((question, lang) => {
@@ -97,6 +115,8 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
     setCode(template);
     setCodeOutput('');
     setCodeInput('');
+    setVerdict('');
+    setUnavailable(false);
   }, [supportedLanguages]);
 
   return {
@@ -105,6 +125,9 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
     codeOutput,
     codeInput,
     isRunningCode,
+    verdict,
+    unavailable,
+    monacoLanguage,
     setCode,
     setCodeInput,
     setCodeOutput,

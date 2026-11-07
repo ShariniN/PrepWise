@@ -111,6 +111,11 @@ export const useInterview = (addDebugLog) => {
       throw new Error(result.error || 'Failed to submit answer');
     }
 
+    // Execution is recorded by the server; surface it if the response carries it.
+    const execution = result.executionResults || result.response?.executionResults || result.feedback?.executionResults;
+    if (result.feedback && typeof result.feedback === 'object' && (execution || result.feedback.executionSource)) {
+      return { ...result.feedback, execution, executionSource: result.feedback.executionSource };
+    }
     return result.feedback;
   }, [addDebugLog]);
 
