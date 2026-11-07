@@ -1,11 +1,12 @@
 import React from 'react';
+import { Card } from '../ui';
 
 const StatCard = ({ label, value, hint }) => (
-  <div className="rounded-xl border border-gray-200 bg-white p-4">
-    <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-    <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
-    {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
-  </div>
+  <Card className="!p-4 sm:!p-5">
+    <p className="text-xs font-semibold uppercase tracking-wider text-ink-2">{label}</p>
+    <p className="mt-1 font-display text-3xl font-semibold tracking-tight text-ink">{value}</p>
+    {hint && <p className="mt-1 text-xs text-ink-2">{hint}</p>}
+  </Card>
 );
 
 export default StatCard;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 // Shared "chart / table" toggle so every graphic has a screen-reader friendly table view.
 export const ViewToggle = ({ table, onChange }) => (
-  <button type="button" onClick={() => onChange(!table)} aria-pressed={table} className="text-xs text-indigo-700 underline">
+  <button type="button" onClick={() => onChange(!table)} aria-pressed={table} className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/20">
     {table ? 'Show chart' : 'Show as table'}
   </button>
 );
@@ -10,9 +10,9 @@ export const ViewToggle = ({ table, onChange }) => (
 const fmt = (v, suffix = '') => (v === null || v === undefined ? 'no data' : `${v}${suffix}`);
 
 const Frame = ({ caption, table, setTable, children }) => (
-  <div className="viz-root rounded-lg p-3" style={{ background: 'var(--viz-surface)', color: 'var(--viz-ink)' }}>
-    <div className="flex justify-between items-center mb-2 gap-3">
-      <p className="text-sm font-medium">{caption}</p>
+  <div className="viz-root rounded-2xl border border-line p-4" style={{ background: 'var(--viz-surface)', color: 'var(--viz-ink)' }}>
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <p className="min-w-0 text-sm font-semibold">{caption}</p>
       <ViewToggle table={table} onChange={setTable} />
     </div>
     {children}
@@ -25,12 +25,12 @@ export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
   return (
     <Frame caption={caption} table={table} setTable={setTable}>
       {table ? (
-        <table className="w-full text-sm">
+        <table className="viz-table w-full text-sm">
           <caption className="sr-only">{caption}</caption>
-          <thead><tr><th className="text-left">Item</th><th className="text-right">Value</th></tr></thead>
+          <thead><tr><th scope="col" className="px-2 py-1.5 text-left font-semibold whitespace-nowrap">Item</th><th scope="col" className="px-2 py-1.5 text-right font-semibold">Value</th></tr></thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.label}><td>{it.label}</td><td className="text-right">{fmt(it.value, suffix)}</td></tr>
+              <tr key={it.label}><td className="border-t border-line px-2 py-1.5">{it.label}</td><td className="border-t border-line px-2 py-1.5 text-right tabular-nums">{fmt(it.value, suffix)}</td></tr>
             ))}
           </tbody>
         </table>
@@ -40,7 +40,7 @@ export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
             const pct = it.value == null ? 0 : Math.max(0, Math.min(100, (it.value / (it.max || max)) * 100));
             return (
               <li key={it.label}>
-                <div className="flex justify-between text-xs" style={{ color: 'var(--viz-ink-2)' }}>
+                <div className="flex justify-between gap-3 text-xs" style={{ color: 'var(--viz-ink-2)' }}>
                   <span>{it.label}</span>
                   <span>{fmt(it.value, suffix)}{it.detail ? ` (${it.detail})` : ''}</span>
                 </div>
@@ -66,11 +66,11 @@ export const Sparkline = ({ points, caption, height = 60 }) => {
   return (
     <Frame caption={caption} table={table} setTable={setTable}>
       {table ? (
-        <div className="max-h-64 overflow-auto">
-          <table className="w-full text-sm">
+        <div className="max-h-64 overflow-auto rounded-xl">
+          <table className="viz-table w-full text-sm">
             <caption className="sr-only">{caption}</caption>
-            <thead><tr><th className="text-left">Date</th><th className="text-right">Value</th></tr></thead>
-            <tbody>{points.map((p) => <tr key={p.label}><td>{p.label}</td><td className="text-right">{p.value}</td></tr>)}</tbody>
+            <thead><tr><th scope="col" className="px-2 py-1.5 text-left font-semibold whitespace-nowrap">Date</th><th scope="col" className="px-2 py-1.5 text-right font-semibold">Value</th></tr></thead>
+            <tbody>{points.map((p) => <tr key={p.label}><td className="border-t border-line px-2 py-1.5">{p.label}</td><td className="border-t border-line px-2 py-1.5 text-right tabular-nums">{p.value}</td></tr>)}</tbody>
           </table>
         </div>
       ) : (
@@ -103,21 +103,21 @@ export const Heatmap = ({ columns, rows, caption }) => {
   return (
     <Frame caption={caption} table={table} setTable={setTable}>
       {table ? (
-        <div className="overflow-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="viz-table w-full text-sm">
             <caption className="sr-only">{caption}</caption>
             <thead>
-              <tr><th className="text-left">Student</th>{columns.map((c) => <th key={c.topic} className="text-right">{c.topic}</th>)}</tr>
+              <tr><th scope="col" className="px-2 py-1.5 text-left font-semibold whitespace-nowrap">Student</th>{columns.map((c) => <th scope="col" key={c.topic} className="px-2 py-1.5 text-right font-semibold whitespace-nowrap">{c.topic}</th>)}</tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id}><td>{r.name}</td>{r.values.map((v, i) => <td key={i} className="text-right">{fmt(v)}</td>)}</tr>
+                <tr key={r.id}><td className="border-t border-line px-2 py-1.5">{r.name}</td>{r.values.map((v, i) => <td key={i} className="border-t border-line px-2 py-1.5 text-right tabular-nums">{fmt(v)}</td>)}</tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <div className="overflow-auto">
+        <div className="overflow-x-auto">
           <svg role="img"
             aria-label={`${caption}. ${rows.length} students by ${columns.length} topics. Darker is a higher score. Use the table view for exact values.`}
             width={nameW + columns.length * cell} height={headH + rows.length * 26}>
@@ -151,7 +151,7 @@ export const Heatmap = ({ columns, rows, caption }) => {
         </div>
       )}
       {!table && (
-        <p className="text-xs mt-2" style={{ color: 'var(--viz-ink-2)' }}>
+        <p className="mt-3 text-xs" style={{ color: 'var(--viz-ink-2)' }}>
           Score 0 to 100 on a single blue ramp. A dash means no eligible score yet.
         </p>
       )}

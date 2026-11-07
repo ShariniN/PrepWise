@@ -15,10 +15,10 @@ const TopicHeatmap = ({ courseId, cohortId }) => {
   const rows = data.rows || [];
 
   return (
-    <section className="space-y-4" aria-labelledby="th-h">
+    <section className="space-y-5" aria-labelledby="th-h">
       <div>
-        <h2 id="th-h" className="text-lg font-semibold text-gray-800">Which topics are weak, and for whom</h2>
-        <p className="text-sm text-gray-500">
+        <h2 id="th-h" className="font-display text-xl font-semibold text-ink">Which topics are weak, and for whom</h2>
+        <p className="mt-1 max-w-2xl text-sm text-ink-2">
           Each cell is the student&apos;s best eligible score per question, averaged over the topic. Use it to choose a topic to revisit,
           not to rank students. Rows and columns are ordered by data, nothing is scored or flagged.
         </p>
