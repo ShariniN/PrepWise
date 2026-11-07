@@ -5,6 +5,7 @@ import { institutionOf } from '../middleware/tenancy.js';
 import { MAX_SOURCE_CHARS } from '../services/execution/index.js';
 import { normalizeLanguage } from '../services/execution/languages.js';
 import { studentQuestion, studentListItem } from '../services/questionSerializers.js';
+import { lockedQuestionIds } from '../services/assessments/lock.js';
 import { runForQuestion, submitForQuestion, cleanEvents, EVENT_LIMITS, CODE_TYPES } from '../services/practiceCore.js';
 
 export { EVENT_LIMITS };
@@ -26,7 +27,8 @@ export const listQuestions = async (req, res) => {
   if (typeof difficulty === 'string' && difficulty) filter.difficulty = difficulty;
   if (typeof type === 'string' && type) filter.type = type;
   if (unseen === '1' || unseen === 'true') filter.excludeIds = await questionRepo.solvedQuestionIds(institutionId, req.user.id);
-  const questions = await questionRepo.listVisible(institutionId, filter);
+  const locked = await lockedQuestionIds(req); // questions inside an unfinished assessment are not practice material
+  const questions = (await questionRepo.listVisible(institutionId, filter)).filter((q) => !locked.has(String(q._id)));
   res.json({ success: true, questions: questions.map(studentListItem) });
 };
 

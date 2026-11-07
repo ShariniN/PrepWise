@@ -18,6 +18,7 @@ import meRouter from './routes/MeRoutes.js';
 import complianceRouter from './routes/ComplianceRoutes.js';
 import practiceRouter from './routes/practiceRoutes.js';
 import questionRouter from './routes/questionRoutes.js';
+import assessmentRouter from './routes/assessmentRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/me', meRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/practice', practiceRouter);
 app.use('/api/questions', questionRouter);
+app.use('/api/assessments', assessmentRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {

@@ -3,6 +3,7 @@
 import { mock } from 'node:test';
 import questionRepo from '../../repositories/questionRepo.js';
 import { newId } from '../helpers.js';
+import { installAssessmentWorld } from './assessmentWorld.js';
 
 const same = (a, b) => String(a ?? '') === String(b ?? '');
 const clone = (o) => (o == null ? o : structuredClone(o));
@@ -114,5 +115,6 @@ export const installQuestionWorld = (world) => {
     tests.forEach((t, order) => db.tests.push({ _id: newId(), institutionId: d.institutionId, questionId: d._id, weight: 1, comparison: 'trim', visible: false, order, ...t }));
     return d;
   };
+  installAssessmentWorld(world); // assessments share the attempts / batches stored above
   return db;
 };

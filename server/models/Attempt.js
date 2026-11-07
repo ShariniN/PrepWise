@@ -23,6 +23,7 @@ const attemptSchema = new mongoose.Schema({
   score: { type: Number, min: 0, max: 100, default: null },
   answer: { type: mongoose.Schema.Types.Mixed, default: null }, // mcq selection, trace answer, or short text
   needsReview: { type: Boolean, default: false },               // short and behavioural answers wait for a lecturer
+  assessmentSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'AssessmentSession', default: null, index: true }, // set in assessment mode
 }, { timestamps: true, collection: 'attempts' });
 
 attemptSchema.index({ institutionId: 1, userId: 1, questionId: 1, runKind: 1 });

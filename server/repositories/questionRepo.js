@@ -23,6 +23,9 @@ const questionRepo = {
   },
   findVisible: (institutionId, id, { staff = false } = {}) =>
     Question.findOne({ _id: id, ...readable(institutionId) }).select(staff ? STAFF_ONLY : '').lean(),
+  // Published members of a variant group that this institution may read (own questions and the seed bank).
+  listVariantGroup: (institutionId, group) =>
+    Question.find({ ...readable(institutionId), variantGroup: group, status: 'published' }).lean(),
   findOwn: (institutionId, id) => Question.findOne({ _id: id, institutionId }).select(STAFF_ONLY).lean(),
   createQuestion: async (doc) => (await Question.create(doc)).toObject(),
   updateQuestion: (institutionId, id, patch) =>
@@ -56,7 +59,7 @@ const questionRepo = {
   updateAttempt: (institutionId, userId, id, patch) =>
     Attempt.findOneAndUpdate({ _id: id, institutionId, userId }, { $set: patch }, { new: true }).lean(),
   findDraft: (institutionId, userId, questionId) =>
-    Attempt.findOne({ institutionId, userId, questionId, runKind: 'draft' }).lean(),
+    Attempt.findOne({ institutionId, userId, questionId, runKind: 'draft', assessmentSessionId: null }).lean(),
   solvedQuestionIds: (institutionId, userId) =>
     Attempt.distinct('questionId', { institutionId, userId, runKind: 'submit', verdict: 'accepted' }),
   countAttemptsFor: (questionId) => Attempt.countDocuments({ questionId }),

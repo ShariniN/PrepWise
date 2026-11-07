@@ -55,6 +55,8 @@ const questionSchema = new Schema({
   explanation: { type: String, select: false, maxlength: 4000 }, // shown only after an answer is submitted
   validation: { type: validationSchema, select: false },
   duplicatedFrom: { type: Schema.Types.ObjectId, default: null },
+  // Questions sharing a variantGroup are interchangeable in an assessment; each student gets one deterministic member.
+  variantGroup: { type: String, trim: true, maxlength: 80, default: null },
 }, { timestamps: true, collection: 'questions' });
 
 questionSchema.index({ institutionId: 1, status: 1, type: 1 });

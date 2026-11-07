@@ -55,6 +55,8 @@ const pickQuestionFields = (b, { creating }) => {
   set('memoryLimitKb', num(b.memoryLimitKb, 16000, 512000));
   set('estimatedMinutes', num(b.estimatedMinutes, 1, 240));
   set('learningOutcome', str(b.learningOutcome, 500));
+  if (b.variantGroup === null) out.variantGroup = null;
+  else set('variantGroup', str(b.variantGroup, 80));
   set('referenceSolution', cleanCode(b.referenceSolution));
   set('wrongSolution', cleanCode(b.wrongSolution));
   set('explanation', typeof b.explanation === 'string' ? b.explanation.slice(0, 4000) : undefined);

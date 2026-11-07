@@ -53,7 +53,7 @@ export const storedPerTest = (perTest) => perTest.map((t) => ({
 // STAFF view: full question including solutions.
 export const staffQuestion = (q, tests, { editable }) => ({
   id: idOf(q), institutionId: q.institutionId ? String(q.institutionId) : null, authorId: q.authorId ? String(q.authorId) : null,
-  slug: q.slug || null, title: q.title, statement: q.statement, type: q.type, topic: q.topic || [], difficulty: q.difficulty,
+  slug: q.slug || null, variantGroup: q.variantGroup || null, title: q.title, statement: q.statement, type: q.type, topic: q.topic || [], difficulty: q.difficulty,
   languages: q.languages || [], starterCode: toPlain(q.starterCode), timeLimitMs: q.timeLimitMs, memoryLimitKb: q.memoryLimitKb,
   estimatedMinutes: q.estimatedMinutes ?? null, learningOutcome: q.learningOutcome || '', source: q.source, status: q.status,
   version: q.version, referenceSolution: q.referenceSolution || null, altReferenceSolutions: q.altReferenceSolutions || [],
