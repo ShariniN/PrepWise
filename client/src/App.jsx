@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import EmailVerify from './pages/EmailVerify'
 import ResetPassword from './pages/ResetPassword'
-import {ToastContainer} from 'react-toastify';
+import Toaster from './components/ui/Toaster';
 import 'react-toastify/dist/ReactToastify.css';
 import FresherDashboard from './pages/FresherDashboard'
 import ProfileSettings from './pages/ProfileSettings'
@@ -43,7 +43,7 @@ const App = () => {
   return (
     <div>
       <DemoBanner/>
-      <ToastContainer/>
+      <Toaster/>
       <Routes>
         {/* Authentication Routes */}
         <Route path='/' element={<Login/>}/>
