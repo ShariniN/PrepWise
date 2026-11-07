@@ -30,6 +30,7 @@ import AssessmentResults from './pages/AssessmentResults'
 import AssessmentManage from './pages/AssessmentManage'
 import AssessmentEditor from './pages/AssessmentEditor'
 import IntegrityQueue from './pages/IntegrityQueue'
+import IntegrityCase from './pages/IntegrityCase'
 
 
 
@@ -70,6 +71,8 @@ const App = () => {
         <Route path='/assessments/manage/:id' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
 
         <Route path='/integrity' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityQueue/></ProtectedRoute>}/>
+
+        <Route path='/integrity/:caseId' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityCase/></ProtectedRoute>}/>
 
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/careers' element={<ProtectedRoute allow={CAREER_ROLES}><CareerReadiness/></ProtectedRoute>}/>
