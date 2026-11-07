@@ -36,7 +36,7 @@ test('unauthenticated gets 401; students cannot create or read course details', 
   assert.equal((await request(app).post('/api/courses').set(as(stuA1)).send({ code: 'X', title: 'Y' })).status, 403);
   const c = await makeCourse(lecA1);
   assert.equal((await request(app).get(`/api/courses/${c.id}`).set(as(stuA1))).status, 403);
-  assert.equal((await request(app).get('/api/courses/mine').set(as(w.addUser({ email: 'co@a.edu', role: 'career_officer', institutionId: IDS.instA })))).status, 403);
+  assert.equal((await request(app).get('/api/courses/mine').set(as(w.addUser({ email: 'co@a.edu', role: 'career_officer', institutionId: IDS.instA })))).status, 200);
 });
 
 test('lecturer creates a course, a cohort, and enrols students by email', async () => {

@@ -10,7 +10,7 @@ const teaching = requireRole('lecturer', 'university_admin');
 
 courseRouter.use(userAuth);
 
-courseRouter.get('/mine', requireRole('student', 'lecturer', 'university_admin'), myCourses);
+courseRouter.get('/mine', requireRole('student', 'lecturer', 'career_officer', 'university_admin'), myCourses);
 courseRouter.post('/', teaching, createCourse);
 courseRouter.get('/:courseId', teaching, getCourse);
 courseRouter.post('/:courseId/cohorts', teaching, createCohort);

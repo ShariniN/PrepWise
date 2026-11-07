@@ -69,7 +69,7 @@ export const myCourses = async (req, res) => {
   let courses;
   let options = { withCounts: true };
 
-  if (role === 'university_admin') {
+  if (role === 'university_admin' || role === 'career_officer') {
     courses = await courseRepo.listCourses(institutionId);
   } else if (role === 'lecturer') {
     const owned = await courseRepo.listCoursesOwnedBy(institutionId, id);
