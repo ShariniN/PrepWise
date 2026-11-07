@@ -128,20 +128,14 @@ test('unknown API paths return JSON 404, not the web page', async () => {
   assert.equal(res.body.success, false);
 });
 
-test('registration works without any trainer model', async () => {
-  mock.method(userModel, 'findOne', async () => null);
-  mock.method(userModel.prototype, 'save', async function () { return this; });
-  mock.method(transporter, 'sendMail', async () => ({}));
-
+test('open registration was replaced by invitations (Phase 1)', async () => {
   const res = await request(app).post('/api/auth/register').send({
     name: 'New Student',
     email: 'new@example.com',
     password: 'Passw0rd!',
     phoneNumber: '0771234567',
   });
-
-  assert.equal(res.body.success, true, res.body.message);
-  assert.equal(res.body.accountType, 'Fresher');
+  assert.equal(res.status, 404);
 });
 
 test('login with an unknown email returns 401 instead of crashing', async () => {
