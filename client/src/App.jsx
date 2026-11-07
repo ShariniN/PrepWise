@@ -19,7 +19,10 @@ import QuestionBank from './pages/QuestionBank'
 import QuestionEditor from './pages/QuestionEditor'
 import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
-import { ROLES, STAFF_ROLES, QUESTION_ROLES } from './utils/roles'
+import { ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES, CAREER_ROLES } from './utils/roles'
+import GradingQueue from './pages/GradingQueue'
+import CareerReadiness from './pages/CareerReadiness'
+import AdminOverview from './pages/AdminOverview'
 
 
 
@@ -48,6 +51,10 @@ const App = () => {
         {/* Staff and admin routes */}
         <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
+
+        <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
+        <Route path='/careers' element={<ProtectedRoute allow={CAREER_ROLES}><CareerReadiness/></ProtectedRoute>}/>
+        <Route path='/admin-overview' element={<ProtectedRoute allow={[ROLES.ADMIN]}><AdminOverview/></ProtectedRoute>}/>
 
         <Route path='/questions' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionBank/></ProtectedRoute>}/>
         <Route path='/questions/new' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionEditor/></ProtectedRoute>}/>
