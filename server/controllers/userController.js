@@ -69,19 +69,13 @@ export const updateUserProfile = async (req, res) => {
     }
 
     const userId = req.user._id || req.user.id;
-    const { name, phoneNumber, accountType } = req.body;
+    // Only these fields can be changed by the user. Role and plan are never accepted from the client.
+    const { name, phoneNumber } = req.body;
 
-    if (!name || !phoneNumber || !accountType) {
+    if (!name || !phoneNumber) {
       return res.status(400).json({
         success: false,
-        message: "Name, phone number, and account type are required"
-      });
-    }
-
-    if (!['Fresher'].includes(accountType)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid account type for this endpoint"
+        message: "Name and phone number are required"
       });
     }
 
@@ -90,7 +84,6 @@ export const updateUserProfile = async (req, res) => {
       {
         name,
         phoneNumber,
-        accountType,
         lastActive: new Date()
       },
       { 
@@ -179,96 +172,6 @@ export const changePassword = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to change password"
-    });
-  }
-};
-
-export const upgradeToPremium = async (req, res) => {
-  try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "Premium upgrades are only available for fresher accounts"
-      });
-    }
-
-    const userId = req.user._id || req.user.id;
-
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      { 
-        accountPlan: 'premium',
-        lastActive: new Date()
-      },
-      { 
-        new: true,
-        select: '-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt'
-      }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Account upgraded to Premium successfully",
-      data: updatedUser
-    });
-  } catch (error) {
-    console.error('Upgrade to premium error:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to upgrade account"
-    });
-  }
-};
-
-export const downgradeToBasic = async (req, res) => {
-  try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "Account plan changes are only available for fresher accounts"
-      });
-    }
-
-    const userId = req.user._id || req.user.id;
-
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      { 
-        accountPlan: 'basic',
-        lastActive: new Date()
-      },
-      { 
-        new: true,
-        select: '-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt'
-      }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Account downgraded to Basic",
-      data: updatedUser
-    });
-  } catch (error) {
-    console.error('Downgrade to basic error:', error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to downgrade account"
     });
   }
 };
@@ -410,102 +313,6 @@ export const deleteCV = async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to delete CV' 
-    });
-  }
-};
-
-// Admin dashboard functions - Get all freshers
-export const getAllFreshers = async (req, res) => {
-  try {
-    const freshers = await userModel.find({ accountType: 'Fresher' })
-      .select('-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt');
-    res.json({
-      success: true,
-      data: freshers
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
-    });
-  }
-};
-
-// Get single fresher by ID
-export const getFresherById = async (req, res) => {
-  try {
-    const fresher = await userModel.findOne({ 
-      _id: req.params.id, 
-      accountType: 'Fresher' 
-    }).select('-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt');
-    
-    if (!fresher) {
-      return res.status(404).json({ 
-        success: false,
-        message: "Fresher not found" 
-      });
-    }
-    res.json({
-      success: true,
-      data: fresher
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false,
-      error: err.message 
-    });
-  }
-};
-
-// Update fresher (admin only)
-export const updateFresher = async (req, res) => {
-  try {
-    const updatedFresher = await userModel.findOneAndUpdate(
-      { _id: req.params.id, accountType: 'Fresher' },
-      req.body,
-      { new: true }
-    ).select('-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt');
-    
-    if (!updatedFresher) {
-      return res.status(404).json({ 
-        success: false,
-        message: "Fresher not found" 
-      });
-    }
-    res.json({
-      success: true,
-      data: updatedFresher
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false,
-      error: err.message 
-    });
-  }
-};
-
-// Delete fresher (admin only)
-export const deleteFresher = async (req, res) => {
-  try {
-    const deletedFresher = await userModel.findOneAndDelete({ 
-      _id: req.params.id, 
-      accountType: 'Fresher' 
-    });
-    
-    if (!deletedFresher) {
-      return res.status(404).json({ 
-        success: false,
-        message: "Fresher not found" 
-      });
-    }
-    res.json({ 
-      success: true,
-      message: "Fresher deleted successfully" 
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false,
-      error: err.message 
     });
   }
 };

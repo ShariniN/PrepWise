@@ -13,7 +13,6 @@ const SignUp = () => {
 
   // Component state
   const [state, setState] = useState('Sign Up')
-  const [accountType, setAccountType] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,19 +24,11 @@ const SignUp = () => {
         e.preventDefault();
         axios.defaults.withCredentials = true
 
-        if (!accountType) {
-          toast.error("Please select an account type")
-          return;
-        }
-
-        // For both Fresher and Trainer, use the same registration endpoint
-        // The backend will handle OTP generation automatically
         const {data} = await axios.post(backendUrl + '/api/auth/register', {
           name, 
           email, 
           password, 
           phoneNumber,
-          accountType,
         })
 
         if(data.success){
@@ -65,25 +56,6 @@ const SignUp = () => {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Create Your Account</h2>
 
         <form onSubmit={onSubmitHandler}>
-
-          {/* Account Type */}
-          <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Choose your Account Type</label>
-            <div className="flex gap-4">
-                {["Fresher", "Trainer"].map((type) => (
-                <div
-                    key={type}
-                    onClick={() => setAccountType(type)}
-                    className={`
-                    cursor-pointer w-full text-center py-2 rounded-lg text-sm font-medium
-                    ${accountType === type ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700"}
-                    transition duration-200 border border-gray-300 hover:border-indigo-600
-                    `}>
-                    {type}
-                </div>
-                ))}
-            </div>
-          </div>
 
           {/* Full Name */}
           <div className="mb-4">
@@ -137,12 +109,7 @@ const SignUp = () => {
         {/* Additional Info */}
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-500">
-            {accountType === 'Fresher' ? 
-              'Complete your profile later with CV and additional details.' :
-              accountType === 'Trainer' ?
-              'Complete your profile later with skills and experience.' :
-              'Please select your account type to continue.'
-            }
+            Complete your profile later with CV and additional details.
           </p>
         </div>
       </div>

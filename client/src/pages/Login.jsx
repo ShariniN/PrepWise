@@ -36,13 +36,7 @@ const Login = () => {
         getUserData();
 
         // Navigate based on account type
-        if (data.accountType === "Trainer") {
-          navigate("/trainer-dashboard");
-        } else if (data.accountType === "Fresher") {
-          navigate("/fresher-dashboard");
-        } else {
-          toast.error(data.message || "Login unsuccessful");
-        }
+        navigate("/fresher-dashboard");
       }
     } catch (error) {
       // Handle errors from server or network

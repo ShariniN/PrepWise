@@ -11,8 +11,6 @@ import CVAnalyzer from './pages/CVAnalyzer'
 import SignUp from './pages/SignUp'
 import SkillAssessor from './pages/SkillAssessor'
 import Interview from './pages/Interview'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminLogin from './pages/AdminLogin';
 
 
 
@@ -31,9 +29,6 @@ const App = () => {
         {/* Dashboard Routes */}
         <Route path='/fresher-dashboard' element={<FresherDashboard/>}/>
         <Route path='/profile-settings' element={<ProfileSettings/>}/>
-        <Route path='/admin-dashboard' element={<AdminDashboard/>}/>
-        
-        <Route path='/admin-login' element={<AdminLogin/>}/>
 
         <Route path='/cv-analyzer' element={<CVAnalyzer/>}/>
         <Route path='/swot' element={<SkillAssessor/>}/>

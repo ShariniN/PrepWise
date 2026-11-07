@@ -25,15 +25,10 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{10,15}$/, 'Please enter a valid phone number']
   },
-  accountType: {  // ← ADD THIS FIELD
+  accountType: {
     type: String,
-    enum: ['Trainer', 'Fresher'],
-    required: [true, 'Account type is required']
-  },
-  accountPlan: {
-    type: String,
-    enum: ['basic', 'premium'],
-    default: 'basic'
+    enum: ['Fresher'],
+    default: 'Fresher'
   },
   isAccountVerified: {
     type: Boolean,
@@ -94,8 +89,7 @@ const userSchema = new mongoose.Schema({
 // Define indexes separately
 userSchema.index({ email: 1 }, { unique: true, name: 'email_unique' });
 userSchema.index({ isAccountVerified: 1 }, { name: 'account_verified' });
-userSchema.index({ accountPlan: 1 }, { name: 'account_plan' });
-userSchema.index({ accountType: 1 }, { name: 'account_type' }); // ← ADD INDEX FOR accountType
+userSchema.index({ accountType: 1 }, { name: 'account_type' });
 userSchema.index({ lastActive: -1 }, { name: 'last_active' });
 userSchema.index({ 'currentCV.hash': 1 }, { name: 'cv_hash_lookup', sparse: true }); // Sparse index for CV hash
 

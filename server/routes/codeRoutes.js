@@ -45,34 +45,6 @@ const jdoodleLanguageMap = {
   'python': { language: 'python3', versionIndex: '4' }     // Alias
 };
 
-// Mock execution for testing when JDoodle is not configured
-const mockCodeExecution = async (script, language) => {
-  console.log('🔧 Using mock code execution (JDoodle not configured)');
-  
-  // Simulate execution delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Simple mock responses based on language
-  const mockResponses = {
-    'javascript': 'Mock output: JavaScript code executed successfully\nHello, World!',
-    'python': 'Mock output: Python code executed successfully\nHello, World!',
-    'java': 'Mock output: Java code compiled and executed\nHello, World!',
-    'csharp': 'Mock output: C# code compiled and executed\nHello, World!',
-    'cpp': 'Mock output: C++ code compiled and executed\nHello, World!'
-  };
-  
-  const normalizedLang = language.toLowerCase().replace(/[0-9]/g, '');
-  const output = mockResponses[normalizedLang] || `Mock output: ${language} code executed\nResult: Success`;
-  
-  return {
-    success: true,
-    output: output,
-    error: '',
-    executionTime: '0.1s',
-    memory: '8192KB'
-  };
-};
-
 // JDoodle code execution function
 const executeCodeWithJDoodleAPI = async (script, language, versionIndex, stdin = '') => {
   try {
@@ -80,8 +52,7 @@ const executeCodeWithJDoodleAPI = async (script, language, versionIndex, stdin =
     
     // Check if JDoodle is configured
     if (!isJDoodleConfigured()) {
-      console.warn('JDoodle not configured, using mock execution');
-      return await mockCodeExecution(script, language);
+      throw new Error('Code execution service is not configured');
     }
     
     // Map language to JDoodle format
@@ -154,8 +125,7 @@ const executeCodeWithJDoodleAPI = async (script, language, versionIndex, stdin =
       });
       
       if (status === 401 || status === 403) {
-        console.error('JDoodle authentication failed - using mock execution');
-        return await mockCodeExecution(script, language);
+        throw new Error('Code execution service is unavailable (authentication failed)');
       } else if (status === 429) {
         throw new Error('JDoodle API rate limit exceeded. Please try again later.');
       } else if (status === 400) {
@@ -164,8 +134,7 @@ const executeCodeWithJDoodleAPI = async (script, language, versionIndex, stdin =
     } else if (error.code === 'ECONNABORTED') {
       throw new Error('Code execution timeout. Please optimize your code and try again.');
     } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-      console.error('JDoodle service unavailable - using mock execution');
-      return await mockCodeExecution(script, language);
+      throw new Error('Code execution service is unavailable');
     }
     
     throw new Error(`Code execution failed: ${error.message}`);
@@ -251,6 +220,9 @@ codeRouter.post('/execute', codeExecutionLimiter, async (req, res) => {
     if (error.message.includes('rate limit')) {
       errorMessage = 'Too many requests. Please wait before trying again.';
       statusCode = 429;
+    } else if (error.message.includes('not configured') || error.message.includes('unavailable')) {
+      errorMessage = 'Code execution is currently unavailable. Your work has not been scored.';
+      statusCode = 503;
     } else if (error.message.includes('Unsupported language')) {
       errorMessage = error.message;
       statusCode = 400;
@@ -278,7 +250,7 @@ codeRouter.get('/health', (req, res) => {
   };
   
   if (!isJDoodleConfigured()) {
-    healthStatus.warning = 'JDoodle API not configured - using mock execution';
+    healthStatus.warning = 'JDoodle API not configured - code execution is unavailable';
     healthStatus.jdoodleCredentials = {
       clientId: jdoodleConfig.clientId ? 'Set' : 'Not set',
       clientSecret: jdoodleConfig.clientSecret ? 'Set' : 'Not set'

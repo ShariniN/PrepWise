@@ -3,7 +3,6 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
-import { spawn } from 'child_process';
 import userAuth from '../middleware/userAuth.js';
 import rateLimit from 'express-rate-limit';
 
@@ -36,7 +35,7 @@ const codeExecutionLimiter = rateLimit({
 const assemblyAIConfig = {
   baseUrl: "https://api.assemblyai.com",
   headers: {
-    authorization: process.env.ASSEMBLYAI_API_KEY || "09e162bb0a7a4478bfb5092b53b53b58",
+    authorization: process.env.ASSEMBLYAI_API_KEY,
   }
 };
 
@@ -151,8 +150,12 @@ const transcribeWithAssemblyAI = async (audioPath) => {
 export const transcribeAudio = async (req, res) => {
   try {
     console.log('Transcription request received');
-    console.log('User in transcribe:', req.user);
     
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      return res.status(503).json({ success: false, error: 'Transcription is not configured' });
+    }
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -230,42 +233,10 @@ export const transcribeAudio = async (req, res) => {
   }
 };
 
-// Mock transcription for testing
-const mockTranscribeAudio = async (req, res) => {
-  try {
-    const audioFile = req.file;
-    
-    if (!audioFile) {
-      return res.status(400).json({
-        success: false,
-        error: 'Audio file is required'
-      });
-    }
-
-    const mockTranscription = "This is a mock transcription. The candidate provided a thoughtful response discussing their technical experience and problem-solving approach.";
-    
-    res.json({
-      success: true,
-      text: mockTranscription,
-      duration: Math.floor(audioFile.size / 1000),
-      confidence: 0.95
-    });
-    
-  } catch (error) {
-    console.error('Mock transcription error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to transcribe audio'
-    });
-  }
-};
-
-// Public routes (before userAuth middleware)
-interviewRouter.post('/transcribe', uploadToDisk.single('audio'), transcribeAudio);
-interviewRouter.post('/transcribe-mock', uploadToMemory.single('audio'), mockTranscribeAudio);
-
-// Apply authentication middleware to all routes below this point
+// All interview routes require authentication
 interviewRouter.use(userAuth);
+
+interviewRouter.post('/transcribe', uploadToDisk.single('audio'), transcribeAudio);
 
 // CORRECTED: Use the fixed controller function directly
 interviewRouter.post('/execute', codeExecutionLimiter, executeCodeWithJDoodle);
@@ -279,6 +250,10 @@ interviewRouter.post('/process-cv', processCV);
 interviewRouter.post('/create', createInterview);
 interviewRouter.post('/create-with-profile-cv', createInterviewWithProfileCV);
 
+// User history routes
+interviewRouter.get('/user/history', getUserInterviews);
+interviewRouter.get('/history', getUserInterviews);
+
 // Interview management routes
 interviewRouter.get('/:interviewId', getInterview);
 interviewRouter.put('/:interviewId/start', startInterview);
@@ -290,195 +265,6 @@ interviewRouter.put('/:interviewId/complete', completeInterview);
 
 // Feedback and analysis routes
 interviewRouter.get('/:interviewId/feedback', getInterviewFeedback);
-
-// User history routes
-interviewRouter.get('/user/history', getUserInterviews);
-interviewRouter.get('/history', getUserInterviews);
-
-// Local code execution fallback (keep for testing)
-const executeCodeLocal = async (code, language) => {
-  return new Promise((resolve, reject) => {
-    let command, args, fileExtension;
-    const tempFileName = `temp_${Date.now()}`;
-    
-    switch (language.toLowerCase()) {
-      case 'javascript':
-      case 'js':
-      case 'nodejs':
-        command = 'node';
-        args = ['-e', code];
-        break;
-      case 'python':
-      case 'py':
-      case 'python3':
-        command = 'python3';
-        args = ['-c', code];
-        break;
-      case 'java':
-        fileExtension = '.java';
-        fs.writeFileSync(`${tempFileName}.java`, code);
-        command = 'javac';
-        args = [`${tempFileName}.java`];
-        break;
-      case 'cpp':
-      case 'c++':
-        fileExtension = '.cpp';
-        fs.writeFileSync(`${tempFileName}.cpp`, code);
-        command = 'g++';
-        args = ['-o', tempFileName, `${tempFileName}.cpp`];
-        break;
-      case 'c':
-        fileExtension = '.c';
-        fs.writeFileSync(`${tempFileName}.c`, code);
-        command = 'gcc';
-        args = ['-o', tempFileName, `${tempFileName}.c`];
-        break;
-      default:
-        reject(new Error(`Unsupported language: ${language}`));
-        return;
-    }
-
-    const process = spawn(command, args, {
-      timeout: 10000,
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    let stdout = '';
-    let stderr = '';
-
-    process.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    process.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    process.on('close', (exitCode) => {
-      const cleanup = () => {
-        try {
-          if (fileExtension && fs.existsSync(`${tempFileName}${fileExtension}`)) {
-            fs.unlinkSync(`${tempFileName}${fileExtension}`);
-          }
-          if (fs.existsSync(tempFileName)) {
-            fs.unlinkSync(tempFileName);
-          }
-          if (language.toLowerCase() === 'java' && fs.existsSync(`${tempFileName}.class`)) {
-            fs.unlinkSync(`${tempFileName}.class`);
-          }
-        } catch (cleanupError) {
-          console.error('Cleanup error:', cleanupError);
-        }
-      };
-
-      // Handle compiled languages
-      if (language.toLowerCase() === 'java' && exitCode === 0) {
-        const javaProcess = spawn('java', ['Solution'], {
-          timeout: 5000,
-          stdio: ['pipe', 'pipe', 'pipe']
-        });
-
-        let javaStdout = '';
-        let javaStderr = '';
-
-        javaProcess.stdout.on('data', (data) => {
-          javaStdout += data.toString();
-        });
-
-        javaProcess.stderr.on('data', (data) => {
-          javaStderr += data.toString();
-        });
-
-        javaProcess.on('close', (javaExitCode) => {
-          cleanup();
-          resolve({
-            success: javaExitCode === 0,
-            output: javaStdout || javaStderr || 'No output',
-            error: javaExitCode !== 0 ? javaStderr : null,
-            exitCode: javaExitCode
-          });
-        });
-      } else if ((language.toLowerCase() === 'cpp' || language.toLowerCase() === 'c') && exitCode === 0) {
-        const execProcess = spawn(`./${tempFileName}`, [], {
-          timeout: 5000,
-          stdio: ['pipe', 'pipe', 'pipe']
-        });
-
-        let execStdout = '';
-        let execStderr = '';
-
-        execProcess.stdout.on('data', (data) => {
-          execStdout += data.toString();
-        });
-
-        execProcess.stderr.on('data', (data) => {
-          execStderr += data.toString();
-        });
-
-        execProcess.on('close', (execExitCode) => {
-          cleanup();
-          resolve({
-            success: execExitCode === 0,
-            output: execStdout || execStderr || 'No output',
-            error: execExitCode !== 0 ? execStderr : null,
-            exitCode: execExitCode
-          });
-        });
-      } else {
-        cleanup();
-        resolve({
-          success: exitCode === 0,
-          output: stdout || stderr || 'No output',
-          error: exitCode !== 0 ? stderr : null,
-          exitCode
-        });
-      }
-    });
-
-    process.on('error', (error) => {
-      reject(new Error(`Process error: ${error.message}`));
-    });
-
-    // Timeout safety
-    setTimeout(() => {
-      process.kill('SIGTERM');
-      reject(new Error('Code execution timeout'));
-    }, 15000);
-  });
-};
-
-// Local execution endpoint (fallback)
-interviewRouter.post('/execute-code-local', async (req, res) => {
-  try {
-    const { code, language } = req.body;
-
-    if (!code || !language) {
-      return res.status(400).json({
-        success: false,
-        error: 'Code and language are required'
-      });
-    }
-
-    const result = await executeCodeLocal(code, language);
-
-    res.json({
-      success: true,
-      output: result.output,
-      error: result.error,
-      executionTime: null,
-      memory: null,
-      statusCode: result.exitCode
-    });
-
-  } catch (error) {
-    console.error('Local code execution error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Code execution failed',
-      details: error.message
-    });
-  }
-});
 
 // Error handling middleware
 interviewRouter.use((error, req, res, next) => {

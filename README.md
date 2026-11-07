@@ -1,86 +1,37 @@
-# 🚀 PrepWise – AI-Powered Career Preparation Platform  
+# PrepWise
 
-PrepWise is an **end-to-end career preparation platform** built using the **MERN Stack (MongoDB, Express, React, Node.js)**.  
-It integrates **AI-driven resume analysis, skill assessment, and mock interview simulation** to help students and job seekers become job-ready.  
+AI-assisted career readiness for university students: CV analysis, skill self-assessment and mock technical interviews with live code execution.
 
-The platform bridges the gap between **academic learning and industry expectations** by evaluating users’ CVs, skills, and interview performance, and then generating **personalized feedback and training recommendations**.  
+PrepWise is being developed as a subscription product for universities, priced per student. See [the implementation plan](docs/superpowers/specs/2026-11-07-prepwise-university-platform-plan.md) for the roadmap.
 
----
+## What works today
 
-## 🧾 Overview  
+- **CV Analyzer** - upload a PDF CV and a job description for strengths, gaps and suggestions.
+- **Skill Assessor** - extracts skills from the CV and lets students rate their confidence.
+- **Mock interview** - generated behavioural, technical and coding questions, answered by text, voice or code, with AI feedback and a report.
+- **Code execution** - via JDoodle. If the service is not configured, the editor says so and nothing is scored.
 
-PrepWise is designed for **students, job seekers, and professionals** preparing for tech roles.  
-It also includes **admin and trainer functionalities** to manage users, events, news, and training programs.  
+## Tech stack
 
----
+React + Vite + Tailwind (client), Node.js + Express + MongoDB/Mongoose (server), JWT cookie auth, Google Gemini (default AI provider), JDoodle (code execution), AssemblyAI (speech to text).
 
-## ⚙️ Core Features  
+## Running locally
 
-### 🧠 CV Checker  
-- AI-driven document analysis for **structure, strengths, and weaknesses**.  
-- Upload CV (PDF/DOCX) and one or more Job Descriptions (JDs).  
-- Returns:
-  - **Strengths:** Keywords matching the job role.  
-  - **Weaknesses:** Missing or irrelevant content.  
-  - **Structure Analysis:** Layout and formatting feedback.  
-  - **Improvement Suggestions:** Targeted edits for better job matching.  
-- ⚙️ *Powered by NLP-based keyword extraction and semantic similarity checks.*  
+Requires Node 20+ and a MongoDB database.
 
----
+```bash
+# server
+cd server
+cp .env.example .env     # then fill in the values
+npm install
+npm run dev              # http://localhost:4000
 
-### 💪 Skill Assessor  
-- Extracts **technical and soft skills** from the CV automatically.  
-- Allows users to **self-rate** each skill on a **confidence scale (1–10)**.  
-- Ratings are stored and used to personalize future **training recommendations**.  
+# client (second terminal)
+cd client
+npm install
+npm run dev              # http://localhost:5173
+```
 
----
+Run the server tests with `npm test` inside `server/`.
 
-### 🧑‍💻 AI Mock Interview Module  
-- Simulates a realistic **technical job interview** experience.  
-- Dynamically generates **10 questions**:
-  - 🗣 **3 Behavioral**
-  - 💻 **4 Technical**
-  - 👨‍💻 **3 Coding** (executed live via JDoodle API)  
-- **Voice-enabled answering** using the Web Speech API (speech-to-text).  
-- **Real-time code execution** and debugging feedback.  
-- Each question is graded based on:
-  - Accuracy  
-  - Relevance  
-  - Communication clarity  
-  - Code efficiency  
-
----
-
-### 📊 Performance Report & Training Recommendations  
-After the interview, users receive a **comprehensive performance report**:  
-- Score breakdown per question (0–100 scale).  
-- Identified strengths and areas for improvement.  
-- Personalized **training recommendations** based on:
-  - Skill gaps  
-  - Self-assessed confidence levels  
-
----
-
-## 🧩 Tech Stack  
-
-| **Layer** | **Technology** | **Description** |
-|------------|----------------|-----------------|
-| **Frontend** | React.js | Dynamic and responsive UI with routing and state management |
-| **Backend** | Node.js, Express.js | RESTful API development and business logic |
-| **Database** | MongoDB Atlas | Cloud database for users, CVs, sessions, and reports |
-| **Authentication** | JWT | Secure user authentication and session management |
-| **File Upload** | Multer | CV upload and storage management |
-| **AI Integration** | Gemini API | CV analysis and skill extraction |
-| **Code Execution** | JDoodle API | Real-time coding and debugging environment |
-| **Speech Recognition** | Web Speech API | Enables voice-based interview responses |
-| **Deployment** | AWS / Cloud Hosting | Scalable cloud deployment for frontend and backend |
-
----
-
-## 🔒 Key Highlights  
-- AI + NLP integration for CV and skill matching.  
-- Real-time coding & voice-based interview simulation.  
-- Role-based dashboards (Admin, Trainer, Fresher).  
-- Personalized learning and upskilling recommendations.  
-- Deployed on cloud infrastructure for scalability and reliability.  
-
+Use fake data only while developing. Do not enter real student CVs until a production setup with a data processing agreement is in place.

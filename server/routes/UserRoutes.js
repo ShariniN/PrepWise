@@ -5,15 +5,9 @@ import {
   getUserProfile,
   updateUserProfile,
   changePassword,
-  upgradeToPremium,
-  downgradeToBasic,
   uploadCV,
   getCurrentCV,
   deleteCV,
-  getAllFreshers,
-  getFresherById,
-  updateFresher,
-  deleteFresher,
 } from "../controllers/userController.js";
 
 import { 
@@ -71,10 +65,6 @@ userRouter.put('/upload-cv', upload.single('cv'), uploadCV);
 userRouter.get('/cv', getCurrentCV);
 userRouter.delete('/cv', deleteCV);
 
-// Subscription routes (fresher only)
-userRouter.put('/upgrade-premium', upgradeToPremium);
-userRouter.put('/downgrade-basic', downgradeToBasic);
-
 // CV Analysis routes (fresher only)
 userRouter.get('/saved-analyses', getSavedAnalysis); 
 userRouter.delete('/analysis/:id', deleteAnalysis);
@@ -84,11 +74,5 @@ userRouter.get('/skills-assessments', getRatings);
 userRouter.get('/skills-stats', getRatingsStats);
 userRouter.get('/skills-assessment/:id', getRatingDetails);
 userRouter.delete('/assessment/:id', deleteRatings);
-
-// Admin dashboard routes (these might need additional admin middleware)
-userRouter.get("/freshers", getAllFreshers);
-userRouter.get("/freshers/:id", getFresherById);
-userRouter.put("/freshers/:id", updateFresher);
-userRouter.delete("/freshers/:id", deleteFresher);
 
 export default userRouter;
