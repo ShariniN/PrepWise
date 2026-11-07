@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import AppShell from '../components/AppShell';
+import { Button, Card, EmptyState } from '../components/ui';
 
 // Simple icon components to replace Lucide icons
 const AlertCircle = () => (
@@ -156,10 +158,10 @@ const SWOTAnalysis = ({
 
   // Get confidence level color
   const getConfidenceColor = (level) => {
-    if (level >= 8) return 'text-green-600 bg-green-100';
-    if (level >= 6) return 'text-blue-600 bg-blue-100';
-    if (level >= 4) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
+    if (level >= 8) return 'text-success-700 bg-success-100';
+    if (level >= 6) return 'text-primary-800 bg-primary-100';
+    if (level >= 4) return 'text-sun-700 bg-sun-100';
+    return 'text-danger-700 bg-danger-100';
   };
 
   // Get confidence level text
@@ -196,90 +198,79 @@ const SWOTAnalysis = ({
   const renderRatingStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Rate Your Technology Confidence</h2>
-        <p className="text-gray-600 text-lg">
+        <h2 className="font-display text-3xl font-semibold text-ink mb-2">Rate Your Technology Confidence</h2>
+        <p className="text-ink-2 text-lg">
           Adjust your confidence level for each technology from 1 (beginner) to 10 (expert)
         </p>
-        <div className="mt-4 flex justify-center space-x-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-            <span className="text-blue-800 font-semibold">{technologies.length} technologies found</span>
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <div className="bg-primary-50 border border-primary-100 rounded-full px-4 py-2">
+            <span className="text-primary-800 font-semibold">{technologies.length} technologies found</span>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-            <span className="text-green-800 font-medium">All start at intermediate level (5/10)</span>
+          <div className="bg-success-100 rounded-full px-4 py-2">
+            <span className="text-success-700 font-medium">All start at intermediate level (5/10)</span>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div role="alert" className="bg-danger-100 rounded-2xl p-4">
           <div className="flex items-center">
             <AlertCircle />
-            <span className="text-red-800 ml-2">{error}</span>
+            <span className="text-danger-700 ml-2">{error}</span>
           </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-success-100 rounded-2xl p-4">
           <div className="flex items-center">
             <CheckCircle />
-            <span className="text-green-800 ml-2">{success}</span>
+            <span className="text-success-700 ml-2">{success}</span>
           </div>
         </div>
       )}
 
       {technologies.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 text-gray-400 mx-auto mb-4 flex items-center justify-center">
-            <AlertCircle />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">No Technologies Found</h3>
-          <p className="text-gray-500 mb-6">
-            No technologies were extracted from your resume. Please go back and analyze your CV first.
-          </p>
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
-            >
-              <ArrowLeft />
-              <span className="ml-2">Back to CV Analysis</span>
-            </button>
+        <EmptyState
+          title="No Technologies Found"
+          description="No technologies were extracted from your resume. Please go back and analyze your CV first."
+          action={onBack && (
+            <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
           )}
-        </div>
+        />
       ) : (
         <>
-          <div className="max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+          <div className="max-h-[32rem] overflow-y-auto bg-sand p-4 rounded-3xl">
             {Object.entries(groupedTechnologies).map(([category, techs]) => (
               <div key={category} className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3 sticky top-0 bg-gray-50 py-2">
+                <h3 className="font-display text-lg font-semibold text-ink mb-3 sticky top-0 bg-sand py-2">
                   {category}
                 </h3>
                 <div className="space-y-3">
                   {techs.map((tech, techIndex) => {
                     const globalIndex = technologies.findIndex(t => t.name === tech.name);
                     return (
-                      <div key={globalIndex} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <div key={globalIndex} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-line rounded-2xl bg-surface shadow-soft hover:shadow-card transition-shadow">
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-800">{tech.name}</h4>
+                          <h4 className="font-semibold text-ink">{tech.name}</h4>
                           <div className="flex items-center mt-1">
-                            <span className={`text-xs px-2 py-1 rounded-full ${getConfidenceColor(tech.confidenceLevel)}`}>
+                            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${getConfidenceColor(tech.confidenceLevel)}`}>
                               {getConfidenceText(tech.confidenceLevel)}
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm text-gray-500 font-medium">1</span>
+                          <span className="text-sm text-ink-muted font-medium">1</span>
                           <input
                             type="range"
                             min="1"
                             max="10"
                             value={tech.confidenceLevel}
                             onChange={(e) => handleRatingChange(globalIndex, e.target.value)}
-                            className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            className="w-32 h-2 bg-sand rounded-lg appearance-none cursor-pointer slider"
                           />
-                          <span className="text-sm text-gray-500 font-medium">10</span>
-                          <div className={`ml-3 px-3 py-1 rounded-lg font-bold text-lg min-w-[3rem] text-center ${getConfidenceColor(tech.confidenceLevel)}`}>
+                          <span className="text-sm text-ink-muted font-medium">10</span>
+                          <div className={`ml-3 px-3 py-1 rounded-xl font-bold text-lg min-w-[3rem] text-center ${getConfidenceColor(tech.confidenceLevel)}`}>
                             {tech.confidenceLevel}
                           </div>
                         </div>
@@ -291,29 +282,23 @@ const SWOTAnalysis = ({
             ))}
           </div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             {onBack && (
-              <button
-                onClick={onBack}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center"
-              >
-                <ArrowLeft />
-                <span className="ml-2">Back to CV Analysis</span>
-              </button>
+              <Button variant="secondary" onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
             )}
-            <div className="flex space-x-4">
-              <div className="text-sm text-gray-600">
-                <div className="flex items-center space-x-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div className="text-sm text-ink-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>Expert (8-10): <strong>{stats.expert}</strong></span>
                   <span>Proficient (6-7): <strong>{stats.proficient}</strong></span>
                   <span>Intermediate (4-5): <strong>{stats.intermediate}</strong></span>
                   <span>Beginner (1-3): <strong>{stats.beginner}</strong></span>
                 </div>
               </div>
-              <button
+              <Button
+                size="lg"
                 onClick={handleSaveRatings}
                 disabled={saving || technologies.length === 0}
-                className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold flex items-center"
               >
                 {saving ? (
                   <>
@@ -326,7 +311,7 @@ const SWOTAnalysis = ({
                     <span className="ml-2">Save Technology Ratings</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -341,106 +326,84 @@ const SWOTAnalysis = ({
 
     return (
       <div className="space-y-8 text-center">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-20 h-20 bg-success-100 text-success-700 rounded-full flex items-center justify-center mx-auto">
           <CheckCircle />
         </div>
         
         <div>
-          <h2 className="text-3xl font-bold text-green-600 mb-2">Ratings Saved Successfully!</h2>
-          <p className="text-gray-600 text-lg">
+          <h2 className="font-display text-3xl font-semibold text-success-700 mb-2">Ratings Saved Successfully!</h2>
+          <p className="text-ink-2 text-lg">
             Your technology confidence ratings have been saved for {stats.total} technologies
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center justify-center mb-2">
+          <div className="bg-success-100 rounded-3xl p-4">
+            <div className="flex items-center justify-center mb-2 text-success-700">
               <TrendingUp />
-              <span className="font-bold text-green-800 ml-2 text-sm">Expert</span>
+              <span className="font-bold text-success-700 ml-2 text-sm">Expert</span>
             </div>
-            <div className="text-2xl font-bold text-green-600 mb-1">
+            <div className="font-display text-3xl font-semibold text-success-700 mb-1">
               {stats.expert}
             </div>
-            <div className="text-xs text-green-700">Level 8-10</div>
+            <div className="text-xs text-success-700">Level 8-10</div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-center mb-2">
+          <div className="bg-primary-100 rounded-3xl p-4">
+            <div className="flex items-center justify-center mb-2 text-primary-800">
               <Star />
-              <span className="font-bold text-blue-800 ml-2 text-sm">Proficient</span>
+              <span className="font-bold text-primary-800 ml-2 text-sm">Proficient</span>
             </div>
-            <div className="text-2xl font-bold text-blue-600 mb-1">
+            <div className="font-display text-3xl font-semibold text-primary-800 mb-1">
               {stats.proficient}
             </div>
-            <div className="text-xs text-blue-700">Level 6-7</div>
+            <div className="text-xs text-primary-800">Level 6-7</div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-center justify-center mb-2">
+          <div className="bg-sun-100 rounded-3xl p-4">
+            <div className="flex items-center justify-center mb-2 text-sun-700">
               <AlertCircle />
-              <span className="font-bold text-yellow-800 ml-2 text-sm">Intermediate</span>
+              <span className="font-bold text-sun-700 ml-2 text-sm">Intermediate</span>
             </div>
-            <div className="text-2xl font-bold text-yellow-600 mb-1">
+            <div className="font-display text-3xl font-semibold text-sun-700 mb-1">
               {stats.intermediate}
             </div>
-            <div className="text-xs text-yellow-700">Level 4-5</div>
+            <div className="text-xs text-sun-700">Level 4-5</div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center justify-center mb-2">
+          <div className="bg-danger-100 rounded-3xl p-4">
+            <div className="flex items-center justify-center mb-2 text-danger-700">
               <AlertCircle />
-              <span className="font-bold text-red-800 ml-2 text-sm">Beginner</span>
+              <span className="font-bold text-danger-700 ml-2 text-sm">Beginner</span>
             </div>
-            <div className="text-2xl font-bold text-red-600 mb-1">
+            <div className="font-display text-3xl font-semibold text-danger-700 mb-1">
               {stats.beginner}
             </div>
-            <div className="text-xs text-red-700">Level 1-3</div>
+            <div className="text-xs text-danger-700">Level 1-3</div>
           </div>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-2xl mx-auto">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Rating Summary</h3>
+        <div className="bg-sand rounded-3xl p-6 max-w-2xl mx-auto">
+          <h3 className="font-display text-lg font-semibold text-ink mb-4">Rating Summary</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">Average Confidence:</span>
-              <span className="font-bold text-gray-800 ml-2">
+              <span className="text-ink-2">Average Confidence:</span>
+              <span className="font-bold text-ink ml-2">
                 {averageConfidence.toFixed(1)}/10
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Technologies Rated:</span>
-              <span className="font-bold text-gray-800 ml-2">{stats.total}</span>
+              <span className="text-ink-2">Technologies Rated:</span>
+              <span className="font-bold text-ink ml-2">{stats.total}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex space-x-4 justify-center">
-          <button
-            onClick={() => setStep('rating')}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center"
-          >
-            <ArrowLeft />
-            <span className="ml-2">Update Ratings</span>
-          </button>
-          
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Back to CV Analysis
-            </button>
-          )}
-          
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Button variant="secondary" onClick={() => setStep('rating')} icon={<ArrowLeft />}>Update Ratings</Button>
+          {onBack && <Button variant="dark" onClick={onBack}>Back to CV Analysis</Button>}
           {onGoToInterview && (
-            <button
-              onClick={onGoToInterview}
-              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center font-semibold"
-            >
-              <MessageCircle />
-              <span className="ml-2">Start Interview Practice</span>
-              <ArrowRight />
-            </button>
+            <Button onClick={onGoToInterview} icon={<MessageCircle />} iconRight={<ArrowRight />}>Start Interview Practice</Button>
           )}
         </div>
       </div>
@@ -449,47 +412,41 @@ const SWOTAnalysis = ({
 
   if (!resumeHash || !extractedTechnologies || extractedTechnologies.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6 text-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-          <div className="w-16 h-16 text-red-600 mx-auto mb-4 flex items-center justify-center">
+      <AppShell width="narrow" title="Skills" subtitle="Rate your confidence in the technologies found on your CV.">
+        <Card tone="sand" className="text-center !p-8 sm:!p-10">
+          <div className="w-16 h-16 text-danger-600 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-danger-100">
             <AlertCircle />
           </div>
-          <h2 className="text-2xl font-bold text-red-800 mb-4">
+          <h2 className="font-display text-2xl font-semibold text-ink mb-3">
             {!resumeHash ? "Resume Analysis Required" : "No Technologies Found"}
           </h2>
-          <p className="text-red-600 mb-6">
-            {!resumeHash 
+          <p className="text-ink-2 mb-6">
+            {!resumeHash
               ? "Please analyze your resume first to extract technologies for rating."
               : "No technologies were extracted from your resume. Please ensure your resume contains technical skills and try analyzing again."
             }
           </p>
-          <div className="text-sm text-red-500 mb-4">
-            Debug info: resumeHash={resumeHash ? 'present' : 'missing'}, 
+          <div className="text-sm text-ink-muted mb-4">
+            Debug info: resumeHash={resumeHash ? 'present' : 'missing'},
             extractedTechnologies={extractedTechnologies?.length || 0} items
           </div>
           {onBack && (
-            <button
-              onClick={onBack}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center mx-auto"
-            >
-              <ArrowLeft />
-              <span className="ml-2">Back to CV Analysis</span>
-            </button>
-            )}
-        </div>
-      </div>
+            <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
+          )}
+        </Card>
+      </AppShell>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
+    <AppShell title="Skills" subtitle="Rate your confidence in the technologies found on your CV.">
       <style>{`
         .slider::-webkit-slider-thumb {
           appearance: none;
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #4f46e5;
           cursor: pointer;
           border: 2px solid #ffffff;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -498,7 +455,7 @@ const SWOTAnalysis = ({
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: #4f46e5;
           cursor: pointer;
           border: 2px solid #ffffff;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -506,12 +463,12 @@ const SWOTAnalysis = ({
         .slider::-webkit-slider-track {
           height: 8px;
           border-radius: 4px;
-          background: #e5e7eb;
+          background: #ebe7dc;
         }
         .slider::-moz-range-track {
           height: 8px;
           border-radius: 4px;
-          background: #e5e7eb;
+          background: #ebe7dc;
         }
         @keyframes spin {
           from { transform: rotate(0deg); }
@@ -524,7 +481,7 @@ const SWOTAnalysis = ({
       
       {step === 'rating' && renderRatingStep()}
       {step === 'success' && renderSuccessStep()}
-    </div>
+    </AppShell>
   );
 };
 
