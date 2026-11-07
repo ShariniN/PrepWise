@@ -17,7 +17,7 @@ fs.mkdirSync(dbPath, { recursive: true });
 const secretFile = path.join(dbPath, 'jwt-secret.txt');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'));
 
-const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: 'wiredTiger' } });
+const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: 'wiredTiger', port: 27111 } });
 
 // Set before importing anything that reads the environment (dotenv never overrides existing values).
 process.env.MONGODB_URI = mongod.getUri();
