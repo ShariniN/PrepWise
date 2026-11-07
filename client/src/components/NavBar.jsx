@@ -4,7 +4,7 @@ import { useContext } from "react";
 import { assets } from "../assets/assets";
 import axios from "axios";
 import { useNavigate, NavLink } from "react-router-dom";
-import { homeForRole, ROLES, ROLE_LABELS } from "../utils/roles";
+import { homeForRole, ROLES, ROLE_LABELS, QUESTION_ROLES } from "../utils/roles";
 import { toast } from "react-toastify";
 
 const NavBar = () => {
@@ -24,7 +24,7 @@ const NavBar = () => {
 
   // Student-only tools (CV analyzer, skills, interview) are hidden from staff.
   const links = role === ROLES.ADMIN
-    ? [{ to: '/manage-people', label: 'Manage people' }]
+    ? [{ to: '/manage-people', label: 'Manage people' }, { to: '/questions', label: 'Questions' }]
     : role === ROLES.STUDENT
       ? [
           { to: '/fresher-dashboard', label: 'Dashboard' },
@@ -33,7 +33,7 @@ const NavBar = () => {
           { to: '/practice', label: 'Practice' },
           { to: '/interview', label: 'Interview' },
         ]
-      : role ? [{ to: '/staff', label: 'My courses' }] : [];
+      : role ? [{ to: '/staff', label: 'My courses' }, ...(QUESTION_ROLES.includes(role) ? [{ to: '/questions', label: 'Questions' }] : [])] : [];
 
   return (
     <div className="px-4 flex items-center justify-between sm:px-16 py-4 bg-white shadow-md">

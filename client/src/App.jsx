@@ -15,9 +15,11 @@ import StaffDashboard from './pages/StaffDashboard'
 import ManagePeople from './pages/ManagePeople'
 import PracticeList from './pages/PracticeList'
 import PracticeQuestion from './pages/PracticeQuestion'
+import QuestionBank from './pages/QuestionBank'
+import QuestionEditor from './pages/QuestionEditor'
 import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
-import { ROLES, STAFF_ROLES } from './utils/roles'
+import { ROLES, STAFF_ROLES, QUESTION_ROLES } from './utils/roles'
 
 
 
@@ -46,6 +48,10 @@ const App = () => {
         {/* Staff and admin routes */}
         <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
+
+        <Route path='/questions' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionBank/></ProtectedRoute>}/>
+        <Route path='/questions/new' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionEditor/></ProtectedRoute>}/>
+        <Route path='/questions/:id' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionEditor/></ProtectedRoute>}/>
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>
