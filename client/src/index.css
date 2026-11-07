@@ -7,3 +7,39 @@
 *{
   font-family: "Outfit", sans-serif;
 }
+
+/* Chart tokens (dataviz reference palette). Light by default, selected steps for dark. */
+.viz-root {
+  --viz-surface: #fcfcfb;
+  --viz-ink: #0b0b0b;
+  --viz-ink-2: #52514e;
+  --viz-muted: #6b6963;
+  --viz-grid: #e1e0d9;
+  --viz-series-1: #2a78d6;
+  --viz-null: #f0efec;
+  --viz-seq-1: #cde2fb;
+  --viz-seq-2: #9ec5f4;
+  --viz-seq-3: #5598e7;
+  --viz-seq-4: #256abf;
+  --viz-seq-5: #104281;
+  --viz-on-low: #0b0b0b;
+  --viz-on-high: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .viz-root {
+    --viz-surface: #1a1a19;
+    --viz-ink: #f0efec;
+    --viz-ink-2: #c3c2b7;
+    --viz-muted: #a3a199;
+    --viz-grid: #2c2c2a;
+    --viz-series-1: #3987e5;
+    --viz-null: #383835;
+    --viz-seq-1: #184f95;
+    --viz-seq-2: #1c5cab;
+    --viz-seq-3: #3987e5;
+    --viz-seq-4: #6da7ec;
+    --viz-seq-5: #b7d3f6;
+    --viz-on-low: #ffffff;
+    --viz-on-high: #0b0b0b;
+  }
+}
