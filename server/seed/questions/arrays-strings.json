@@ -1,0 +1,1537 @@
+[
+  {
+    "slug": "array-maximum",
+    "title": "Largest value",
+    "type": "coding",
+    "topic": [
+      "arrays"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 4,
+    "learningOutcome": "Scan an array while tracking the best value so far",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Find the largest number in a list.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers\n\n**Output** (standard output): the largest value\n\n**Example**\n\nInput:\n```\n3 9 2\n```\nOutput:\n```\n9\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(int[] a) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(ints(line(L, 0)));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  let best = a[0];\n  for (const x of a) if (x > best) best = x;\n  return best;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    best = a[0]\n    for x in a:\n        if x > best:\n            best = x\n    return best\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "3 9 2",
+        "expectedOutput": "9",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-5 -2 -9",
+        "expectedOutput": "-2",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "7",
+        "expectedOutput": "7",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "4 4 4",
+        "expectedOutput": "4",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3 4 1000000",
+        "expectedOutput": "1000000",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "second-largest-distinct",
+    "title": "Second largest distinct value",
+    "type": "coding",
+    "topic": [
+      "arrays"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Track two values in a single pass and handle duplicates",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Find the second largest value among the distinct values in a list. Repeats of the largest value do not count as the second largest.\n\n**Input** (standard input), one line each:\n1. `a`: at least two distinct integers\n\n**Output** (standard output): the second largest distinct value\n\n**Example**\n\nInput:\n```\n5 1 9 3\n```\nOutput:\n```\n5\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(int[] a) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(ints(line(L, 0)));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  const d = [...new Set(a)].sort((x, y) => y - x);\n  return d[1];\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    d = sorted(set(a), reverse=True)\n    return d[1]\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "5 1 9 3",
+        "expectedOutput": "5",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "9 9 8",
+        "expectedOutput": "8",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-1 -1 -2 -2",
+        "expectedOutput": "-2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2",
+        "expectedOutput": "1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "10 10 10 3 10",
+        "expectedOutput": "3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "has-pair-with-sum",
+    "title": "Two numbers that add up",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "hashing"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Use a set to avoid a nested loop",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Decide whether two different positions in the list hold numbers that add up to the target. The same position cannot be used twice.\n\n**Input** (standard input), one line each:\n1. `a`: between 0 and 1000 integers\n2. `target`: an integer\n\n**Output** (standard output): `true` if such a pair exists\n\n**Example**\n\nInput:\n```\n2 7 11 15\n9\n```\nOutput:\n```\ntrue\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a, target) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(String(result));\n",
+      "python": "def solve(a, target):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(str(result).lower())\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static boolean solve(int[] a, int target) {\n        // TODO: write your solution here\n        return false;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        boolean result = solve(ints(line(L, 0)), Integer.parseInt(line(L, 1).trim()));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a, target) {\n  const seen = new Set();\n  for (const x of a) {\n    if (seen.has(target - x)) return true;\n    seen.add(x);\n  }\n  return false;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(String(result));\n",
+      "python": "def solve(a, target):\n    seen = set()\n    for x in a:\n        if target - x in seen:\n            return True\n        seen.add(x)\n    return False\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(str(result).lower())\n"
+    },
+    "tests": [
+      {
+        "input": "2 7 11 15\n9",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "3 3\n6",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "3\n6",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "\n0",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 4\n8",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-4 10 4\n0",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "prefix-sums",
+    "title": "Running totals",
+    "type": "coding",
+    "topic": [
+      "arrays"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 6,
+    "learningOutcome": "Build a new array from a running accumulator",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Produce a list where each position holds the sum of all numbers up to and including that position in the input.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers\n\n**Output** (standard output): the running totals, space separated\n\n**Example**\n\nInput:\n```\n1 2 3 4\n```\nOutput:\n```\n1 3 6 10\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int[] solve(int[] a) {\n        // TODO: write your solution here\n        return new int[0];\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int[] result = solve(ints(line(L, 0)));\n        System.out.println(Arrays.stream(result).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(\" \")));\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  let total = 0;\n  return a.map((x) => (total += x));\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    out, total = [], 0\n    for x in a:\n        total += x\n        out.append(total)\n    return out\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n"
+    },
+    "tests": [
+      {
+        "input": "1 2 3 4",
+        "expectedOutput": "1 3 6 10",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "5",
+        "expectedOutput": "5",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-1 1 -1 1",
+        "expectedOutput": "-1 0 -1 0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0 0 0",
+        "expectedOutput": "0 0 0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1000000 1000000 1000000",
+        "expectedOutput": "1000000 2000000 3000000",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "rotate-left",
+    "title": "Rotate a list",
+    "type": "coding",
+    "topic": [
+      "arrays"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Use modular arithmetic to wrap around",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Move every element `k` places to the left. Elements that fall off the front reappear at the back, so rotating `1 2 3 4 5` by 2 gives `3 4 5 1 2`. `k` can be larger than the list.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers\n2. `k`: from 0 to 1,000,000\n\n**Output** (standard output): the rotated list\n\n**Example**\n\nInput:\n```\n1 2 3 4 5\n2\n```\nOutput:\n```\n3 4 5 1 2\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a, k) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a, k):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(' '.join(map(str, result)))\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int[] solve(int[] a, int k) {\n        // TODO: write your solution here\n        return new int[0];\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int[] result = solve(ints(line(L, 0)), Integer.parseInt(line(L, 1).trim()));\n        System.out.println(Arrays.stream(result).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(\" \")));\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a, k) {\n  const s = k % a.length;\n  return a.slice(s).concat(a.slice(0, s));\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a, k):\n    s = k % len(a)\n    return a[s:] + a[:s]\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(' '.join(map(str, result)))\n"
+    },
+    "tests": [
+      {
+        "input": "1 2 3 4 5\n2",
+        "expectedOutput": "3 4 5 1 2",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3\n0",
+        "expectedOutput": "1 2 3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3\n3",
+        "expectedOutput": "1 2 3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3\n7",
+        "expectedOutput": "2 3 1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "9\n100",
+        "expectedOutput": "9",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2\n1000000",
+        "expectedOutput": "1 2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "dedupe-keep-order",
+    "title": "Remove duplicates, keep order",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "hashing"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 8,
+    "learningOutcome": "Keep the first occurrence while scanning",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Remove repeated numbers from a list, keeping only the first time each number appears and preserving the original order.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers\n\n**Output** (standard output): the list without repeats\n\n**Example**\n\nInput:\n```\n3 1 3 2 1\n```\nOutput:\n```\n3 1 2\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int[] solve(int[] a) {\n        // TODO: write your solution here\n        return new int[0];\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int[] result = solve(ints(line(L, 0)));\n        System.out.println(Arrays.stream(result).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(\" \")));\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  const seen = new Set();\n  const out = [];\n  for (const x of a) if (!seen.has(x)) { seen.add(x); out.push(x); }\n  return out;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    seen, out = set(), []\n    for x in a:\n        if x not in seen:\n            seen.add(x)\n            out.append(x)\n    return out\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n"
+    },
+    "tests": [
+      {
+        "input": "3 1 3 2 1",
+        "expectedOutput": "3 1 2",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "5 5 5",
+        "expectedOutput": "5",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3",
+        "expectedOutput": "1 2 3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-1 1 -1",
+        "expectedOutput": "-1 1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "7",
+        "expectedOutput": "7",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "move-zeros",
+    "title": "Zeros to the end",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "two-pointers"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Partition an array while keeping relative order",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Move every zero to the end of the list while keeping the other numbers in their original order.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers\n\n**Output** (standard output): the rearranged list\n\n**Example**\n\nInput:\n```\n0 1 0 3 12\n```\nOutput:\n```\n1 3 12 0 0\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int[] solve(int[] a) {\n        // TODO: write your solution here\n        return new int[0];\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int[] result = solve(ints(line(L, 0)));\n        System.out.println(Arrays.stream(result).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(\" \")));\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  const nz = a.filter((x) => x !== 0);\n  return nz.concat(new Array(a.length - nz.length).fill(0));\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a):\n    nz = [x for x in a if x != 0]\n    return nz + [0] * (len(a) - len(nz))\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(' '.join(map(str, result)))\n"
+    },
+    "tests": [
+      {
+        "input": "0 1 0 3 12",
+        "expectedOutput": "1 3 12 0 0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0 0",
+        "expectedOutput": "0 0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "4 5",
+        "expectedOutput": "4 5",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 0 0 2 0 3",
+        "expectedOutput": "1 2 3 0 0 0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "merge-sorted-lists",
+    "title": "Merge two sorted lists",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "two-pointers",
+      "sorting"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Walk two sorted lists with two indexes",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Both lists are already sorted from smallest to largest. Merge them into one sorted list in a single pass without sorting the result afterwards.\n\n**Input** (standard input), one line each:\n1. `a`: a sorted list of 0 to 1000 integers\n2. `b`: a sorted list of 0 to 1000 integers\n\n**Output** (standard output): the merged sorted list\n\n**Example**\n\nInput:\n```\n1 3 5\n2 4 6\n```\nOutput:\n```\n1 2 3 4 5 6\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a, b) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), ints(line(1)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a, b):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), ints(line(1)))\nprint(' '.join(map(str, result)))\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int[] solve(int[] a, int[] b) {\n        // TODO: write your solution here\n        return new int[0];\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int[] result = solve(ints(line(L, 0)), ints(line(L, 1)));\n        System.out.println(Arrays.stream(result).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(\" \")));\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a, b) {\n  const out = [];\n  let i = 0, j = 0;\n  while (i < a.length && j < b.length) out.push(a[i] <= b[j] ? a[i++] : b[j++]);\n  while (i < a.length) out.push(a[i++]);\n  while (j < b.length) out.push(b[j++]);\n  return out;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), ints(line(1)));\nconsole.log(result.join(' '));\n",
+      "python": "def solve(a, b):\n    out, i, j = [], 0, 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            out.append(a[i]); i += 1\n        else:\n            out.append(b[j]); j += 1\n    return out + a[i:] + b[j:]\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), ints(line(1)))\nprint(' '.join(map(str, result)))\n"
+    },
+    "tests": [
+      {
+        "input": "1 3 5\n2 4 6",
+        "expectedOutput": "1 2 3 4 5 6",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "\n1 2",
+        "expectedOutput": "1 2",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 1\n1",
+        "expectedOutput": "1 1 1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "5 6\n1 2",
+        "expectedOutput": "1 2 5 6",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-3 0\n-2 7",
+        "expectedOutput": "-3 -2 0 7",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "max-subarray-sum",
+    "title": "Best contiguous stretch",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "dynamic-programming"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 15,
+    "learningOutcome": "Decide at each step whether to extend or restart a running sum",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Find the largest possible sum of a non-empty run of neighbouring numbers in the list.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 integers, possibly negative\n\n**Output** (standard output): the largest sum of any contiguous run\n\n**Example**\n\nInput:\n```\n-2 1 -3 4 -1 2 1 -5 4\n```\nOutput:\n```\n6\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(int[] a) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(ints(line(L, 0)));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  let best = a[0], cur = a[0];\n  for (let i = 1; i < a.length; i++) {\n    cur = Math.max(a[i], cur + a[i]);\n    best = Math.max(best, cur);\n  }\n  return best;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    best = cur = a[0]\n    for x in a[1:]:\n        cur = max(x, cur + x)\n        best = max(best, cur)\n    return best\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "-2 1 -3 4 -1 2 1 -5 4",
+        "expectedOutput": "6",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "-3 -1 -2",
+        "expectedOutput": "-1",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "5",
+        "expectedOutput": "5",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3",
+        "expectedOutput": "6",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "2 -1 2 -1 2",
+        "expectedOutput": "4",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "is-sorted",
+    "title": "Is the list sorted?",
+    "type": "coding",
+    "topic": [
+      "arrays"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "learningOutcome": "Compare neighbouring elements",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Decide whether the list is in non-decreasing order (equal neighbours are allowed).\n\n**Input** (standard input), one line each:\n1. `a`: between 0 and 1000 integers\n\n**Output** (standard output): `true` if each number is at least as large as the one before it\n\n**Example**\n\nInput:\n```\n1 2 2 5\n```\nOutput:\n```\ntrue\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(String(result));\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(str(result).lower())\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static boolean solve(int[] a) {\n        // TODO: write your solution here\n        return false;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        boolean result = solve(ints(line(L, 0)));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  for (let i = 1; i < a.length; i++) if (a[i] < a[i - 1]) return false;\n  return true;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(String(result));\n",
+      "python": "def solve(a):\n    return all(a[i] >= a[i - 1] for i in range(1, len(a)))\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(str(result).lower())\n"
+    },
+    "tests": [
+      {
+        "input": "1 2 2 5",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "3 1",
+        "expectedOutput": "false",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "4",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3 2",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "majority-element",
+    "title": "Majority element",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "hashing"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Count occurrences and compare with half the length",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "A majority element appears strictly more than half the time. Print it, or `-1` if there is none.\n\n**Input** (standard input), one line each:\n1. `a`: between 1 and 1000 non-negative integers\n\n**Output** (standard output): the majority element, or -1\n\n**Example**\n\nInput:\n```\n3 3 4 3 2\n```\nOutput:\n```\n3\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(int[] a) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(ints(line(L, 0)));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a) {\n  const counts = new Map();\n  for (const x of a) counts.set(x, (counts.get(x) || 0) + 1);\n  for (const [v, c] of counts) if (c * 2 > a.length) return v;\n  return -1;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)));\nconsole.log(result);\n",
+      "python": "def solve(a):\n    counts = {}\n    for x in a:\n        counts[x] = counts.get(x, 0) + 1\n    for v, c in counts.items():\n        if c * 2 > len(a):\n            return v\n    return -1\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "3 3 4 3 2",
+        "expectedOutput": "3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3",
+        "expectedOutput": "-1",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "5",
+        "expectedOutput": "5",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 1 2 2",
+        "expectedOutput": "-1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0 0 0 1 1",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "count-pairs-with-sum",
+    "title": "Count the pairs",
+    "type": "coding",
+    "topic": [
+      "arrays",
+      "hashing"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 15,
+    "learningOutcome": "Count pairs with a frequency map instead of testing every pair",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Count the pairs of positions `i < j` whose values add up to the target. Equal values at different positions count as different pairs.\n\n**Input** (standard input), one line each:\n1. `a`: between 0 and 1000 integers\n2. `target`: an integer\n\n**Output** (standard output): the number of pairs\n\n**Example**\n\nInput:\n```\n1 5 7 -1 5\n6\n```\nOutput:\n```\n3\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a, target) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(result);\n",
+      "python": "def solve(a, target):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(int[] a, int target) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(ints(line(L, 0)), Integer.parseInt(line(L, 1).trim()));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a, target) {\n  const freq = new Map();\n  let pairs = 0;\n  for (const x of a) {\n    pairs += freq.get(target - x) || 0;\n    freq.set(x, (freq.get(x) || 0) + 1);\n  }\n  return pairs;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(ints(line(0)), parseInt(line(1), 10));\nconsole.log(result);\n",
+      "python": "def solve(a, target):\n    freq, pairs = {}, 0\n    for x in a:\n        pairs += freq.get(target - x, 0)\n        freq[x] = freq.get(x, 0) + 1\n    return pairs\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(ints(line(0)), int(line(1)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "1 5 7 -1 5\n6",
+        "expectedOutput": "3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "2 2 2\n4",
+        "expectedOutput": "3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "\n5",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "1 2 3\n100",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0 0\n0",
+        "expectedOutput": "1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "reverse-words",
+    "title": "Reverse the word order",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 8,
+    "learningOutcome": "Split, reorder and join text",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Reverse the order of the words in a sentence. Words are separated by one or more spaces; the output uses exactly one space between words and no spaces at either end.\n\n**Input** (standard input), one line each:\n1. `s`: a sentence of at most 1000 characters\n\n**Output** (standard output): the words in reverse order\n\n**Example**\n\nInput:\n```\nthe sky is blue\n```\nOutput:\n```\nblue is sky the\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String s) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  return s.split(/\\s+/).filter(Boolean).reverse().join(' ');\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    return ' '.join(reversed(s.split()))\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "the sky is blue",
+        "expectedOutput": "blue is sky the",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "  hello   world  ",
+        "expectedOutput": "world hello",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "single",
+        "expectedOutput": "single",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "a b c d",
+        "expectedOutput": "d c b a",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "valid-palindrome",
+    "title": "Palindrome, ignoring punctuation",
+    "type": "coding",
+    "topic": [
+      "strings",
+      "two-pointers"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Filter and compare from both ends",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Decide whether the text reads the same forwards and backwards when you ignore everything except letters and digits, and ignore upper or lower case.\n\n**Input** (standard input), one line each:\n1. `s`: text of at most 1000 characters\n\n**Output** (standard output): `true` if it is a palindrome under those rules\n\n**Example**\n\nInput:\n```\nA man, a plan, a canal: Panama\n```\nOutput:\n```\ntrue\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(String(result));\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(str(result).lower())\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static boolean solve(String s) {\n        // TODO: write your solution here\n        return false;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        boolean result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  const t = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  return t === t.split('').reverse().join('');\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(String(result));\n",
+      "python": "def solve(s):\n    t = ''.join(c for c in s.lower() if c.isalnum() and c.isascii())\n    return t == t[::-1]\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(str(result).lower())\n"
+    },
+    "tests": [
+      {
+        "input": "A man, a plan, a canal: Panama",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "race a car",
+        "expectedOutput": "false",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "0P",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "No lemon, no melon",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "count-vowels",
+    "title": "Count the vowels",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 5,
+    "learningOutcome": "Loop over characters and test membership",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Count the vowels (a, e, i, o, u, in either case) in the text.\n\n**Input** (standard input), one line each:\n1. `s`: text of at most 1000 characters\n\n**Output** (standard output): the number of vowels\n\n**Example**\n\nInput:\n```\nHello World\n```\nOutput:\n```\n3\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String s) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  let n = 0;\n  for (const c of s.toLowerCase()) if ('aeiou'.includes(c)) n++;\n  return n;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    return sum(1 for c in s.lower() if c in 'aeiou')\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "Hello World",
+        "expectedOutput": "3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "rhythm",
+        "expectedOutput": "0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "AEIOUaeiou",
+        "expectedOutput": "10",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "sky 123 !!",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "is-anagram",
+    "title": "Anagram check",
+    "type": "coding",
+    "topic": [
+      "strings",
+      "hashing"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Compare character frequencies",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Two words are anagrams if one can be rearranged into the other using every letter exactly once. Ignore case; the inputs contain only letters.\n\n**Input** (standard input), one line each:\n1. `a`: a line of text\n2. `b`: a line of text\n\n**Output** (standard output): `true` if they are anagrams\n\n**Example**\n\nInput:\n```\nlisten\nsilent\n```\nOutput:\n```\ntrue\n```\n",
+    "starterCode": {
+      "javascript": "function solve(a, b) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0), line(1));\nconsole.log(String(result));\n",
+      "python": "def solve(a, b):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0), line(1))\nprint(str(result).lower())\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static boolean solve(String a, String b) {\n        // TODO: write your solution here\n        return false;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        boolean result = solve(line(L, 0), line(L, 1));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(a, b) {\n  const norm = (s) => s.toLowerCase().split('').sort().join('');\n  return norm(a) === norm(b);\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0), line(1));\nconsole.log(String(result));\n",
+      "python": "def solve(a, b):\n    return sorted(a.lower()) == sorted(b.lower())\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0), line(1))\nprint(str(result).lower())\n"
+    },
+    "tests": [
+      {
+        "input": "listen\nsilent",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "rat\ncar",
+        "expectedOutput": "false",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "Dusty\nStudy",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "aab\nabb",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "\n",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "ab\nabc",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "first-unique-char",
+    "title": "First character that appears once",
+    "type": "coding",
+    "topic": [
+      "strings",
+      "hashing"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Two passes: count, then find",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Find the first character in the text that appears exactly once and print its position (counting from 0). Print `-1` if there is none.\n\n**Input** (standard input), one line each:\n1. `s`: lowercase letters, at most 1000 characters\n\n**Output** (standard output): the 0-based index, or -1\n\n**Example**\n\nInput:\n```\nleetcode\n```\nOutput:\n```\n0\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String s) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  const counts = {};\n  for (const c of s) counts[c] = (counts[c] || 0) + 1;\n  for (let i = 0; i < s.length; i++) if (counts[s[i]] === 1) return i;\n  return -1;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    counts = {}\n    for c in s:\n        counts[c] = counts.get(c, 0) + 1\n    for i, c in enumerate(s):\n        if counts[c] == 1:\n            return i\n    return -1\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "leetcode",
+        "expectedOutput": "0",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "aabb",
+        "expectedOutput": "-1",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "loveleetcode",
+        "expectedOutput": "2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "-1",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "z",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "aabbc",
+        "expectedOutput": "4",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "caesar-shift",
+    "title": "Caesar cipher",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Shift characters with wrap-around using modular arithmetic",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Shift every letter forward in the alphabet by `k` places, wrapping from `z` back to `a`. Keep upper and lower case. Anything that is not a letter stays as it is.\n\n**Input** (standard input), one line each:\n1. `s`: text of at most 1000 characters\n2. `k`: from 0 to 1000\n\n**Output** (standard output): the shifted text\n\n**Example**\n\nInput:\n```\nHello, World!\n3\n```\nOutput:\n```\nKhoor, Zruog!\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s, k) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0), parseInt(line(1), 10));\nconsole.log(result);\n",
+      "python": "def solve(s, k):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0), int(line(1)))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String s, int k) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0), Integer.parseInt(line(L, 1).trim()));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s, k) {\n  k %= 26;\n  let out = '';\n  for (const c of s) {\n    if (c >= 'a' && c <= 'z') out += String.fromCharCode(((c.charCodeAt(0) - 97 + k) % 26) + 97);\n    else if (c >= 'A' && c <= 'Z') out += String.fromCharCode(((c.charCodeAt(0) - 65 + k) % 26) + 65);\n    else out += c;\n  }\n  return out;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0), parseInt(line(1), 10));\nconsole.log(result);\n",
+      "python": "def solve(s, k):\n    k %= 26\n    out = []\n    for c in s:\n        if 'a' <= c <= 'z':\n            out.append(chr((ord(c) - 97 + k) % 26 + 97))\n        elif 'A' <= c <= 'Z':\n            out.append(chr((ord(c) - 65 + k) % 26 + 65))\n        else:\n            out.append(c)\n    return ''.join(out)\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0), int(line(1)))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "Hello, World!\n3",
+        "expectedOutput": "Khoor, Zruog!",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "xyz\n2",
+        "expectedOutput": "zab",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "abc\n0",
+        "expectedOutput": "abc",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "abc\n26",
+        "expectedOutput": "abc",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "Zebra-42\n27",
+        "expectedOutput": "Afcsb-42",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "\n5",
+        "expectedOutput": "",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "run-length-encode",
+    "title": "Run-length encoding",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 12,
+    "learningOutcome": "Group consecutive equal characters",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Compress text by replacing each run of the same character with the character followed by the length of the run. `aaabcc` becomes `a3b1c2`.\n\n**Input** (standard input), one line each:\n1. `s`: letters only, at most 1000 characters\n\n**Output** (standard output): the encoded text (empty for empty input)\n\n**Example**\n\nInput:\n```\naaabcc\n```\nOutput:\n```\na3b1c2\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String s) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  let out = '';\n  let i = 0;\n  while (i < s.length) {\n    let j = i;\n    while (j < s.length && s[j] === s[i]) j++;\n    out += s[i] + (j - i);\n    i = j;\n  }\n  return out;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    out = []\n    i = 0\n    while i < len(s):\n        j = i\n        while j < len(s) and s[j] == s[i]:\n            j += 1\n        out.append(s[i] + str(j - i))\n        i = j\n    return ''.join(out)\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "aaabcc",
+        "expectedOutput": "a3b1c2",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "abc",
+        "expectedOutput": "a1b1c1",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "zzzzzzzzzzzz",
+        "expectedOutput": "z12",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "aabbaa",
+        "expectedOutput": "a2b2a2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "longest-common-prefix",
+    "title": "Longest common prefix",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 10,
+    "learningOutcome": "Compare strings column by column",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "The input line holds several words separated by single spaces. Find the longest prefix that every word starts with. Print an empty line if there is none.\n\n**Input** (standard input), one line each:\n1. `words`: between 1 and 100 lowercase words separated by spaces\n\n**Output** (standard output): the longest common prefix (possibly empty)\n\n**Example**\n\nInput:\n```\nflower flow flight\n```\nOutput:\n```\nfl\n```\n",
+    "starterCode": {
+      "javascript": "function solve(words) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(words):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String words) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(words) {\n  const w = words.split(' ');\n  let prefix = w[0];\n  for (const x of w) while (!x.startsWith(prefix)) prefix = prefix.slice(0, -1);\n  return prefix;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(words):\n    w = words.split(' ')\n    prefix = w[0]\n    for x in w:\n        while not x.startswith(prefix):\n            prefix = prefix[:-1]\n    return prefix\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "flower flow flight",
+        "expectedOutput": "fl",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "dog racecar car",
+        "expectedOutput": "",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "alone",
+        "expectedOutput": "alone",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "same same same",
+        "expectedOutput": "same",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "interview internet interval",
+        "expectedOutput": "inter",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "balanced-brackets",
+    "title": "Balanced brackets",
+    "type": "coding",
+    "topic": [
+      "strings",
+      "stacks"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 15,
+    "learningOutcome": "Use a stack to match opening and closing symbols",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "The text contains only the characters `()[]{}`. It is balanced if every opening bracket is closed by the same kind of bracket in the right order. The empty text is balanced.\n\n**Input** (standard input), one line each:\n1. `s`: at most 1000 bracket characters\n\n**Output** (standard output): `true` if the brackets are balanced\n\n**Example**\n\nInput:\n```\n()[]{}\n```\nOutput:\n```\ntrue\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(String(result));\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(str(result).lower())\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static boolean solve(String s) {\n        // TODO: write your solution here\n        return false;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        boolean result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  const pairs = { ')': '(', ']': '[', '}': '{' };\n  const stack = [];\n  for (const c of s) {\n    if ('([{'.includes(c)) stack.push(c);\n    else if (stack.pop() !== pairs[c]) return false;\n  }\n  return stack.length === 0;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(String(result));\n",
+      "python": "def solve(s):\n    pairs = {')': '(', ']': '[', '}': '{'}\n    stack = []\n    for c in s:\n        if c in '([{':\n            stack.append(c)\n        elif not stack or stack.pop() != pairs[c]:\n            return False\n    return not stack\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(str(result).lower())\n"
+    },
+    "tests": [
+      {
+        "input": "()[]{}",
+        "expectedOutput": "true",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "(]",
+        "expectedOutput": "false",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "(((",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": ")(",
+        "expectedOutput": "false",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "{[()()]}",
+        "expectedOutput": "true",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "longest-unique-substring",
+    "title": "Longest run without repeats",
+    "type": "coding",
+    "topic": [
+      "strings",
+      "hashing",
+      "sliding-window"
+    ],
+    "difficulty": "hard",
+    "estimatedMinutes": 20,
+    "learningOutcome": "Maintain a sliding window with a map of last positions",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Find the length of the longest stretch of neighbouring characters in which no character appears twice.\n\n**Input** (standard input), one line each:\n1. `s`: at most 5000 characters\n\n**Output** (standard output): the length of the longest such substring\n\n**Example**\n\nInput:\n```\nabcabcbb\n```\nOutput:\n```\n3\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static int solve(String s) {\n        // TODO: write your solution here\n        return 0;\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        int result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  const last = new Map();\n  let start = 0, best = 0;\n  for (let i = 0; i < s.length; i++) {\n    if (last.has(s[i]) && last.get(s[i]) >= start) start = last.get(s[i]) + 1;\n    last.set(s[i], i);\n    best = Math.max(best, i - start + 1);\n  }\n  return best;\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    last, start, best = {}, 0, 0\n    for i, c in enumerate(s):\n        if c in last and last[c] >= start:\n            start = last[c] + 1\n        last[c] = i\n        best = max(best, i - start + 1)\n    return best\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "abcabcbb",
+        "expectedOutput": "3",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "bbbbb",
+        "expectedOutput": "1",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "pwwkew",
+        "expectedOutput": "3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "0",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "abba",
+        "expectedOutput": "2",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "dvdf",
+        "expectedOutput": "3",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  },
+  {
+    "slug": "title-case",
+    "title": "Title case",
+    "type": "coding",
+    "topic": [
+      "strings"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 8,
+    "learningOutcome": "Transform each word independently",
+    "languages": [
+      "javascript",
+      "python",
+      "java"
+    ],
+    "timeLimitMs": 2000,
+    "statement": "Capitalise the first letter of every word and make the rest lower case. Words are separated by single spaces.\n\n**Input** (standard input), one line each:\n1. `s`: at most 1000 characters\n\n**Output** (standard output): the text in title case\n\n**Example**\n\nInput:\n```\nhello wORLD\n```\nOutput:\n```\nHello World\n```\n",
+    "starterCode": {
+      "javascript": "function solve(s) {\n  // TODO: write your solution here\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    # TODO: write your solution here\n    pass\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n",
+      "java": "import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    static String solve(String s) {\n        // TODO: write your solution here\n        return \"\";\n    }\n\n    // ---- reading input and printing the answer: nothing to change below this line ----\n    static String line(List<String> L, int i) { return i < L.size() ? L.get(i).replace(\"\\r\", \"\") : \"\"; }\n    static int[] ints(String s) {\n        s = s.trim();\n        if (s.isEmpty()) return new int[0];\n        String[] parts = s.split(\"\\\\s+\");\n        int[] out = new int[parts.length];\n        for (int i = 0; i < parts.length; i++) out[i] = Integer.parseInt(parts[i]);\n        return out;\n    }\n    public static void main(String[] args) throws IOException {\n        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n        List<String> L = new ArrayList<>();\n        String s;\n        while ((s = br.readLine()) != null) L.add(s);\n        String result = solve(line(L, 0));\n        System.out.println(result);\n    }\n}\n"
+    },
+    "referenceSolutions": {
+      "javascript": "function solve(s) {\n  return s.split(' ').map((w) => w.slice(0, 1).toUpperCase() + w.slice(1).toLowerCase()).join(' ');\n}\n\n// ---- reading input and printing the answer: nothing to change below this line ----\nconst L = require('fs').readFileSync(0, 'utf8').split('\\n').map((s) => s.replace(/\\r$/, ''));\nconst line = (i) => (i < L.length ? L[i] : '');\nconst ints = (s) => (s.trim() === '' ? [] : s.trim().split(/\\s+/).map(Number));\nconst result = solve(line(0));\nconsole.log(result);\n",
+      "python": "def solve(s):\n    return ' '.join(w[:1].upper() + w[1:].lower() for w in s.split(' '))\n\n# ---- reading input and printing the answer: nothing to change below this line ----\nimport sys\n_L = sys.stdin.read().split('\\n')\ndef line(i):\n    return _L[i].rstrip('\\r') if i < len(_L) else ''\ndef ints(s):\n    s = s.strip()\n    return [int(x) for x in s.split()] if s else []\nresult = solve(line(0))\nprint(result)\n"
+    },
+    "tests": [
+      {
+        "input": "hello wORLD",
+        "expectedOutput": "Hello World",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "a",
+        "expectedOutput": "A",
+        "visible": true,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "",
+        "expectedOutput": "",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "ALREADY LOUD",
+        "expectedOutput": "Already Loud",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      },
+      {
+        "input": "3d printing",
+        "expectedOutput": "3d Printing",
+        "visible": false,
+        "weight": 1,
+        "comparison": "trim"
+      }
+    ]
+  }
+]
