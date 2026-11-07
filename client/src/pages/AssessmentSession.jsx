@@ -135,10 +135,10 @@ const ActiveSession = ({ initial, sessionId }) => {
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-2 z-10 flex flex-wrap items-center gap-3 rounded-3xl border border-line bg-surface/95 p-3 pl-5 shadow-card backdrop-blur sm:top-4">
-        <h1 className="min-w-[10rem] flex-1 truncate font-display text-lg font-semibold text-ink">{session.title}</h1>
+      <div className="sticky top-2 z-10 flex items-center gap-2 rounded-3xl border border-line bg-surface/95 p-3 pl-5 shadow-card backdrop-blur sm:top-4">
+        <h1 className="min-w-0 flex-1 truncate font-display text-base sm:text-lg font-semibold text-ink">{session.title}</h1>
         <div
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-mono text-xl font-semibold tabular-nums ${lowTime ? 'bg-sun-100 text-sun-700' : 'bg-sand text-ink'}`}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 font-mono text-lg sm:px-4 sm:text-xl font-semibold tabular-nums ${lowTime ? 'bg-sun-100 text-sun-700' : 'bg-sand text-ink'}`}
           role="timer" aria-label="Time remaining"
         >
           <Clock size={18} aria-hidden="true" />
