@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Card, Field, Skeleton, Textarea } from '../ui';
 import Markdown from '../Markdown';
 import CodeEditor from '../CodeEditor';
 import AnswerInput from '../AnswerInput';
@@ -187,70 +188,68 @@ const SessionQuestion = ({ sessionId, questionId, onTimeUp, onEnded, onSubmitted
     return typeof answer === 'string' && answer.trim().length > 0;
   }, [question, code, source, language, answer]);
 
-  if (loadError) return <div role="alert" className="bg-white rounded-2xl shadow p-6 text-red-700">{loadError}</div>;
-  if (!question) return <p className="text-gray-500" role="status">Loading question...</p>;
+  if (loadError) return <Card role="alert" tone="sand" className="text-danger-700">{loadError}</Card>;
+  if (!question) return <Card role="status" aria-label="Loading question" className="space-y-3"><Skeleton className="h-7 w-1/3" /><Skeleton className="h-40 w-full" /></Card>;
 
   const saveLabel = { saving: 'Saving...', saved: 'Saved', retrying: 'Not saved yet, will retry' }[saveState] || '';
-  const btn = 'px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <section className="bg-white rounded-2xl shadow p-6 space-y-3 self-start">
-        <h2 className="text-xl font-bold text-gray-800">{question.title}</h2>
+      <Card as="section" className="space-y-3 self-start">
+        <h2 className="font-display text-xl font-semibold text-ink">{question.title}</h2>
         <Markdown text={question.statement} />
         {code && (question.visibleTests || []).length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-gray-700">Examples</h3>
+            <h3 className="text-sm font-semibold text-ink">Examples</h3>
             {question.visibleTests.map((t, i) => (
-              <div key={t.id || i} className="grid grid-cols-2 gap-2 text-xs">
-                <div><div className="text-gray-500">Input</div><pre className="bg-gray-50 border rounded p-2 whitespace-pre-wrap">{t.input || '(empty)'}</pre></div>
-                <div><div className="text-gray-500">Output</div><pre className="bg-gray-50 border rounded p-2 whitespace-pre-wrap">{t.expectedOutput}</pre></div>
+              <div key={t.id || i} className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <div><div className="mb-1 text-ink-2">Input</div><pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl border border-line bg-sand p-3 text-ink">{t.input || '(empty)'}</pre></div>
+                <div><div className="mb-1 text-ink-2">Output</div><pre className="overflow-x-auto whitespace-pre-wrap rounded-2xl border border-line bg-sand p-3 text-ink">{t.expectedOutput}</pre></div>
               </div>
             ))}
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="bg-white rounded-2xl shadow p-6 space-y-4">
+      <Card as="section" className="min-w-0 space-y-4">
         {code ? (
           <>
             <div data-integrity-editor>
               <CodeEditor value={source} onChange={onCode} language={language} languages={question.languages}
                 onLanguageChange={onLanguage} recorder={events} />
             </div>
-            <label className="block text-xs text-gray-600">Custom input (optional, used by Run)
-              <textarea value={stdin} onChange={(e) => setStdin(e.target.value)} rows={2} maxLength={16000}
-                className="w-full mt-1 border border-gray-300 rounded p-2 font-mono text-xs" />
-            </label>
+            <Field label="Custom input (optional, used by Run)">
+              {(p) => <Textarea {...p} value={stdin} onChange={(e) => setStdin(e.target.value)} rows={2} maxLength={16000} className="font-mono text-xs" />}
+            </Field>
           </>
         ) : (
           <div data-integrity-editor><AnswerInput question={question} value={answer} onChange={onAnswer} /></div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {code && (
-            <button type="button" className={`${btn} bg-gray-200 text-gray-800 hover:bg-gray-300`} disabled={!!busy || !source.trim()} onClick={run}>
+            <Button variant="secondary" disabled={!!busy || !source.trim()} loading={busy === 'run'} onClick={run}>
               {busy === 'run' ? 'Running...' : 'Run'}
-            </button>
+            </Button>
           )}
-          <button type="button" className={`${btn} bg-indigo-600 text-white hover:bg-indigo-700`} disabled={!!busy || !canSubmit} onClick={submit}>
+          <Button disabled={!!busy || !canSubmit} loading={busy === 'submit'} onClick={submit}>
             {busy === 'submit' ? 'Saving...' : 'Submit answer'}
-          </button>
-          <span className="text-xs text-gray-500" aria-live="polite">{saveLabel}</span>
+          </Button>
+          <span className={`text-xs ${saveState === 'retrying' ? 'text-sun-700' : 'text-ink-2'}`} aria-live="polite">{saveLabel}</span>
         </div>
-        {notice && <p role="status" className="text-sm font-medium text-green-800">{notice}</p>}
+        {notice && <p role="status" className={`text-sm font-medium ${notice === 'Answer saved' ? 'text-success-700' : 'text-ink'}`}>{notice}</p>}
         {unavailable && <UnavailableNotice message={unavailable.message} />}
         {runOut && (
           <div className="space-y-1">
-            <p className="text-xs text-gray-500">Run output only. Runs are not marked and no results are shown during the assessment.</p>
+            <p className="text-xs text-ink-2">Run output only. Runs are not marked and no results are shown during the assessment.</p>
             <ResultView result={{ stdout: runOut.stdout, stderr: runOut.stderr, compileOutput: runOut.compileOutput, timeMs: runOut.timeMs }} />
           </div>
         )}
         {released && <ResultView result={released} />}
         {!released && notice === 'Answer saved' && (
-          <p className="text-xs text-gray-500">You can change your answer and submit again; the last submission counts.</p>
+          <p className="text-xs text-ink-2">You can change your answer and submit again; the last submission counts.</p>
         )}
-      </section>
+      </Card>
     </div>
   );
 };
