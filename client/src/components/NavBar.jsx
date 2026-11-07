@@ -3,24 +3,36 @@ import { AppContext } from "../context/AppContext.jsx";
 import { useContext } from "react";
 import { assets } from "../assets/assets";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
+import { homeForRole, ROLES, ROLE_LABELS } from "../utils/roles";
 import { toast } from "react-toastify";
 
 const NavBar = () => {
   const navigate = useNavigate()
-  const { userData, backendUrl, setUserData, setIsLoggedin} = useContext(AppContext);
+  const { userData, backendUrl, clearAuth, role } = useContext(AppContext);
 
   const logout = async()=> {
     try {
       axios.defaults.withCredentials = true
       const {data} = await axios.post(backendUrl + '/api/auth/logout')
-      data.success && setIsLoggedin(false)
-      data.success && setUserData(false)
+      data.success && clearAuth()
       navigate('/login')
     } catch (error) {
       toast.error(error.message)
     }
   }
+
+  // Student-only tools (CV analyzer, skills, interview) are hidden from staff.
+  const links = role === ROLES.ADMIN
+    ? [{ to: '/manage-people', label: 'Manage people' }]
+    : role === ROLES.STUDENT
+      ? [
+          { to: '/fresher-dashboard', label: 'Dashboard' },
+          { to: '/cv-analyzer', label: 'CV analyzer' },
+          { to: '/swot', label: 'Skills' },
+          { to: '/interview', label: 'Interview' },
+        ]
+      : role ? [{ to: '/staff', label: 'My courses' }] : [];
 
   return (
     <div className="px-4 flex items-center justify-between sm:px-16 py-4 bg-white shadow-md">
@@ -28,13 +40,24 @@ const NavBar = () => {
       {/* Logo redirects to fresher dashboard */}
       <div 
         className="flex items-center gap-2 cursor-pointer"
-        onClick={() => navigate('/fresher-dashboard')}
+        onClick={() => navigate(homeForRole(role))}
       >
         <img src={assets.logo} alt="Logo" className="h-20 w-20" />
         {/* <span className="text-sm font-semibold text-gray-800">Personalized Prep. Job-Ready Fast.</span> */}
       </div>
 
+      <nav aria-label="Main" className="hidden md:flex items-center gap-4 text-sm font-medium text-gray-600">
+        {links.map((l) => (
+          <NavLink key={l.to} to={l.to} className={({ isActive }) => isActive ? 'text-indigo-700' : 'hover:text-indigo-600'}>
+            {l.label}
+          </NavLink>
+        ))}
+      </nav>
+
       <div className="flex items-center gap-4 text-gray-700 text-base font-medium">
+        {role && role !== ROLES.STUDENT && (
+          <span className="hidden sm:inline text-xs bg-indigo-100 text-indigo-700 rounded-full px-2 py-1">{ROLE_LABELS[role]}</span>
+        )}
         <div>
           {userData ? userData.name : "Guest"}
         </div>
