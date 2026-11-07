@@ -4,8 +4,7 @@ import api, { errorMessage } from '../api/client';
 import { AppContext } from '../context/AppContext';
 import { ROLES } from '../utils/roles';
 import CourseCard from './CourseCard';
-
-const inputCls = 'w-full bg-gray-100 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
+import { Button, Card, EmptyState, Field, Input, Skeleton } from './ui';
 
 // Courses list plus "create course", for lecturers and university admins.
 // Career officers can see courses only if the API returns any (it returns none for them).
@@ -52,39 +51,40 @@ const CoursesPanel = () => {
   };
 
   return (
-    <section aria-labelledby="courses-heading" className="space-y-4">
-      <h2 id="courses-heading" className="text-xl font-bold text-gray-800">Courses and cohorts</h2>
+    <section aria-labelledby="courses-heading" className="space-y-5">
+      <h2 id="courses-heading" className="font-display text-2xl font-semibold text-ink">Courses and cohorts</h2>
 
       {canManage && (
-        <form onSubmit={create} className="bg-white rounded-xl shadow p-5 grid gap-3 sm:grid-cols-6">
-          <div className="sm:col-span-2">
-            <label htmlFor="course-code" className="block text-sm font-medium text-gray-700 mb-1">Course code</label>
-            <input id="course-code" className={inputCls} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CS101" />
+        <Card as="form" onSubmit={create}>
+          <div className="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
+            <Field label="Course code">
+              {(p) => <Input {...p} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CS101" />}
+            </Field>
+            <Field label="Title">
+              {(p) => <Input {...p} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />}
+            </Field>
           </div>
-          <div className="sm:col-span-4">
-            <label htmlFor="course-title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <input id="course-title" className={inputCls} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <Field label="Description (optional)">
+              {(p) => <Input {...p} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />}
+            </Field>
+            <Button type="submit" loading={busy}>Create course</Button>
           </div>
-          <div className="sm:col-span-5">
-            <label htmlFor="course-desc" className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-            <input id="course-desc" className={inputCls} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          </div>
-          <div className="sm:col-span-1 flex items-end">
-            <button type="submit" disabled={busy} className="w-full px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60">
-              Create course
-            </button>
-          </div>
-        </form>
+        </Card>
       )}
 
-      {error && <p role="alert" className="text-sm text-red-600 bg-red-50 rounded-md p-3">{error}</p>}
+      {error && <p role="alert" className="rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">{error}</p>}
 
       {courses === null ? (
-        <p className="text-sm text-gray-500" role="status">Loading courses...</p>
+        <div role="status" className="space-y-3">
+          <Skeleton className="h-32 w-full" rounded="rounded-3xl" />
+          <span className="sr-only">Loading courses...</span>
+        </div>
       ) : courses.length === 0 ? (
-        <p className="text-sm text-gray-500 bg-white rounded-xl shadow p-5">
-          {canManage ? 'No courses yet. Create your first course above.' : 'No courses are assigned to you yet.'}
-        </p>
+        <EmptyState
+          title={canManage ? 'No courses yet' : 'No courses'}
+          description={canManage ? 'No courses yet. Create your first course above.' : 'No courses are assigned to you yet.'}
+        />
       ) : (
         <div className="space-y-4">
           {courses.map((c) => (

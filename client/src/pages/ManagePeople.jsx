@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import NavBar from '../components/NavBar';
+import AppShell from '../components/AppShell';
 import CoursesPanel from '../components/CoursesPanel';
 import UsageHeader from '../components/people/UsageHeader';
 import PeopleTable from '../components/people/PeopleTable';
 import InviteForm from '../components/people/InviteForm';
 import ImportCsv from '../components/people/ImportCsv';
+import { Tabs, TabPanel } from '../components/ui';
 import api, { errorMessage } from '../api/client';
 
 const TABS = [
@@ -66,42 +67,26 @@ const ManagePeople = () => {
   }, [tick]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800">Manage your university</h1>
-        <p className="text-sm text-gray-600">
-          <Link to="/admin-overview" className="text-indigo-700 underline">Adoption and renewal overview</Link>
-        </p>
+    <AppShell
+      title="Manage your university"
+      subtitle={<Link to="/admin-overview" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Adoption and renewal overview</Link>}
+    >
+      <div className="space-y-6">
+        <Tabs tabs={TABS} value={tab} onChange={setTab} idBase="mp" ariaLabel="Sections" />
 
-        <div role="tablist" aria-label="Sections" className="flex gap-2 border-b border-gray-300">
-          {TABS.map((t) => (
-            <button
-              key={t.id} role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} aria-controls={`panel-${t.id}`}
-              onClick={() => setTab(t.id)}
-              className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 ${tab === t.id ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'people' ? (
-          <div role="tabpanel" id="panel-people" aria-labelledby="tab-people" className="space-y-6">
-            <UsageHeader usage={usage} error={usage ? '' : usageError} />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <InviteForm onDone={refresh} />
-              <ImportCsv onDone={refresh} />
-            </div>
-            <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} onChanged={refresh} />
+        <TabPanel id="people" value={tab} idBase="mp" className="space-y-6">
+          <UsageHeader usage={usage} error={usage ? '' : usageError} />
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+            <InviteForm onDone={refresh} />
+            <ImportCsv onDone={refresh} />
           </div>
-        ) : (
-          <div role="tabpanel" id="panel-courses" aria-labelledby="tab-courses">
-            <CoursesPanel />
-          </div>
-        )}
-      </main>
-    </div>
+          <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} onChanged={refresh} />
+        </TabPanel>
+        <TabPanel id="courses" value={tab} idBase="mp">
+          <CoursesPanel />
+        </TabPanel>
+      </div>
+    </AppShell>
   );
 };
 

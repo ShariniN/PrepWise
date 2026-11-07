@@ -2,17 +2,14 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import api, { errorMessage } from '../../api/client';
 import { ROLE_LABELS } from '../../utils/roles';
+import { Badge, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../ui';
 import ConfirmDialog from './ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';
 
-const STATUS_STYLE = {
-  active: 'bg-green-100 text-green-800',
-  invited: 'bg-blue-100 text-blue-800',
-  deactivated: 'bg-gray-200 text-gray-700',
-};
+const STATUS_TONE = { active: 'success', invited: 'primary', deactivated: 'neutral' };
 
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString() : '-');
-const linkBtn = 'text-indigo-700 hover:underline text-sm disabled:opacity-50';
+const linkBtn = 'text-sm font-medium text-primary-700 hover:underline disabled:opacity-50';
 
 const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged }) => {
   const [pending, setPending] = useState(null); // { kind, person, role? }
@@ -59,86 +56,84 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged })
         message={
           <>
             Choose a new role for {who}.{' '}
-            <select aria-label="New role" className="mt-2 block w-full bg-gray-100 rounded-md px-3 py-2 text-sm" value={pending.role} onChange={(e) => setPending({ ...pending, role: e.target.value })}>
+            <Select aria-label="New role" className="mt-3" value={pending.role} onChange={(e) => setPending({ ...pending, role: e.target.value })}>
               {Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            </Select>
           </>
         } />
     );
   };
 
-  const sel = 'bg-gray-100 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
-
   return (
-    <section className="bg-white rounded-xl shadow p-5" aria-labelledby="people-h">
-      <h3 id="people-h" className="font-semibold text-gray-800 mb-3">People</h3>
-      <div className="flex flex-wrap gap-2 mb-4">
+    <Card as="section" aria-labelledby="people-h">
+      <h3 id="people-h" className="mb-4 font-display text-lg font-semibold text-ink">People</h3>
+      <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_11rem]">
         <div>
           <label htmlFor="f-search" className="sr-only">Search by name or email</label>
-          <input id="f-search" type="search" placeholder="Search name or email" className={`${sel} w-64`} value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+          <Input id="f-search" type="search" placeholder="Search name or email" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
         </div>
         <div>
           <label htmlFor="f-role" className="sr-only">Filter by role</label>
-          <select id="f-role" className={sel} value={filters.role} onChange={(e) => setFilters({ ...filters, role: e.target.value })}>
+          <Select id="f-role" value={filters.role} onChange={(e) => setFilters({ ...filters, role: e.target.value })}>
             <option value="">All roles</option>
             {Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+          </Select>
         </div>
         <div>
           <label htmlFor="f-status" className="sr-only">Filter by status</label>
-          <select id="f-status" className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+          <Select id="f-status" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="invited">Invited</option>
             <option value="deactivated">Deactivated</option>
-          </select>
+          </Select>
         </div>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-700 bg-red-50 rounded-md p-3 mb-3">{error}</p>}
+      {error && <p role="alert" className="mb-3 rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">{error}</p>}
 
       {loading && !people ? (
-        <p className="text-sm text-gray-500" role="status">Loading people...</p>
-      ) : people && people.length === 0 ? (
-        <p className="text-sm text-gray-500">No people match. Invite someone or import a CSV.</p>
-      ) : people ? (
-        <div className="overflow-x-auto" aria-busy={loading}>
-          <table className="min-w-full text-sm">
-            <caption className="sr-only">People in your university</caption>
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th scope="col" className="py-2 pr-3">Name</th><th scope="col" className="pr-3">Email</th><th scope="col" className="pr-3">Role</th>
-                <th scope="col" className="pr-3">Status</th><th scope="col" className="pr-3">Last active</th><th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {people.map((p) => (
-                <tr key={p.id} className="border-b last:border-0 align-top">
-                  <td className="py-2 pr-3 font-medium text-gray-800">{p.name}</td>
-                  <td className="pr-3">{p.email}</td>
-                  <td className="pr-3">{ROLE_LABELS[p.role] || p.role}</td>
-                  <td className="pr-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_STYLE[p.status] || ''}`}>{p.status}</span>
-                    {p.status === 'invited' && p.inviteExpiresAt && <div className="text-xs text-gray-400">expires {fmt(p.inviteExpiresAt)}</div>}
-                  </td>
-                  <td className="pr-3">{fmt(p.lastActive)}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                      {p.status === 'active' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'deactivate', person: p })}>Deactivate</button>}
-                      {p.status === 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'reactivate', person: p })}>Reactivate</button>}
-                      {p.status === 'invited' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'resend', person: p })}>Resend invite</button>}
-                      {p.status !== 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: p.role })}>Change role</button>}
-                      <CopyLinkButton link={links[p.id]} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div role="status" className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <span className="sr-only">Loading people...</span>
         </div>
+      ) : people && people.length === 0 ? (
+        <EmptyState title="No people match" description="Invite someone or import a CSV." className="!py-10" />
+      ) : people ? (
+        <Table className="!shadow-none" >
+          <caption className="sr-only">People in your university</caption>
+          <THead>
+            <Tr><Th>Name</Th><Th>Email</Th><Th>Role</Th><Th>Status</Th><Th>Last active</Th><Th>Actions</Th></Tr>
+          </THead>
+          <TBody>
+            {people.map((p) => (
+              <Tr key={p.id} className="align-top">
+                <Td className="whitespace-nowrap font-medium">{p.name}</Td>
+                <Td>{p.email}</Td>
+                <Td className="whitespace-nowrap">{ROLE_LABELS[p.role] || p.role}</Td>
+                <Td>
+                  <Badge tone={STATUS_TONE[p.status] || 'neutral'}>{p.status}</Badge>
+                  {p.status === 'invited' && p.inviteExpiresAt && <div className="mt-1 text-xs text-ink-2">expires {fmt(p.inviteExpiresAt)}</div>}
+                </Td>
+                <Td className="whitespace-nowrap">{fmt(p.lastActive)}</Td>
+                <Td>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    {p.status === 'active' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'deactivate', person: p })}>Deactivate</button>}
+                    {p.status === 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'reactivate', person: p })}>Reactivate</button>}
+                    {p.status === 'invited' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'resend', person: p })}>Resend invite</button>}
+                    {p.status !== 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: p.role })}>Change role</button>}
+                    <CopyLinkButton link={links[p.id]} />
+                  </div>
+                </Td>
+              </Tr>
+            ))}
+          </TBody>
+        </Table>
       ) : null}
       {dialog()}
-    </section>
+    </Card>
   );
 };
 

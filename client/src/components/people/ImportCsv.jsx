@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import api, { errorMessage } from '../../api/client';
+import { Badge, Button, Card, Field, Table, THead, TBody, Tr, Th, Td, Textarea } from '../ui';
 import CopyLinkButton from './CopyLinkButton';
 
 const TEMPLATE = 'email,name,role\nstudent1@example.edu,Student One,student\nlecturer1@example.edu,Lecturer One,lecturer\n';
 
-const STATUS_STYLE = {
-  invited: 'bg-green-100 text-green-800',
-  skipped: 'bg-gray-100 text-gray-700',
-  blocked_limit: 'bg-red-100 text-red-800',
-  error: 'bg-amber-100 text-amber-800',
-};
+const STATUS_TONE = { invited: 'success', skipped: 'neutral', blocked_limit: 'danger', error: 'warning' };
 
 const downloadTemplate = () => {
   const url = URL.createObjectURL(new Blob([TEMPLATE], { type: 'text/csv' }));
@@ -59,61 +55,58 @@ const ImportCsv = ({ onDone }) => {
   const s = result?.summary;
 
   return (
-    <section className="bg-white rounded-xl shadow p-5" aria-labelledby="csv-h">
+    <Card as="section" aria-labelledby="csv-h">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id="csv-h" className="font-semibold text-gray-800">Import CSV</h3>
-        <button type="button" onClick={downloadTemplate} className="text-sm text-indigo-700 hover:underline">Download template</button>
+        <h3 id="csv-h" className="font-display text-lg font-semibold text-ink">Import CSV</h3>
+        <Button size="sm" variant="ghost" onClick={downloadTemplate}>Download template</Button>
       </div>
-      <p className="text-xs text-gray-500 mt-1">Columns: email (required), name, role (default student). The header row is required.</p>
-      <form onSubmit={submit} className="mt-3 space-y-3">
-        <div>
-          <label htmlFor="csv-file" className="block text-sm font-medium text-gray-700 mb-1">CSV file</label>
-          <input id="csv-file" type="file" accept=".csv,text/csv,text/plain" onChange={onFile} className="text-sm" />
-        </div>
-        <div>
-          <label htmlFor="csv-text" className="block text-sm font-medium text-gray-700 mb-1">Or paste CSV text</label>
-          <textarea id="csv-text" rows={5} value={csv} onChange={(e) => setCsv(e.target.value)} className="w-full bg-gray-100 rounded-md px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-400" />
-        </div>
-        <button type="submit" disabled={busy} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60">
-          {busy ? 'Importing...' : 'Import'}
-        </button>
+      <p className="mt-1 text-sm text-ink-2">Columns: email (required), name, role (default student). The header row is required.</p>
+      <form onSubmit={submit} className="mt-4 space-y-4">
+        <Field label="CSV file">
+          {(p) => (
+            <input id={p.id} type="file" accept=".csv,text/csv,text/plain" onChange={onFile}
+              className="block w-full cursor-pointer rounded-2xl border border-line bg-surface text-sm text-ink-2 file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-primary-50 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-primary-700 hover:file:bg-primary-100" />
+          )}
+        </Field>
+        <Field label="Or paste CSV text">
+          {(p) => <Textarea {...p} rows={5} value={csv} onChange={(e) => setCsv(e.target.value)} className="font-mono" />}
+        </Field>
+        <Button type="submit" loading={busy}>{busy ? 'Importing...' : 'Import'}</Button>
       </form>
-      {error && <p role="alert" className="mt-3 text-sm text-red-700 bg-red-50 rounded-md p-3">{error}</p>}
+      {error && <p role="alert" className="mt-4 rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">{error}</p>}
 
       {result && (
-        <div className="mt-4" role="status">
-          <p className="text-sm text-gray-700">
+        <div className="mt-5" role="status">
+          <p className="text-sm text-ink">
             {s.total} rows: {s.invited || 0} invited, {s.skipped || 0} skipped, {s.blocked_limit || 0} blocked by the limit
             {s.error ? `, ${s.error} with errors` : ''}.
           </p>
           {result.limitReached && (
-            <p className="mt-2 text-sm text-red-700 bg-red-50 rounded-md p-3">
+            <p className="mt-2 rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">
               The student limit was reached. Remaining student rows were not invited (staff rows were still added).
             </p>
           )}
-          {result.warning && !result.limitReached && <p className="mt-2 text-sm text-amber-800 bg-amber-50 rounded-md p-3">{result.warning}</p>}
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <caption className="sr-only">Import results per CSV line</caption>
-              <thead><tr className="text-left text-gray-500 border-b">
-                <th scope="col" className="py-1 pr-3">Line</th><th scope="col" className="pr-3">Email</th><th scope="col" className="pr-3">Role</th><th scope="col" className="pr-3">Result</th><th scope="col">Note</th>
-              </tr></thead>
-              <tbody>
-                {result.results.map((r) => (
-                  <tr key={`${r.line}-${r.email}`} className="border-b last:border-0">
-                    <td className="py-1 pr-3">{r.line}</td>
-                    <td className="pr-3">{r.email}</td>
-                    <td className="pr-3">{r.role}</td>
-                    <td className="pr-3"><span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_STYLE[r.status] || ''}`}>{r.status.replace('_', ' ')}</span></td>
-                    <td>{r.reason} <CopyLinkButton link={r.inviteLink} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {result.warning && !result.limitReached && <p className="mt-2 rounded-2xl bg-sun-50 p-3 text-sm text-ink">{result.warning}</p>}
+          <Table className="mt-3">
+            <caption className="sr-only">Import results per CSV line</caption>
+            <THead>
+              <Tr><Th>Line</Th><Th>Email</Th><Th>Role</Th><Th>Result</Th><Th>Note</Th></Tr>
+            </THead>
+            <TBody>
+              {result.results.map((r) => (
+                <Tr key={`${r.line}-${r.email}`}>
+                  <Td>{r.line}</Td>
+                  <Td>{r.email}</Td>
+                  <Td>{r.role}</Td>
+                  <Td><Badge tone={STATUS_TONE[r.status] || 'neutral'}>{r.status.replace('_', ' ')}</Badge></Td>
+                  <Td>{r.reason} <CopyLinkButton link={r.inviteLink} /></Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
         </div>
       )}
-    </section>
+    </Card>
   );
 };
 

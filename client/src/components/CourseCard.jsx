@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { ChevronDown } from 'lucide-react';
 import api, { errorMessage } from '../api/client';
-
-const inputCls = 'w-full bg-gray-100 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
-const btnCls = 'px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60';
+import { Badge, Button, Card, Field, Input, Textarea } from './ui';
 
 const parseEmails = (text) =>
   [...new Set(text.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))];
@@ -55,29 +54,31 @@ const CohortRow = ({ courseId, cohort, onChanged }) => {
   };
 
   return (
-    <li className="border border-gray-200 rounded-lg p-3">
-      <button type="button" onClick={toggle} aria-expanded={open} className="w-full flex items-center justify-between text-left">
-        <span className="font-medium text-gray-800">{cohort.name}</span>
-        <span className="text-xs text-gray-500">{cohort.studentCount ?? 0} students</span>
+    <li className="rounded-2xl border border-line bg-paper p-4">
+      <button type="button" onClick={toggle} aria-expanded={open} className="flex w-full items-center justify-between gap-3 text-left">
+        <span className="font-semibold text-ink">{cohort.name}</span>
+        <span className="flex items-center gap-2 text-xs text-ink-2">
+          {cohort.studentCount ?? 0} students
+          <ChevronDown size={16} aria-hidden="true" className={`transition ${open ? 'rotate-180' : ''}`} />
+        </span>
       </button>
       {open && (
-        <div className="mt-3 space-y-3">
-          <form onSubmit={enrol}>
-            <label htmlFor={`enrol-${cohort.id}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Enrol students by email (one per line, or comma separated)
-            </label>
-            <textarea id={`enrol-${cohort.id}`} rows={3} className={inputCls} value={emails} onChange={(e) => setEmails(e.target.value)} />
-            <button type="submit" disabled={busy} className={`${btnCls} mt-2`}>{busy ? 'Enrolling...' : 'Enrol'}</button>
+        <div className="mt-4 space-y-4">
+          <form onSubmit={enrol} className="space-y-3">
+            <Field label="Enrol students by email (one per line, or comma separated)">
+              {(p) => <Textarea {...p} rows={3} value={emails} onChange={(e) => setEmails(e.target.value)} />}
+            </Field>
+            <Button type="submit" size="sm" loading={busy}>{busy ? 'Enrolling...' : 'Enrol'}</Button>
           </form>
 
           {results && (
             <div className="text-sm">
-              <p className="font-medium text-gray-700 mb-1">Last enrolment result</p>
-              <ul className="divide-y border rounded-md">
+              <p className="mb-1.5 font-semibold text-ink">Last enrolment result</p>
+              <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
                 {results.map((r) => (
-                  <li key={r.email} className="flex justify-between px-2 py-1">
-                    <span className="truncate">{r.email}</span>
-                    <span className={r.status === 'enrolled' ? 'text-green-700' : 'text-amber-700'}>{r.status.replace(/_/g, ' ')}</span>
+                  <li key={r.email} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="min-w-0 truncate">{r.email}</span>
+                    <Badge tone={r.status === 'enrolled' ? 'success' : 'warning'}>{r.status.replace(/_/g, ' ')}</Badge>
                   </li>
                 ))}
               </ul>
@@ -85,19 +86,19 @@ const CohortRow = ({ courseId, cohort, onChanged }) => {
           )}
 
           <div className="text-sm">
-            <p className="font-medium text-gray-700 mb-1">Roster</p>
+            <p className="mb-1.5 font-semibold text-ink">Roster</p>
             {rosterError ? (
-              <p role="alert" className="text-red-600">{rosterError}</p>
+              <p role="alert" className="text-danger-600">{rosterError}</p>
             ) : roster === null ? (
-              <p className="text-gray-500">Loading...</p>
+              <p className="text-ink-2">Loading...</p>
             ) : roster.length === 0 ? (
-              <p className="text-gray-500">No students enrolled yet.</p>
+              <p className="text-ink-2">No students enrolled yet.</p>
             ) : (
-              <ul className="divide-y border rounded-md max-h-48 overflow-y-auto">
+              <ul className="max-h-48 divide-y divide-line overflow-y-auto rounded-2xl border border-line bg-surface">
                 {roster.map((s) => (
-                  <li key={s.id} className="flex justify-between px-2 py-1">
-                    <span className="truncate">{s.name} <span className="text-gray-500">({s.email})</span></span>
-                    <span className="text-gray-500">{s.status}</span>
+                  <li key={s.id} className="flex justify-between gap-3 px-3 py-2">
+                    <span className="min-w-0 truncate">{s.name} <span className="text-ink-2">({s.email})</span></span>
+                    <span className="shrink-0 text-ink-2">{s.status}</span>
                   </li>
                 ))}
               </ul>
@@ -143,46 +144,44 @@ const CourseCard = ({ course, canManage, isAdmin, onChanged }) => {
   };
 
   return (
-    <article className="bg-white rounded-xl shadow p-5">
+    <Card as="article">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-lg font-semibold text-gray-800">{course.code} <span className="font-normal">{course.title}</span></h3>
-        {course.studentCount !== undefined && <span className="text-sm text-gray-500">{course.studentCount} students</span>}
+        <h3 className="font-display text-xl font-semibold text-ink">{course.code} <span className="font-normal text-ink-2">{course.title}</span></h3>
+        {course.studentCount !== undefined && <Badge tone="neutral">{course.studentCount} students</Badge>}
       </header>
-      {course.description && <p className="text-sm text-gray-600 mt-1">{course.description}</p>}
+      {course.description && <p className="mt-1 text-sm text-ink-2">{course.description}</p>}
 
-      <h4 className="text-sm font-semibold text-gray-700 mt-4 mb-2">Cohorts</h4>
+      <h4 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-2">Cohorts</h4>
       {course.cohorts?.length ? (
         <ul className="space-y-2">
           {course.cohorts.map((c) => (
             canManage
               ? <CohortRow key={c.id} courseId={course.id} cohort={c} onChanged={onChanged} />
-              : <li key={c.id} className="border border-gray-200 rounded-lg p-3 text-sm">{c.name}</li>
+              : <li key={c.id} className="rounded-2xl border border-line bg-paper p-3 text-sm">{c.name}</li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-gray-500">No cohorts yet.</p>
+        <p className="text-sm text-ink-2">No cohorts yet.</p>
       )}
 
       {canManage && (
-        <form onSubmit={addCohort} className="mt-3 flex gap-2 items-end">
-          <div className="flex-1">
-            <label htmlFor={`cohort-${course.id}`} className="block text-sm font-medium text-gray-700 mb-1">New cohort name</label>
-            <input id={`cohort-${course.id}`} className={inputCls} value={cohortName} onChange={(e) => setCohortName(e.target.value)} placeholder="Group 1" />
-          </div>
-          <button type="submit" disabled={busy} className={btnCls}>Add cohort</button>
+        <form onSubmit={addCohort} className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Field label="New cohort name">
+            {(p) => <Input {...p} value={cohortName} onChange={(e) => setCohortName(e.target.value)} placeholder="Group 1" />}
+          </Field>
+          <Button type="submit" variant="secondary" loading={busy}>Add cohort</Button>
         </form>
       )}
 
       {isAdmin && (
-        <form onSubmit={assign} className="mt-3 flex gap-2 items-end">
-          <div className="flex-1">
-            <label htmlFor={`lect-${course.id}`} className="block text-sm font-medium text-gray-700 mb-1">Give a lecturer access (email)</label>
-            <input id={`lect-${course.id}`} type="email" className={inputCls} value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} />
-          </div>
-          <button type="submit" className={btnCls}>Assign</button>
+        <form onSubmit={assign} className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Field label="Give a lecturer access (email)">
+            {(p) => <Input {...p} type="email" value={lecturerEmail} onChange={(e) => setLecturerEmail(e.target.value)} />}
+          </Field>
+          <Button type="submit" variant="secondary">Assign</Button>
         </form>
       )}
-    </article>
+    </Card>
   );
 };
 
