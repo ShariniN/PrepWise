@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import ConfirmDialog from '../analytics/ConfirmDialog';
+import { Button, ConfirmDialog } from '../ui';
 import { setAssessmentStatus } from '../../api/assessments';
 import { errorMessage, errorCode } from '../../api/client';
 
@@ -42,14 +42,13 @@ const StatusActions = ({ assessment, onChanged }) => {
   return (
     <>
       {moves.map(([status, label]) => (
-        <button key={status} type="button" className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-          onClick={() => (CONFIRM_TEXT[status] ? setPending(status) : go(status))}>{label}</button>
+        <Button key={status} size="sm" variant="secondary"
+          onClick={() => (CONFIRM_TEXT[status] ? setPending(status) : go(status))}>{label}</Button>
       ))}
       {pending && (
-        <ConfirmDialog title={`${pending === 'closed' ? 'Close' : 'Open'} "${assessment.title}"?`} confirmLabel={pending === 'closed' ? 'Close assessment' : 'Open now'}
-          busy={busy} onConfirm={() => go(pending)} onCancel={() => setPending(null)}>
-          <p>{CONFIRM_TEXT[pending]}</p>
-        </ConfirmDialog>
+        <ConfirmDialog open title={`${pending === 'closed' ? 'Close' : 'Open'} "${assessment.title}"?`} confirmLabel={pending === 'closed' ? 'Close assessment' : 'Open now'}
+          description={CONFIRM_TEXT[pending]} danger={pending === 'closed'}
+          loading={busy} onConfirm={() => go(pending)} onClose={() => setPending(null)} />
       )}
     </>
   );

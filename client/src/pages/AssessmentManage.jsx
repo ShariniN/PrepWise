@@ -1,11 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import NavBar from '../components/NavBar';
+import { ClipboardList, Plus } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Badge, Button, Card, EmptyState, Skeleton, StatusPill } from '../components/ui';
 import SessionsPanel from '../components/assessment/SessionsPanel';
 import StatusActions from '../components/assessment/StatusActions';
 import { listAssessments } from '../api/assessments';
 import { errorMessage } from '../api/client';
-import { fmtDateTime, fmtDuration, STATUS_STYLES } from '../utils/assessment';
+import { fmtDateTime, fmtDuration } from '../utils/assessment';
+
+const TONES = { open: 'success', scheduled: 'primary', closed: 'neutral', draft: 'neutral' };
 
 const AssessmentManage = () => {
   const [items, setItems] = useState(null);
@@ -23,50 +27,58 @@ const AssessmentManage = () => {
   const replace = (a) => setItems((list) => list.map((x) => (x.id === a.id ? { ...x, ...a } : x)));
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <section className="bg-white rounded-2xl shadow p-6 flex flex-wrap items-center gap-3">
-          <div className="flex-1 min-w-[14rem]">
-            <h1 className="text-2xl font-bold text-gray-800">Assessments</h1>
-            <p className="text-sm text-gray-500 mt-1">Timed assessments for your courses. Integrity monitoring uses browser signals only.</p>
-          </div>
-          <Link to="/integrity" className="text-sm text-indigo-700 underline">Review queue</Link>
-          <Link to="/assessments/manage/new" className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">New assessment</Link>
-        </section>
+    <AppShell
+      eyebrow="Lecturer"
+      title="Assessments"
+      subtitle="Timed assessments for your courses. Integrity monitoring uses browser signals only."
+      actions={(
+        <>
+          <Button as={Link} to="/integrity" variant="secondary">Review queue</Button>
+          <Button as={Link} to="/assessments/manage/new" icon={<Plus size={16} aria-hidden="true" />}>New assessment</Button>
+        </>
+      )}
+    >
+      {items === null && (
+        <Card role="status" aria-label="Loading" className="space-y-3"><Skeleton className="h-6 w-1/3" /><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></Card>
+      )}
+      {error && <Card role="alert" tone="sand" className="text-sm text-danger-700">{error}</Card>}
+      {items && !error && items.length === 0 && (
+        <EmptyState
+          icon={<ClipboardList size={24} aria-hidden="true" />}
+          title="No assessments yet"
+          description="Create a timed assessment from your published questions."
+          action={<Button as={Link} to="/assessments/manage/new">New assessment</Button>}
+        />
+      )}
 
-        {items === null && <p className="text-gray-500" role="status">Loading...</p>}
-        {error && <p role="alert" className="bg-white rounded-2xl shadow p-4 text-sm text-red-700">{error}</p>}
-        {items && !error && items.length === 0 && <p className="bg-white rounded-2xl shadow p-6 text-gray-500">No assessments yet.</p>}
-
-        {items && items.length > 0 && (
-          <ul className="bg-white rounded-2xl shadow divide-y">
+      {items && items.length > 0 && (
+        <Card className="p-2 sm:p-3">
+          <ul className="divide-y divide-line">
             {items.map((a) => (
               <li key={a.id}>
-                <div className="flex flex-wrap items-center gap-2 p-3">
-                  <Link to={`/assessments/manage/${a.id}`} className="font-medium text-indigo-700 hover:underline flex-1 min-w-[12rem]">{a.title}</Link>
-                  <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_STYLES[a.effectiveStatus] || ''}`}>{a.effectiveStatus}</span>
-                  <span className="text-xs text-gray-500">{fmtDuration(a.durationMinutes)}</span>
-                  <span className="text-xs text-gray-500">{(a.questionIds || []).length} questions</span>
-                  <span className="text-xs text-gray-500">Level {a.integrityLevel}</span>
-                  <span className="basis-full text-xs text-gray-500">{fmtDateTime(a.opensAt)} to {fmtDateTime(a.closesAt)}</span>
-                  <div className="basis-full flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-4">
+                  <Link to={`/assessments/manage/${a.id}`} className="min-w-[12rem] flex-1 font-semibold text-primary-700 hover:underline">{a.title}</Link>
+                  <StatusPill tone={TONES[a.effectiveStatus]}>{a.effectiveStatus}</StatusPill>
+                  <span className="text-xs text-ink-2">{fmtDuration(a.durationMinutes)}</span>
+                  <span className="text-xs text-ink-2">{(a.questionIds || []).length} questions</span>
+                  <Badge>Level {a.integrityLevel}</Badge>
+                  <span className="basis-full text-xs text-ink-2">{fmtDateTime(a.opensAt)} to {fmtDateTime(a.closesAt)}</span>
+                  <div className="flex basis-full flex-wrap gap-2">
                     <StatusActions assessment={a} onChanged={replace} />
-                    <button type="button" className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300"
-                      onClick={() => setOpenId(openId === a.id ? '' : a.id)} aria-expanded={openId === a.id}>
+                    <Button size="sm" variant="secondary" onClick={() => setOpenId(openId === a.id ? '' : a.id)} aria-expanded={openId === a.id}>
                       {openId === a.id ? 'Hide sessions' : 'Sessions'}
-                    </button>
-                    <Link to={`/integrity?assessmentId=${a.id}`} className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300">Cases</Link>
-                    <Link to={`/assessments/manage/${a.id}`} className="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300">Edit</Link>
+                    </Button>
+                    <Button as={Link} size="sm" variant="secondary" to={`/integrity?assessmentId=${a.id}`}>Cases</Button>
+                    <Button as={Link} size="sm" variant="secondary" to={`/assessments/manage/${a.id}`}>Edit</Button>
                   </div>
                 </div>
-                {openId === a.id && <div className="bg-gray-50 border-t"><SessionsPanel assessmentId={a.id} /></div>}
+                {openId === a.id && <div className="mb-3 rounded-2xl bg-sand/60"><SessionsPanel assessmentId={a.id} /></div>}
               </li>
             ))}
           </ul>
-        )}
-      </main>
-    </div>
+        </Card>
+      )}
+    </AppShell>
   );
 };
 
