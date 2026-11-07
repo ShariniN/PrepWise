@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { AppContext } from "../context/AppContext.jsx";
 import { useContext } from "react";
 import { assets } from "../assets/assets";
@@ -6,10 +6,20 @@ import axios from "axios";
 import { useNavigate, NavLink } from "react-router-dom";
 import { homeForRole, ROLES, ROLE_LABELS } from "../utils/roles";
 import { toast } from "react-toastify";
+import { listMyCases } from "../api/integrity";
 
 const NavBar = () => {
   const navigate = useNavigate()
   const { userData, backendUrl, clearAuth, role } = useContext(AppContext);
+  const [hasCases, setHasCases] = useState(false);
+
+  // Students only see the My cases link while a case is waiting for their response.
+  useEffect(() => {
+    if (role !== ROLES.STUDENT) return;
+    let cancelled = false;
+    listMyCases().then((d) => { if (!cancelled) setHasCases((d.cases || []).length > 0); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [role]);
 
   const logout = async()=> {
     try {
@@ -30,6 +40,8 @@ const NavBar = () => {
         { to: '/grading', label: 'Grading' },
         { to: '/careers', label: 'Careers' },
         { to: '/questions', label: 'Questions' },
+        { to: '/assessments/manage', label: 'Assessments' },
+        { to: '/integrity', label: 'Integrity review' },
       ]
     : role === ROLES.STUDENT
       ? [
@@ -37,13 +49,17 @@ const NavBar = () => {
           { to: '/cv-analyzer', label: 'CV analyzer' },
           { to: '/swot', label: 'Skills' },
           { to: '/practice', label: 'Practice' },
+          { to: '/assessments', label: 'Assessments' },
           { to: '/interview', label: 'Interview' },
+          ...(hasCases ? [{ to: '/my-cases', label: 'My cases' }] : []),
         ]
       : role === ROLES.LECTURER
         ? [
             { to: '/staff', label: 'Dashboard' },
             { to: '/grading', label: 'Grading' },
             { to: '/questions', label: 'Questions' },
+            { to: '/assessments/manage', label: 'Assessments' },
+            { to: '/integrity', label: 'Integrity review' },
           ]
         : role === ROLES.CAREER_OFFICER
           ? [{ to: '/staff', label: 'My courses' }, { to: '/careers', label: 'Career readiness' }]

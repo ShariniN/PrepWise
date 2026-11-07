@@ -11,22 +11,25 @@ const sizeOf = (e) => 40 + (e.text ? e.text.length : 0);
 
 // Records editing activity for a practice attempt and posts it in batches.
 // Failures are swallowed: this must never get in the way of editing.
-export const useEditEvents = (attemptId) => {
+// `eventsPath` overrides the endpoint (assessment sessions post to their own route).
+export const useEditEvents = (attemptId, eventsPath) => {
   const buffer = useRef([]);
   const bytes = useRef(0);
   const seq = useRef(0);
   const start = useRef(Date.now());
   const idRef = useRef(attemptId);
+  const pathRef = useRef(eventsPath);
   const dead = useRef(false);
 
   useEffect(() => {
     idRef.current = attemptId;
+    pathRef.current = eventsPath;
     seq.current = 0;
     buffer.current = [];
     bytes.current = 0;
     dead.current = false;
     start.current = Date.now();
-  }, [attemptId]);
+  }, [attemptId, eventsPath]);
 
   const flush = useCallback((useBeacon = false) => {
     const id = idRef.current;
@@ -39,7 +42,7 @@ export const useEditEvents = (attemptId) => {
     try {
       if (useBeacon && typeof fetch === 'function') {
         const base = import.meta.env.VITE_BACKEND_URL || '';
-        fetch(`${base}/api/practice/attempts/${id}/events`, {
+        fetch(`${base}${pathRef.current || `/api/practice/attempts/${id}/events`}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -48,7 +51,7 @@ export const useEditEvents = (attemptId) => {
         }).catch(() => {});
         return;
       }
-      api.post(`/api/practice/attempts/${id}/events`, body).catch((err) => {
+      api.post(pathRef.current || `/api/practice/attempts/${id}/events`, body).catch((err) => {
         // 404/429 will not fix themselves; stop sending for this attempt.
         const s = err?.response?.status;
         if (s === 404 || s === 429) dead.current = true;

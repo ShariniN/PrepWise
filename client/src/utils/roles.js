@@ -14,6 +14,10 @@ export const QUESTION_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 export const GRADING_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 export const CAREER_ROLES = [ROLES.CAREER_OFFICER, ROLES.ADMIN];
 
+// Phase 3A: assessments and the integrity review queue.
+export const ASSESSMENT_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
+export const INTEGRITY_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
+
 export const ROLE_LABELS = {
   student: 'Student',
   lecturer: 'Lecturer',

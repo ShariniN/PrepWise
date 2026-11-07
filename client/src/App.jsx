@@ -19,10 +19,20 @@ import QuestionBank from './pages/QuestionBank'
 import QuestionEditor from './pages/QuestionEditor'
 import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
-import { ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES, CAREER_ROLES } from './utils/roles'
+import { ROLES, ASSESSMENT_ROLES, INTEGRITY_ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES, CAREER_ROLES } from './utils/roles'
 import GradingQueue from './pages/GradingQueue'
 import CareerReadiness from './pages/CareerReadiness'
 import AdminOverview from './pages/AdminOverview'
+import AssessmentList from './pages/AssessmentList'
+import AssessmentIntro from './pages/AssessmentIntro'
+import AssessmentSession from './pages/AssessmentSession'
+import AssessmentResults from './pages/AssessmentResults'
+import AssessmentManage from './pages/AssessmentManage'
+import AssessmentEditor from './pages/AssessmentEditor'
+import IntegrityQueue from './pages/IntegrityQueue'
+import IntegrityCase from './pages/IntegrityCase'
+import IntegrityReplay from './pages/IntegrityReplay'
+import MyCases from './pages/MyCases'
 
 
 
@@ -48,9 +58,25 @@ const App = () => {
         <Route path='/practice' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeList/></ProtectedRoute>}/>
         <Route path='/practice/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeQuestion/></ProtectedRoute>}/>
 
+        <Route path='/assessments' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentList/></ProtectedRoute>}/>
+        <Route path='/my-cases' element={<ProtectedRoute allow={[ROLES.STUDENT]}><MyCases/></ProtectedRoute>}/>
+        <Route path='/assessments/session/:sessionId' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentSession/></ProtectedRoute>}/>
+        <Route path='/assessments/session/:sessionId/results' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentResults/></ProtectedRoute>}/>
+        <Route path='/assessments/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentIntro/></ProtectedRoute>}/>
+
         {/* Staff and admin routes */}
         <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
+
+        <Route path='/assessments/manage' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentManage/></ProtectedRoute>}/>
+
+        <Route path='/assessments/manage/new' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
+        <Route path='/assessments/manage/:id' element={<ProtectedRoute allow={ASSESSMENT_ROLES}><AssessmentEditor/></ProtectedRoute>}/>
+
+        <Route path='/integrity' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityQueue/></ProtectedRoute>}/>
+
+        <Route path='/integrity/replay/:sessionId' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityReplay/></ProtectedRoute>}/>
+        <Route path='/integrity/:caseId' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityCase/></ProtectedRoute>}/>
 
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/careers' element={<ProtectedRoute allow={CAREER_ROLES}><CareerReadiness/></ProtectedRoute>}/>
