@@ -180,7 +180,7 @@ test('students only see their own ESCALATED cases, without evidence or reviewer 
 });
 
 test('students cannot read integrity data through any other endpoint', async () => {
-  for (const p of [`/cases/${kase._id}`, '/cases']) {
+  for (const p of [`/cases/${kase._id}`, '/cases', `/sessions/${session._id}/replay?questionId=${qMcq._id}`, `/assessments/${assessment._id}/similarity`]) {
     assert.equal((await api(stu).get(p)).status, 403, p);
   }
   const t = await request(app).get(`/api/assessments/${assessment._id}/sessions`).set(as(stu));

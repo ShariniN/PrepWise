@@ -3,6 +3,7 @@ import userAuth from '../middleware/userAuth.js';
 import requireRole from '../middleware/requireRole.js';
 import * as review from '../controllers/integrityReviewController.js';
 import * as evidence from '../controllers/integrityEvidenceController.js';
+import { getReplay } from '../controllers/integrityReplayController.js';
 
 const integrityRouter = express.Router();
 const student = requireRole('student');
@@ -23,5 +24,6 @@ integrityRouter.post('/sessions/:id/analyse', staff, review.analyseOneSession);
 integrityRouter.post('/assessments/:id/analyse', staff, review.analyseAssessment);
 integrityRouter.post('/assessments/:id/similarity/run', staff, evidence.runSimilarity);
 integrityRouter.get('/assessments/:id/similarity', staff, evidence.listSimilarity);
+integrityRouter.get('/sessions/:id/replay', staff, getReplay);
 
 export default integrityRouter;
