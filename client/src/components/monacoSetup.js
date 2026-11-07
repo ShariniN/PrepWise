@@ -1,15 +1,26 @@
 // Loads Monaco from the bundled npm package (no CDN, works offline).
-// Only the generic editor worker is wired up; language services (IntelliSense)
-// for JS/TS are therefore basic, but syntax highlighting works for all languages.
+// This module is imported lazily by CodeEditor, so Monaco stays out of the main bundle.
 import * as monaco from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import editorWorker from 'monaco-editor/editor/editor.worker?worker';
+import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker';
 import { loader } from '@monaco-editor/react';
 
 self.MonacoEnvironment = {
-  getWorker() {
+  getWorker(_id, label) {
+    if (label === 'typescript' || label === 'javascript') return new tsWorker();
     return new editorWorker();
   },
 };
+
+try {
+  // Programs run in a sandbox with Node/stdin, so only report syntax errors for JS.
+  monaco.languages.typescript?.javascriptDefaults?.setDiagnosticsOptions({
+    noSemanticValidation: true,
+    noSyntaxValidation: false,
+  });
+} catch {
+  /* optional */
+}
 
 loader.config({ monaco });
 

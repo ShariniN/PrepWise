@@ -30,6 +30,7 @@ const NavBar = () => {
           { to: '/fresher-dashboard', label: 'Dashboard' },
           { to: '/cv-analyzer', label: 'CV analyzer' },
           { to: '/swot', label: 'Skills' },
+          { to: '/practice', label: 'Practice' },
           { to: '/interview', label: 'Interview' },
         ]
       : role ? [{ to: '/staff', label: 'My courses' }] : [];

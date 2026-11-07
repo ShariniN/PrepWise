@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { EDITOR_LANGUAGES } from '../utils/practice';
 
 const Editor = React.lazy(async () => {
   // Prefer the bundled Monaco. If that fails, the CDN loader of
@@ -11,17 +12,6 @@ const Editor = React.lazy(async () => {
   const mod = await import('@monaco-editor/react');
   return { default: mod.default };
 });
-
-export const EDITOR_LANGUAGES = [
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'python', label: 'Python' },
-  { value: 'java', label: 'Java' },
-  { value: 'cpp', label: 'C++' },
-  { value: 'c', label: 'C' },
-  { value: 'csharp', label: 'C#' },
-  { value: 'go', label: 'Go' },
-  { value: 'php', label: 'PHP' },
-];
 
 const PREF_KEY = 'prepwise.editorPrefs';
 const readPrefs = () => {
