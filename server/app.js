@@ -37,8 +37,15 @@ const allowedOrigins = [
   'http://localhost:5174'
 ];
 
+// Outside production any localhost port may call the API (Vite picks a free port when 5173 is taken).
+const localhostOrigin = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/;
+
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' && localhostOrigin.test(origin)) return callback(null, true);
+    return callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

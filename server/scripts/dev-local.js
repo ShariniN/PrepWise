@@ -33,7 +33,7 @@ const mongoose = (await import('mongoose')).default;
 await mongoose.connect(process.env.MONGODB_URI, { dbName: 'prepwise' });
 
 const { default: Institution } = await import('../models/Institution.js');
-const firstRun = !(await Institution.findOne({ slug: 'demo-university-a' }));
+const firstRun = !(await Institution.findOne({ slug: 'demo-a' }));
 
 if (firstRun) {
   console.log('\nFirst run: seeding fake demo data (printed passwords are for local use only)...');
