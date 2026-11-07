@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import userAuth from '../middleware/userAuth.js';
+import { executeCode } from '../controllers/codeController.js';
 import rateLimit from 'express-rate-limit';
 
 import { 
@@ -18,8 +19,7 @@ import {
   createInterviewWithProfileCV,
   createInterview,
   skipQuestion,
-  processCV,
-  executeCodeWithJDoodle // Use the corrected function from controller
+  processCV
 } from '../controllers/interviewController.js';
 
 const interviewRouter = express.Router();
@@ -238,9 +238,9 @@ interviewRouter.use(userAuth);
 
 interviewRouter.post('/transcribe', uploadToDisk.single('audio'), transcribeAudio);
 
-// CORRECTED: Use the fixed controller function directly
-interviewRouter.post('/execute', codeExecutionLimiter, executeCodeWithJDoodle);
-interviewRouter.post('/execute-code', codeExecutionLimiter, executeCodeWithJDoodle);
+// Old paths kept for the existing client; same single execution service as /api/code/execute
+interviewRouter.post('/execute', codeExecutionLimiter, executeCode);
+interviewRouter.post('/execute-code', codeExecutionLimiter, executeCode);
 
 // CV management routes
 interviewRouter.get('/cv', getUserCV);
