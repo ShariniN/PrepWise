@@ -1,12 +1,12 @@
 import React, { useContext, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { assets } from '../assets/assets';
+import AuthLayout from '../components/AuthLayout';
+import { Button, Field, Input } from '../components/ui';
 import { AppContext } from '../context/AppContext';
 import api, { errorMessage, errorCode } from '../api/client';
 import { homeForRole, passwordProblems, PASSWORD_RULES } from '../utils/roles';
 
-const inputCls = 'w-full bg-gray-100 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-400';
 
 const AcceptInvite = () => {
   const [params] = useSearchParams();
@@ -51,55 +51,43 @@ const AcceptInvite = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <div className="flex justify-center mb-4">
-          <img src={assets.logo} alt="PrepWise logo" className="w-16 h-16" />
-        </div>
-        <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">Accept your invitation</h1>
-
+    <AuthLayout title="Accept your invitation" subtitle={!token || fatal ? undefined : 'Choose a password to finish setting up your account.'}>
         {!token || fatal ? (
           <div role="alert" className="text-center">
-            <p className="text-red-600 text-sm my-4">
+            <p className="text-danger-700 text-sm mb-4">
               {fatal || 'This invitation link is missing its token.'} Ask your university to send a new invitation.
             </p>
-            <Link to="/login" className="text-indigo-600 text-sm hover:underline">Go to login</Link>
+            <Link to="/login" className="text-primary-700 text-sm font-medium hover:underline">Go to login</Link>
           </div>
         ) : (
-          <>
-            <p className="text-sm text-gray-600 text-center mb-6">Choose a password to finish setting up your account.</p>
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="ai-name" className="block text-sm font-medium text-gray-700 mb-1">Full name (optional)</label>
-                <input id="ai-name" className={inputCls} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-              </div>
-              <div>
-                <label htmlFor="ai-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone number (optional, 10 digits)</label>
-                <input id="ai-phone" className={inputCls} value={phoneNumber} inputMode="numeric" maxLength={10} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))} autoComplete="tel" />
-              </div>
-              <div>
-                <label htmlFor="ai-pw" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input id="ai-pw" type="password" required className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-describedby="ai-pw-rules" />
-                <ul id="ai-pw-rules" className="mt-2 text-xs space-y-0.5">
-                  {PASSWORD_RULES.map((r) => (
-                    <li key={r.label} className={r.test(password) ? 'text-green-600' : 'text-gray-500'}>
-                      {r.test(password) ? '✓' : '-'} {r.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <label htmlFor="ai-confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
-                <input id="ai-confirm" type="password" required className={inputCls} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-              </div>
-              <button type="submit" disabled={busy} className="w-full py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-900 text-white text-sm font-semibold disabled:opacity-60">
-                {busy ? 'Setting up...' : 'Create my account'}
-              </button>
-            </form>
-          </>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <Field label="Full name (optional)">
+              {(p) => <Input {...p} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} autoComplete="name" />}
+            </Field>
+            <Field label="Phone number (optional, 10 digits)">
+              {(p) => <Input {...p} value={phoneNumber} inputMode="numeric" maxLength={10} onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))} autoComplete="tel" />}
+            </Field>
+            <div>
+              <Field label="Password">
+                {(p) => <Input {...p} type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-describedby="ai-pw-rules" />}
+              </Field>
+              <ul id="ai-pw-rules" className="mt-2 text-xs space-y-0.5">
+                {PASSWORD_RULES.map((r) => (
+                  <li key={r.label} className={r.test(password) ? 'text-success-700' : 'text-ink-muted'}>
+                    {r.test(password) ? '✓' : '-'} {r.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Field label="Confirm password">
+              {(p) => <Input {...p} type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />}
+            </Field>
+            <Button type="submit" block size="lg" loading={busy}>
+              {busy ? 'Setting up...' : 'Create my account'}
+            </Button>
+          </form>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   );
 };
 

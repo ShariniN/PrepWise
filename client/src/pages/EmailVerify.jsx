@@ -3,6 +3,8 @@ import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+import AuthLayout from '../components/AuthLayout';
+import { Button, Field, Input } from '../components/ui';
 
 const EmailVerify = () => {
 
@@ -73,22 +75,16 @@ const EmailVerify = () => {
   }, [isLoggedin, userData])
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-200 to-purple-400">
-      <form
-        onSubmit={onSubmitHandler}
-        className="bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm"
-        action="">
-        <h1 className="text-white text-2xl font-semibold text-center mb-4">
-          Email Verification
-        </h1>
-        <p className="text-center mb-6 text-indigo-300">
-          Enter the 6-digit OTP sent to your email
-        </p>
-        <div className="flex justify-between mb-8" onPaste={handlePaste}>
+    <AuthLayout title="Email Verification" subtitle="Enter the 6-digit OTP sent to your email">
+      <form onSubmit={onSubmitHandler} action="">
+        <div className="flex justify-between gap-2 mb-8" onPaste={handlePaste}>
           {Array(6).fill(0).map((_, index) => (
               <input
                 type="text"
-                className="w-12 h-12 bg-[#333A5C] text-white text-center text-xl rounded-md"
+                aria-label={`Digit ${index + 1}`}
+                inputMode="numeric"
+                autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                className="h-14 w-full min-w-0 rounded-2xl border border-line bg-surface text-center font-display text-2xl font-semibold text-ink transition hover:border-primary-300 focus:border-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-600/15"
                 maxLength="1"
                 key={index}
                 required
@@ -98,9 +94,9 @@ const EmailVerify = () => {
               />
             ))}
         </div>
-        <button className="w-full py-3 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white rounded-full">Verify Email</button>
+        <Button type="submit" block size="lg">Verify Email</Button>
       </form>
-    </div>
+    </AuthLayout>
   );
 };
 
