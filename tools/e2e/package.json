@@ -1,0 +1,7 @@
+{
+  "name": "prepwise-e2e-tools",
+  "private": true,
+  "type": "module",
+  "description": "Local-only browser and API smoke tests that run against `npm run dev:local` (fake demo data only).",
+  "dependencies": { "playwright-core": "^1.0.0" }
+}

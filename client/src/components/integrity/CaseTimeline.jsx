@@ -41,24 +41,24 @@ const CaseTimeline = ({ items, truncated }) => {
 
   const mark = (it, i) => {
     const common = {
-      key: i, tabIndex: 0, role: 'img', 'aria-label': `${fmtOffset(it.at)} ${describe(it)}`,
+      tabIndex: 0, role: 'img', 'aria-label': `${fmtOffset(it.at)} ${describe(it)}`,
       onMouseEnter: () => setActive(it), onFocus: () => setActive(it), onMouseLeave: () => setActive(null), onBlur: () => setActive(null),
       style: { cursor: 'pointer', outline: 'none' },
     };
     if (it.kind === 'session') {
-      return <line {...common} x1={x(it.at)} x2={x(it.at)} y1={8} y2={H - 30} stroke={COLORS.ink} strokeWidth={it.type === 'deadline' ? 1.5 : 1} strokeDasharray={it.type === 'deadline' ? '4 3' : undefined} />;
+      return <line key={i} {...common} x1={x(it.at)} x2={x(it.at)} y1={8} y2={H - 30} stroke={COLORS.ink} strokeWidth={it.type === 'deadline' ? 1.5 : 1} strokeDasharray={it.type === 'deadline' ? '4 3' : undefined} />;
     }
     if (it.kind === 'integrity') {
       const c = it.technical ? COLORS.technical : COLORS.integrity;
       const big = it.type === 'paste' && (it.len || 0) >= 500;
-      return <circle {...common} cx={x(it.at)} cy={lane('integrity')} r={big ? 7 : 5} fill={it.technical ? 'none' : c} stroke={it.technical ? c : 'var(--surface, #fff)'} strokeWidth={it.technical ? 2 : 2} />;
+      return <circle key={i} {...common} cx={x(it.at)} cy={lane('integrity')} r={big ? 7 : 5} fill={it.technical ? 'none' : c} stroke={it.technical ? c : 'var(--surface, #fff)'} strokeWidth={it.technical ? 2 : 2} />;
     }
     if (it.kind === 'editing') {
       const x1 = x(it.at); const x2 = Math.max(x(it.until ?? it.at), x1 + 3);
-      return <rect {...common} x={x1} y={lane('editing') - 7} width={x2 - x1} height={14} rx={3} fill={COLORS.editing} fillOpacity={it.pasteCount ? 1 : 0.55} stroke="var(--surface, #fff)" strokeWidth={1} />;
+      return <rect key={i} {...common} x={x1} y={lane('editing') - 7} width={x2 - x1} height={14} rx={3} fill={COLORS.editing} fillOpacity={it.pasteCount ? 1 : 0.55} stroke="var(--surface, #fff)" strokeWidth={1} />;
     }
     const cx = x(it.at); const cy = lane('attempt');
-    return <path {...common} d={`M${cx} ${cy - 7} L${cx + 7} ${cy} L${cx} ${cy + 7} L${cx - 7} ${cy} Z`} fill={it.type === 'submit' ? COLORS.attempt : '#fff'} stroke={COLORS.attempt} strokeWidth={2} />;
+    return <path key={i} {...common} d={`M${cx} ${cy - 7} L${cx + 7} ${cy} L${cx} ${cy + 7} L${cx - 7} ${cy} Z`} fill={it.type === 'submit' ? COLORS.attempt : '#fff'} stroke={COLORS.attempt} strokeWidth={2} />;
   };
 
   return (

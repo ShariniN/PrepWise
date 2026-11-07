@@ -11,3 +11,9 @@ server/.env
 
 # local embedded database for demos
 server/.local-db/
+
+# local e2e artefacts
+tools/e2e/demo-credentials.log
+tools/e2e/e2e-state.json
+tools/e2e/e2e/
+tools/e2e/node_modules/
