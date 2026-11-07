@@ -13,6 +13,8 @@ import SkillAssessor from './pages/SkillAssessor'
 import Interview from './pages/Interview'
 import StaffDashboard from './pages/StaffDashboard'
 import ManagePeople from './pages/ManagePeople'
+import PracticeList from './pages/PracticeList'
+import PracticeQuestion from './pages/PracticeQuestion'
 import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import { ROLES, STAFF_ROLES } from './utils/roles'
@@ -37,6 +39,9 @@ const App = () => {
         <Route path='/cv-analyzer' element={<ProtectedRoute allow={[ROLES.STUDENT]}><CVAnalyzer/></ProtectedRoute>}/>
         <Route path='/swot' element={<ProtectedRoute allow={[ROLES.STUDENT]}><SkillAssessor/></ProtectedRoute>}/>
         <Route path='/interview' element={<ProtectedRoute allow={[ROLES.STUDENT]}><Interview/></ProtectedRoute>}/>
+
+        <Route path='/practice' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeList/></ProtectedRoute>}/>
+        <Route path='/practice/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeQuestion/></ProtectedRoute>}/>
 
         {/* Staff and admin routes */}
         <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
