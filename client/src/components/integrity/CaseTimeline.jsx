@@ -15,7 +15,7 @@ const LANES = [
 ];
 const H = 190;
 
-export const describe = (it) => {
+const describe = (it) => {
   const q = it.questionId ? ` (question ${String(it.questionId).slice(-4)})` : '';
   if (it.kind === 'session') return `Session ${it.type}`;
   if (it.kind === 'integrity') {
