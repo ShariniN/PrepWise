@@ -3,7 +3,7 @@ import { Mic, MicOff, Play, Pause, ChevronRight, Clock, User, FileText, Brain,
   AlertCircle, Volume2, Code, Terminal, CheckCircle, SkipForward, RefreshCw, 
   Trophy, Download, Type, Headphones, Upload, FileCheck, Target, TrendingUp,
   Zap, MessageCircle } from 'lucide-react';
-import NavBar from "../components/NavBar";
+import AppShell from "../components/AppShell";
 import CodeEditor from '../components/CodeEditor';
 import VerdictBadge from '../components/VerdictBadge';
 import UnavailableNotice from '../components/UnavailableNotice';
@@ -367,31 +367,31 @@ const MockInterviewSystem = () => {
   // CV Section Component
   const CVSection = useMemo(() => (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-2">Resume/CV *</label>
+      <label className="block text-sm font-medium text-ink-2 mb-2">Resume/CV *</label>
       
       <div className="flex gap-2 mb-3 flex-wrap">
         <button
           onClick={() => cv.changeCvMode('profile', setInterviewData)}
           disabled={!cv.profileCV}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
             cv.cvMode === 'profile' 
-              ? 'bg-blue-100 border-blue-500 text-blue-700' 
+              ? 'bg-primary-100 border-primary-500 text-primary-700' 
               : cv.profileCV
-                ? 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
-                : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                ? 'bg-sand border-line text-ink-2 hover:bg-sand'
+                : 'bg-sand border-line text-ink-muted cursor-not-allowed'
           }`}
         >
           <User className="w-4 h-4" />
           Profile CV
-          {cv.profileCV && <CheckCircle className="w-4 h-4 text-green-500" />}
+          {cv.profileCV && <CheckCircle className="w-4 h-4 text-success-500" />}
         </button>
         
         <button
           onClick={() => cv.changeCvMode('upload', setInterviewData)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
             cv.cvMode === 'upload' 
-              ? 'bg-purple-100 border-purple-500 text-purple-700' 
-              : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+              ? 'bg-primary-100 border-primary-500 text-primary-700' 
+              : 'bg-sand border-line text-ink-2 hover:bg-sand'
           }`}
         >
           <Upload className="w-4 h-4" />
@@ -400,10 +400,10 @@ const MockInterviewSystem = () => {
 
         <button
           onClick={() => cv.changeCvMode('manual', setInterviewData)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
             cv.cvMode === 'manual' 
-              ? 'bg-green-100 border-green-500 text-green-700' 
-              : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+              ? 'bg-success-100 border-success-500 text-success-700' 
+              : 'bg-sand border-line text-ink-2 hover:bg-sand'
           }`}
         >
           <Type className="w-4 h-4" />
@@ -412,26 +412,26 @@ const MockInterviewSystem = () => {
       </div>
 
       {cv.cvMode === 'profile' && cv.profileCV && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+        <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 mb-3">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-blue-600" />
-              <h4 className="text-sm font-medium text-blue-900">Profile CV Loaded</h4>
+              <FileCheck className="w-4 h-4 text-primary-600" />
+              <h4 className="text-sm font-medium text-primary-900">Profile CV Loaded</h4>
             </div>
-            <span className="text-xs text-blue-600">{cv.profileCV.age || 'Current'}</span>
+            <span className="text-xs text-primary-600">{cv.profileCV.age || 'Current'}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
             <div>
-              <span className="font-medium text-blue-700">File:</span>
-              <span className="ml-1 text-blue-600">{cv.profileCV.fileName}</span>
+              <span className="font-medium text-primary-700">File:</span>
+              <span className="ml-1 text-primary-600">{cv.profileCV.fileName}</span>
             </div>
             <div>
-              <span className="font-medium text-blue-700">Size:</span>
-              <span className="ml-1 text-blue-600">{cv.profileCV.fileSize ? `${Math.round(cv.profileCV.fileSize / 1024)}KB` : 'N/A'}</span>
+              <span className="font-medium text-primary-700">Size:</span>
+              <span className="ml-1 text-primary-600">{cv.profileCV.fileSize ? `${Math.round(cv.profileCV.fileSize / 1024)}KB` : 'N/A'}</span>
             </div>
             <div>
-              <span className="font-medium text-blue-700">Length:</span>
-              <span className="ml-1 text-blue-600">{cv.profileCV.text.length} chars</span>
+              <span className="font-medium text-primary-700">Length:</span>
+              <span className="ml-1 text-primary-600">{cv.profileCV.text.length} chars</span>
             </div>
           </div>
         </div>
@@ -439,7 +439,7 @@ const MockInterviewSystem = () => {
 
       {cv.cvMode === 'upload' && (
         <div className="space-y-3">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+          <div className="border-2 border-dashed border-line rounded-xl p-4 text-center hover:border-line transition-colors">
             <input
               ref={cv.fileInputRef}
               type="file"
@@ -448,33 +448,33 @@ const MockInterviewSystem = () => {
               className="hidden"
               disabled={cv.cvLoading}
             />
-            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-            <div className="text-sm text-gray-600 mb-1">
+            <Upload className="w-6 h-6 text-ink-muted mx-auto mb-2" />
+            <div className="text-sm text-ink-2 mb-1">
               <button
                 onClick={() => cv.fileInputRef.current?.click()}
                 disabled={cv.cvLoading}
-                className="text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-400"
+                className="text-primary-600 hover:text-primary-700 font-medium disabled:text-ink-muted"
               >
                 {cv.cvLoading ? 'Processing...' : 'Click to upload'}
               </button>
             </div>
-            <div className="text-xs text-gray-500">PDF, TXT, DOC, or DOCX (Max 5MB)</div>
+            <div className="text-xs text-ink-muted">PDF, TXT, DOC, or DOCX (Max 5MB)</div>
           </div>
 
           {cv.cvLoading && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-3">
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                <span className="text-sm font-medium text-blue-800">Processing CV file...</span>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                <span className="text-sm font-medium text-primary-800">Processing CV file...</span>
               </div>
             </div>
           )}
 
           {cv.uploadedFile && !cv.cvLoading && interviewData.resumeText && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="bg-success-50 border border-success-100 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-2">
-                <FileCheck className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
+                <FileCheck className="w-4 h-4 text-success-600" />
+                <span className="text-sm font-medium text-success-700">
                   {cv.uploadedFile.name} ({Math.round(cv.uploadedFile.size / 1024)}KB)
                 </span>
               </div>
@@ -488,10 +488,10 @@ const MockInterviewSystem = () => {
           <textarea
             value={interviewData.resumeText}
             onChange={handleManualCvChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 resize-none text-sm"
+            className="w-full px-3 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 h-32 resize-none text-sm"
             placeholder="Enter your professional experience, skills, education, and qualifications..."
           />
-          <div className="mt-1 flex justify-between text-xs text-gray-500">
+          <div className="mt-1 flex justify-between text-xs text-ink-muted">
             <span>Characters: {interviewData.resumeText.length}</span>
             <span>Words: {interviewData.resumeText.split(' ').filter(word => word.length > 0).length}</span>
           </div>
@@ -499,9 +499,9 @@ const MockInterviewSystem = () => {
       )}
 
       {cv.cvError && (
-        <div className="mt-2 flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="w-4 h-4 text-red-500" />
-          <span className="text-red-700 text-xs">{cv.cvError}</span>
+        <div className="mt-2 flex items-center gap-2 p-2 bg-danger-50 border border-danger-100 rounded-xl">
+          <AlertCircle className="w-4 h-4 text-danger-500" />
+          <span className="text-danger-700 text-xs">{cv.cvError}</span>
         </div>
       )}
     </div>
@@ -509,68 +509,59 @@ const MockInterviewSystem = () => {
 
   // Setup Phase Component
   const SetupPhase = useMemo(() => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <NavBar />
-      <div className="container mx-auto px-6 py-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-4">
-              <Brain className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">AI Mock Interview System</h1>
-            <p className="text-lg text-gray-600">
-              Welcome {user?.name || 'User'}! Prepare for your software engineering internship
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+    <AppShell
+      width="narrow"
+      title="AI Mock Interview System"
+      subtitle={`Welcome ${user?.name || 'User'}! Prepare for your software engineering internship`}
+    >
+          <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 space-y-4">
             {user && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4 border border-blue-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <User className="w-4 h-4 text-blue-600" />
+              <div className="bg-primary-50 rounded-xl p-4 mb-4 border border-primary-100">
+                <h3 className="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+                  <User className="w-4 h-4 text-primary-600" />
                   Interview Candidate
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-3 border border-blue-100">
-                    <label className="block text-xs font-medium text-blue-700 mb-1">Name</label>
-                    <p className="text-gray-900 font-medium text-sm">{user.name}</p>
+                  <div className="bg-surface rounded-xl p-3 border border-primary-100">
+                    <label className="block text-xs font-medium text-primary-700 mb-1">Name</label>
+                    <p className="text-ink font-medium text-sm">{user.name}</p>
                   </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-100">
-                    <label className="block text-xs font-medium text-blue-700 mb-1">Email</label>
-                    <p className="text-gray-900 font-medium text-sm">{user.email}</p>
+                  <div className="bg-surface rounded-xl p-3 border border-primary-100">
+                    <label className="block text-xs font-medium text-primary-700 mb-1">Email</label>
+                    <p className="text-ink font-medium text-sm">{user.email}</p>
                   </div>
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-gray-500" />
+              <label className="block text-sm font-medium text-ink-2 mb-2 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-ink-muted" />
                 Job Description *
               </label>
               <textarea
                 value={interviewData.jobDescription}
                 onChange={handleJobDescriptionChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24 resize-none text-sm"
+                className="w-full px-3 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 h-24 resize-none text-sm"
                 placeholder="Paste the software engineering internship job description here..."
               />
             </div>
 
             {CVSection}
 
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+            <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-primary-900 mb-2 flex items-center gap-2">
                 <Volume2 className="w-4 h-4" />
                 Audio Setup
               </h4>
-              <p className="text-xs text-blue-700 mb-3">Test your microphone before starting:</p>
+              <p className="text-xs text-primary-700 mb-3">Test your microphone before starting:</p>
               <button
                 onClick={audio.initializeAudio}
                 disabled={audio.audioPermission}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
                   audio.audioPermission 
-                    ? 'bg-green-100 text-green-800 border border-green-300' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-success-100 text-success-700 border border-success-100' 
+                    : 'bg-primary-600 hover:bg-primary-700 text-white'
                 }`}
               >
                 {audio.audioPermission ? (
@@ -586,8 +577,8 @@ const MockInterviewSystem = () => {
                 )}
               </button>
               {audio.audioError && (
-                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-xs text-red-600 flex items-center gap-2">
+                <div className="mt-2 p-2 bg-danger-50 border border-danger-100 rounded-xl">
+                  <p className="text-xs text-danger-600 flex items-center gap-2">
                     <AlertCircle className="w-3 h-3" />
                     {audio.audioError}
                   </p>
@@ -596,16 +587,16 @@ const MockInterviewSystem = () => {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-red-500" />
-                <span className="text-red-700 text-sm">{error}</span>
+              <div className="flex items-center gap-2 p-3 bg-danger-50 border border-danger-100 rounded-xl">
+                <AlertCircle className="w-4 h-4 text-danger-500" />
+                <span className="text-danger-700 text-sm">{error}</span>
               </div>
             )}
 
             <button
               onClick={handleCreateInterview}
               disabled={loading || !isSetupValid(interviewData.jobDescription, interviewData.resumeText) || !user}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none"
+              className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-line disabled:text-ink-muted text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center justify-center gap-3 shadow-pill active:scale-[0.97] disabled:transform-none disabled:shadow-none"
             >
               {loading ? (
                 <>
@@ -621,67 +612,55 @@ const MockInterviewSystem = () => {
               )}
             </button>
           </div>
-        </div>
-      </div>
-    </div>
+    </AppShell>
   ), [user, interviewData, audio, error, loading, CVSection, handleJobDescriptionChange, handleCreateInterview]);
 
   // Interview Phase Component
   const InterviewPhase = useMemo(() => (
-    <div className="min-h-screen bg-gray-50">
-      <NavBar />
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Brain className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">Mock Interview</h1>
-                <p className="text-xs text-gray-600">Question {interview.questionIndex + 1} of {interview.questions.length}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-gray-600">
-                <Clock className="w-4 h-4" />
-                <span className="font-mono text-sm">{formatTime(timer)}</span>
-              </div>
-              <div className="w-24">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${((interview.questionIndex + 1) / interview.questions.length) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
+    <AppShell width="wide">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-surface p-4 shadow-soft sm:px-6">
+        <div>
+          <h1 className="font-display text-xl font-semibold text-ink">Mock Interview</h1>
+          <p className="text-sm text-ink-2">Question {interview.questionIndex + 1} of {interview.questions.length}</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-ink-2">
+            <Clock className="w-4 h-4" aria-hidden="true" />
+            <span className="font-mono text-sm">{formatTime(timer)}</span>
+          </div>
+          <div className="w-28 sm:w-40">
+            <div className="w-full bg-sand rounded-full h-2.5">
+              <div
+                className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
+                style={{ width: `${((interview.questionIndex + 1) / interview.questions.length) * 100}%` }}
+              ></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div>
         <div className={`grid gap-6 ${showCodeEditor && isCodingQuestion ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-4xl mx-auto'}`}>
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+          <div className="bg-surface rounded-3xl shadow-soft border border-line p-6">
             <div className="flex items-start gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                isCodingQuestion ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
-                interview.currentQuestion?.type === 'technical' ? 'bg-gradient-to-r from-indigo-500 to-blue-500' :
-                'bg-gradient-to-r from-green-500 to-teal-500'
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
+                isCodingQuestion ? 'bg-gradient-to-r from-primary-500 to-danger-500' :
+                interview.currentQuestion?.type === 'technical' ? 'bg-primary-500' :
+                'bg-success-500'
               }`}>
                 {isCodingQuestion ? <Code className="w-6 h-6 text-white" /> : <MessageCircle className="w-6 h-6 text-white" />}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    isCodingQuestion ? 'bg-purple-100 text-purple-800' :
-                    interview.currentQuestion?.type === 'technical' ? 'bg-indigo-100 text-indigo-800' :
-                    'bg-green-100 text-green-800'
+                    isCodingQuestion ? 'bg-primary-100 text-primary-800' :
+                    interview.currentQuestion?.type === 'technical' ? 'bg-primary-100 text-primary-800' :
+                    'bg-success-100 text-success-700'
                   }`}>
                     {interview.currentQuestion?.type?.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 leading-relaxed">
+                <h2 className="text-lg font-bold text-ink leading-relaxed">
                   {interview.currentQuestion?.question}
                 </h2>
               </div>
@@ -689,38 +668,38 @@ const MockInterviewSystem = () => {
 
             {!isCodingQuestion && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Response Method:</label>
+                <label className="block text-sm font-medium text-ink-2 mb-3">Response Method:</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setAnswerMode('audio')}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 ${
+                    className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 ${
                       answerMode === 'audio' 
-                        ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-lg' 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-primary-50 border-primary-500 text-primary-700 shadow-lg' 
+                        : 'bg-sand border-line text-ink-2 hover:bg-sand'
                     }`}
                   >
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Headphones className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <Headphones className="w-4 h-4 text-primary-600" />
                     </div>
                     <div className="text-left">
                       <div className="text-sm font-medium">Audio</div>
-                      <div className="text-xs text-gray-500">Speak answer</div>
+                      <div className="text-xs text-ink-muted">Speak answer</div>
                     </div>
                   </button>
                   <button
                     onClick={() => setAnswerMode('text')}
-                    className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 ${
+                    className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 ${
                       answerMode === 'text' 
-                        ? 'bg-green-50 border-green-500 text-green-700 shadow-lg' 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                        ? 'bg-success-50 border-success-500 text-success-700 shadow-lg' 
+                        : 'bg-sand border-line text-ink-2 hover:bg-sand'
                     }`}
                   >
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Type className="w-4 h-4 text-green-600" />
+                    <div className="w-8 h-8 bg-success-100 rounded-xl flex items-center justify-center">
+                      <Type className="w-4 h-4 text-success-600" />
                     </div>
                     <div className="text-left">
                       <div className="text-sm font-medium">Text</div>
-                      <div className="text-xs text-gray-500">Type answer</div>
+                      <div className="text-xs text-ink-muted">Type answer</div>
                     </div>
                   </button>
                 </div>
@@ -729,15 +708,15 @@ const MockInterviewSystem = () => {
 
             {!isCodingQuestion && answerMode === 'audio' && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                <div className="bg-primary-50 rounded-2xl p-4 border border-primary-100">
                   <div className="flex items-center justify-center gap-4 py-6">
                     <button
                       onClick={audio.isRecording ? audio.stopRecording : audio.startRecording}
                       disabled={loading}
                       className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
                         audio.isRecording 
-                          ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                          ? 'bg-danger-500 hover:bg-danger-600 text-white animate-pulse' 
+                          : 'bg-primary-500 hover:bg-primary-600 text-white'
                       }`}
                     >
                       {audio.isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
@@ -747,7 +726,7 @@ const MockInterviewSystem = () => {
                       <button
                         onClick={audio.playRecording}
                         className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                          audio.isPlaying ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-500 hover:bg-gray-600'
+                          audio.isPlaying ? 'bg-sun-500 hover:bg-sun-600' : 'bg-ink-muted hover:bg-ink-2'
                         } text-white`}
                       >
                         {audio.isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
@@ -756,10 +735,10 @@ const MockInterviewSystem = () => {
                   </div>
 
                   <div className="text-center space-y-2">
-                    <p className="text-gray-700 text-sm font-medium">
+                    <p className="text-ink-2 text-sm font-medium">
                       {audio.isRecording ? (
                         <span className="flex items-center justify-center gap-2">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-danger-500 rounded-full animate-pulse"></div>
                           Recording... {audio.recordingTime}s
                         </span>
                       ) : (
@@ -768,8 +747,8 @@ const MockInterviewSystem = () => {
                     </p>
                     
                     {audio.audioBlob && (
-                      <div className="bg-green-100 border border-green-200 rounded-lg p-2">
-                        <p className="text-green-800 text-sm font-medium flex items-center justify-center gap-2">
+                      <div className="bg-success-100 border border-success-100 rounded-xl p-2">
+                        <p className="text-success-700 text-sm font-medium flex items-center justify-center gap-2">
                           <CheckCircle className="w-4 h-4" />
                           Recorded ({Math.round(audio.audioBlob.size / 1024)}KB)
                         </p>
@@ -777,9 +756,9 @@ const MockInterviewSystem = () => {
                     )}
                     
                     {audio.isTranscribing && (
-                      <div className="bg-blue-100 border border-blue-200 rounded-lg p-2">
-                        <p className="text-blue-800 text-sm flex items-center justify-center gap-2">
-                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-t-transparent"></div>
+                      <div className="bg-primary-100 border border-primary-200 rounded-xl p-2">
+                        <p className="text-primary-800 text-sm flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary-600 border-t-transparent"></div>
                           Transcribing...
                         </p>
                       </div>
@@ -788,25 +767,25 @@ const MockInterviewSystem = () => {
                 </div>
 
                 {audio.transcription && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4">
+                    <h4 className="text-sm font-semibold text-primary-900 mb-2 flex items-center gap-2">
                       <Volume2 className="w-4 h-4" />
                       Transcription
                     </h4>
-                    <div className="bg-white rounded-lg p-3 border border-blue-100">
-                      <p className="text-gray-700 text-sm leading-relaxed">{audio.transcription}</p>
+                    <div className="bg-surface rounded-xl p-3 border border-primary-100">
+                      <p className="text-ink-2 text-sm leading-relaxed">{audio.transcription}</p>
                     </div>
                   </div>
                 )}
 
                 {audio.transcriptionError && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-yellow-800 mb-2">Manual Transcription</h4>
-                    <p className="text-yellow-700 mb-2 text-xs">Type what you said:</p>
+                  <div className="bg-sun-50 border border-sun-200 rounded-2xl p-4">
+                    <h4 className="text-sm font-semibold text-sun-700 mb-2">Manual Transcription</h4>
+                    <p className="text-sun-700 mb-2 text-xs">Type what you said:</p>
                     <textarea
                       value={audio.transcription}
                       onChange={(e) => audio.setTranscription(e.target.value)}
-                      className="w-full h-24 px-3 py-2 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 resize-none text-sm"
+                      className="w-full h-24 px-3 py-2 border border-sun-300 rounded-xl focus:ring-2 focus:ring-sun-500 resize-none text-sm"
                       placeholder="Type your audio response here..."
                     />
                   </div>
@@ -816,15 +795,15 @@ const MockInterviewSystem = () => {
 
             {!isCodingQuestion && answerMode === 'text' && (
               <div className="space-y-3">
-                <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-                  <label className="block text-sm font-medium text-green-800 mb-2">Your Written Response:</label>
+                <div className="bg-success-50 rounded-2xl p-4 border border-success-100">
+                  <label className="block text-sm font-medium text-success-700 mb-2">Your Written Response:</label>
                   <textarea
                     value={textAnswer}
                     onChange={(e) => setTextAnswer(e.target.value)}
-                    className="w-full h-32 px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 resize-none text-sm"
+                    className="w-full h-32 px-3 py-2 border border-success-100 rounded-xl focus:ring-2 focus:ring-success-500 resize-none text-sm"
                     placeholder="Type your comprehensive answer here..."
                   />
-                  <div className="mt-2 flex justify-between text-xs text-green-600">
+                  <div className="mt-2 flex justify-between text-xs text-success-600">
                     <span>Characters: {textAnswer.length}</span>
                     <span>Words: {textAnswer.split(' ').filter(w => w.length > 0).length}</span>
                   </div>
@@ -836,7 +815,7 @@ const MockInterviewSystem = () => {
               <button
                 onClick={handleSkipQuestion}
                 disabled={loading}
-                className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 text-sm"
+                className="bg-ink-muted hover:bg-ink-2 disabled:bg-line text-white font-medium py-2 px-4 rounded-full transition-all flex items-center gap-2 text-sm"
               >
                 {loading ? (
                   <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
@@ -854,7 +833,7 @@ const MockInterviewSystem = () => {
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={loading}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold py-2 px-6 rounded-lg transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none text-sm"
+                  className="bg-success-600 hover:bg-success-700 disabled:bg-line disabled:text-ink-muted text-white font-semibold py-2 px-6 rounded-full transition-all flex items-center gap-2 shadow-pill active:scale-[0.97] disabled:transform-none text-sm"
                 >
                   {loading ? (
                     <>
@@ -873,20 +852,20 @@ const MockInterviewSystem = () => {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mt-4">
-                <AlertCircle className="w-4 h-4 text-red-500" />
-                <span className="text-red-700 text-sm">{error}</span>
+              <div className="flex items-center gap-2 p-3 bg-danger-50 border border-danger-100 rounded-2xl mt-4">
+                <AlertCircle className="w-4 h-4 text-danger-500" />
+                <span className="text-danger-700 text-sm">{error}</span>
               </div>
             )}
           </div>
 
           {showCodeEditor && isCodingQuestion && (
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="bg-surface rounded-3xl shadow-soft border border-line p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Code className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-ink flex items-center gap-2">
+                  <Code className="w-5 h-5 text-primary-600" />
                   Code Editor
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-normal">
+                  <span className="text-xs bg-success-100 text-success-700 px-2 py-1 rounded-full font-normal">
                     Sandboxed execution
                   </span>
                 </h3>
@@ -894,7 +873,7 @@ const MockInterviewSystem = () => {
                   <select
                     value={codeEditor.language}
                     onChange={(e) => codeEditor.changeLanguage(e.target.value, interview.currentQuestion)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="px-3 py-2 border border-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     {SUPPORTED_LANGUAGES.map(lang => (
                       <option key={lang.value} value={lang.value}>
@@ -905,7 +884,7 @@ const MockInterviewSystem = () => {
                   <button
                     onClick={codeEditor.executeCode}
                     disabled={codeEditor.isRunningCode || !codeEditor.code.trim()}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    className="bg-success-600 hover:bg-success-700 disabled:bg-success-500 text-white px-4 py-2 rounded-full text-sm transition-colors flex items-center gap-2"
                   >
                     {codeEditor.isRunningCode ? (
                       <>
@@ -924,7 +903,7 @@ const MockInterviewSystem = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Your Code:</label>
+                  <label className="block text-sm font-medium text-ink-2 mb-2">Your Code:</label>
                   <CodeEditor
                     value={codeEditor.code}
                     onChange={codeEditor.setCode}
@@ -935,14 +914,14 @@ const MockInterviewSystem = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-ink-2 mb-2">
                     Program Input (if needed):
-                    <span className="text-xs text-gray-500 ml-2">Leave empty if not required</span>
+                    <span className="text-xs text-ink-muted ml-2">Leave empty if not required</span>
                   </label>
                   <textarea
                     value={codeEditor.codeInput}
                     onChange={(e) => codeEditor.setCodeInput(e.target.value)}
-                    className="w-full h-16 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:border-purple-500 focus:outline-none resize-none"
+                    className="w-full h-16 px-3 py-2 border border-line rounded-xl text-sm bg-sand focus:border-primary-500 focus:outline-none resize-none"
                     placeholder="Enter input values (one per line)..."
                     style={{ fontFamily: 'monospace' }}
                   />
@@ -953,11 +932,11 @@ const MockInterviewSystem = () => {
 
                 {codeEditor.codeOutput && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <label className="block text-sm font-medium text-ink-2 mb-2 flex items-center gap-2">
                       <Terminal className="w-4 h-4" />
                       Execution Results:
                     </label>
-                    <div className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap max-h-64 overflow-y-auto border-2 border-gray-700">
+                    <div className="bg-ink-deep text-success-500 p-4 rounded-xl font-mono text-sm whitespace-pre-wrap max-h-64 overflow-y-auto border-2 border-line">
                       {codeEditor.codeOutput}
                     </div>
                   </div>
@@ -969,35 +948,26 @@ const MockInterviewSystem = () => {
       </div>
 
       <audio ref={audio.audioPlaybackRef} className="hidden" />
-    </div>
+    </AppShell>
   ), [interview, timer, isCodingQuestion, answerMode, audio, textAnswer, codeEditor, showCodeEditor, loading, error, handleSubmitAnswer, handleSkipQuestion]);
 
   // Feedback Phase Component
   const FeedbackPhase = useMemo(() => (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-50">
-      <NavBar />
-      <div className="container mx-auto px-6 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full mb-4 shadow-lg">
-              <Trophy className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">Interview Complete!</h1>
-            <p className="text-lg text-gray-600">Here's your comprehensive performance analysis</p>
-          </div>
-
+    <AppShell title="Interview Complete!" subtitle="Here's your comprehensive performance analysis">
+      <div>
+        <div>
           {feedback && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
+            <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 mb-8">
               <div className="text-center mb-6">
                 <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full text-3xl font-bold text-white mb-4 ${
-                  feedback.score >= 80 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                  feedback.score >= 60 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                  'bg-gradient-to-r from-red-500 to-pink-500'
+                  feedback.score >= 80 ? 'bg-success-500' :
+                  feedback.score >= 60 ? 'bg-sun-500' :
+                  'bg-danger-500'
                 }`}>
                   {feedback.score}%
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Overall Score</h2>
-                <p className="text-gray-600">
+                <h2 className="text-2xl font-bold text-ink">Overall Score</h2>
+                <p className="text-ink-2">
                   {feedback.score >= 80 ? 'Excellent Performance!' :
                    feedback.score >= 60 ? 'Good Performance!' :
                    'Room for Improvement'}
@@ -1005,18 +975,18 @@ const MockInterviewSystem = () => {
               </div>
 
               {feedback.feedback?.recommendations && feedback.feedback.recommendations.length > 0 && (
-                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
-                  <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                <div className="bg-primary-50 p-4 rounded-xl border border-primary-100">
+                  <h4 className="font-semibold text-primary-900 mb-3 flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     Recommendations for Improvement
                   </h4>
                   <div className="space-y-2">
                     {feedback.feedback.recommendations.map((rec, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-indigo-100">
-                        <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-indigo-600 font-bold text-xs">{index + 1}</span>
+                      <div key={index} className="flex items-start gap-3 p-3 bg-surface rounded-xl border border-primary-100">
+                        <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-primary-600 font-bold text-xs">{index + 1}</span>
                         </div>
-                        <p className="text-gray-700 leading-relaxed text-sm">{rec}</p>
+                        <p className="text-ink-2 leading-relaxed text-sm">{rec}</p>
                       </div>
                     ))}
                   </div>
@@ -1026,9 +996,9 @@ const MockInterviewSystem = () => {
           )}
 
           {Object.keys(interview.questionFeedbacks).length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-purple-600" />
+            <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 mb-8">
+              <h2 className="text-xl font-bold text-ink mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary-600" />
                 Detailed Question Analysis
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1037,22 +1007,22 @@ const MockInterviewSystem = () => {
                   if (!fb) return null;
                   
                   return (
-                    <div key={index} className="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+                    <div key={index} className="border border-line rounded-2xl p-4 hover:shadow-lg transition-shadow">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm ${
-                            fb.score >= 80 ? 'bg-green-500' :
-                            fb.score >= 60 ? 'bg-yellow-500' :
-                            'bg-red-500'
+                            fb.score >= 80 ? 'bg-success-500' :
+                            fb.score >= 60 ? 'bg-sun-500' :
+                            'bg-danger-500'
                           }`}>
                             {index + 1}
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-sm">Question {index + 1}</h4>
+                            <h4 className="font-semibold text-ink text-sm">Question {index + 1}</h4>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              isCodingQuestionType(interview.questions[index]?.type) ? 'bg-purple-100 text-purple-700' :
-                              interview.questions[index]?.type === 'behavioral' ? 'bg-green-100 text-green-700' :
-                              'bg-blue-100 text-blue-700'
+                              isCodingQuestionType(interview.questions[index]?.type) ? 'bg-primary-100 text-primary-700' :
+                              interview.questions[index]?.type === 'behavioral' ? 'bg-success-100 text-success-700' :
+                              'bg-primary-100 text-primary-700'
                             }`}>
                               {interview.questions[index]?.type}
                             </span>
@@ -1060,22 +1030,22 @@ const MockInterviewSystem = () => {
                         </div>
                         <div className="text-right">
                           <div className={`text-lg font-bold ${
-                            fb.score >= 80 ? 'text-green-600' :
-                            fb.score >= 60 ? 'text-yellow-600' :
-                            'text-red-600'
+                            fb.score >= 80 ? 'text-success-600' :
+                            fb.score >= 60 ? 'text-sun-600' :
+                            'text-danger-600'
                           }`}>
                             {response.skipped ? 'SKIP' : `${fb.score}%`}
                           </div>
                         </div>
                       </div>
                       
-                      <p className="text-gray-600 text-xs mb-3">{interview.questions[index]?.question}</p>
+                      <p className="text-ink-2 text-xs mb-3">{interview.questions[index]?.question}</p>
                       <ExecutionInfo execution={fb.execution} source={fb.executionSource} />
                       
                       {fb.strengths?.length > 0 && (
                         <div className="mb-2">
-                          <h5 className="text-xs font-semibold text-green-700 mb-1">Strengths</h5>
-                          <ul className="text-xs text-green-600 space-y-0.5">
+                          <h5 className="text-xs font-semibold text-success-700 mb-1">Strengths</h5>
+                          <ul className="text-xs text-success-600 space-y-0.5">
                             {fb.strengths.map((s, i) => (
                               <li key={i}>• {s}</li>
                             ))}
@@ -1085,8 +1055,8 @@ const MockInterviewSystem = () => {
                       
                       {fb.improvements?.length > 0 && (
                         <div>
-                          <h5 className="text-xs font-semibold text-orange-700 mb-1">Improvements</h5>
-                          <ul className="text-xs text-orange-600 space-y-0.5">
+                          <h5 className="text-xs font-semibold text-sun-700 mb-1">Improvements</h5>
+                          <ul className="text-xs text-sun-600 space-y-0.5">
                             {fb.improvements.map((i, idx) => (
                               <li key={idx}>• {i}</li>
                             ))}
@@ -1101,31 +1071,31 @@ const MockInterviewSystem = () => {
           )}
 
           {interview.responses.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+            <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 mb-8">
+              <h2 className="text-xl font-bold text-ink mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary-600" />
                 Interview Summary
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xl font-bold text-blue-600">{interview.responses.length}</div>
-                  <div className="text-xs text-blue-700">Questions</div>
+                <div className="text-center p-3 bg-primary-50 rounded-xl">
+                  <div className="text-xl font-bold text-primary-600">{interview.responses.length}</div>
+                  <div className="text-xs text-primary-700">Questions</div>
                 </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">{formatTime(timer)}</div>
-                  <div className="text-xs text-green-700">Total Time</div>
+                <div className="text-center p-3 bg-success-50 rounded-xl">
+                  <div className="text-xl font-bold text-success-600">{formatTime(timer)}</div>
+                  <div className="text-xs text-success-700">Total Time</div>
                 </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-xl font-bold text-purple-600">
+                <div className="text-center p-3 bg-primary-50 rounded-xl">
+                  <div className="text-xl font-bold text-primary-600">
                     {interview.responses.filter(r => r.code).length}
                   </div>
-                  <div className="text-xs text-purple-700">Coding</div>
+                  <div className="text-xs text-primary-700">Coding</div>
                 </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-xl font-bold text-orange-600">
+                <div className="text-center p-3 bg-sun-50 rounded-xl">
+                  <div className="text-xl font-bold text-sun-600">
                     {interview.responses.filter(r => r.skipped).length}
                   </div>
-                  <div className="text-xs text-orange-700">Skipped</div>
+                  <div className="text-xs text-sun-700">Skipped</div>
                 </div>
               </div>
             </div>
@@ -1134,14 +1104,14 @@ const MockInterviewSystem = () => {
           <div className="flex justify-center gap-4">
             <button
               onClick={resetInterview}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-full transition-all flex items-center gap-2 shadow-pill active:scale-[0.97]"
             >
               <RefreshCw className="w-4 h-4" />
               Start New Interview
             </button>
             <button
               onClick={() => window.print()}
-              className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-3 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="bg-ink-2 hover:from-ink-2 hover:to-ink-deep text-white font-semibold py-3 px-6 rounded-full transition-all flex items-center gap-2 shadow-pill active:scale-[0.97]"
             >
               <Download className="w-4 h-4" />
               Download Report
@@ -1149,19 +1119,19 @@ const MockInterviewSystem = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AppShell>
   ), [feedback, interview, timer, resetInterview]);
 
   // Loading state
   if (user === null && !error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Interview System</h2>
-          <p className="text-gray-600 text-sm">Preparing your personalized mock interview...</p>
+          <h2 className="text-xl font-semibold text-ink mb-2">Loading Interview System</h2>
+          <p className="text-ink-2 text-sm">Preparing your personalized mock interview...</p>
         </div>
       </div>
     );
@@ -1175,12 +1145,12 @@ const MockInterviewSystem = () => {
       {currentStep === 'feedback' && FeedbackPhase}
       
       {debugMode && (
-        <div className="fixed bottom-4 right-4 bg-gray-900 rounded-xl shadow-2xl p-4 max-w-md">
+        <div className="fixed bottom-4 right-4 bg-ink-deep rounded-2xl shadow-2xl p-4 max-w-md">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold text-green-400">Debug Console</h3>
+            <h3 className="text-sm font-semibold text-success-500">Debug Console</h3>
             <button 
               onClick={() => setDebugLogs([])}
-              className="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded"
+              className="text-xs bg-danger-600 hover:bg-danger-700 text-white px-2 py-1 rounded"
             >
               Clear
             </button>
@@ -1188,11 +1158,11 @@ const MockInterviewSystem = () => {
           <div className="max-h-48 overflow-y-auto text-xs font-mono space-y-1">
             {debugLogs.slice(-10).map((log, index) => (
               <div key={index} className={
-                log.type === 'error' ? 'text-red-400' : 
-                log.type === 'warn' ? 'text-yellow-400' : 
-                'text-green-400'
+                log.type === 'error' ? 'text-danger-500' : 
+                log.type === 'warn' ? 'text-sun-400' : 
+                'text-success-500'
               }>
-                <span className="text-gray-500">[{log.timestamp}]</span> {log.message}
+                <span className="text-ink-muted">[{log.timestamp}]</span> {log.message}
               </div>
             ))}
           </div>
