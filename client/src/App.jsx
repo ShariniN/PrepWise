@@ -31,6 +31,7 @@ import AssessmentManage from './pages/AssessmentManage'
 import AssessmentEditor from './pages/AssessmentEditor'
 import IntegrityQueue from './pages/IntegrityQueue'
 import IntegrityCase from './pages/IntegrityCase'
+import IntegrityReplay from './pages/IntegrityReplay'
 
 
 
@@ -72,6 +73,7 @@ const App = () => {
 
         <Route path='/integrity' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityQueue/></ProtectedRoute>}/>
 
+        <Route path='/integrity/replay/:sessionId' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityReplay/></ProtectedRoute>}/>
         <Route path='/integrity/:caseId' element={<ProtectedRoute allow={INTEGRITY_ROLES}><IntegrityCase/></ProtectedRoute>}/>
 
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
