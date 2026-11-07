@@ -288,9 +288,8 @@ test('careers coverage gives percentages per cohort without student rows', async
   assert.equal(res.body.institution.students, 6);
   assert.equal(res.body.institution.withCvAnalysisPercent, 33.3);
   assert.equal(res.body.institution.withMockInterviewPercent, 16.7);
-  assert.equal(res.body.programmes[0].cohorts[0].students, 6);
+  assert.equal(res.body.programmes[0].cohorts[0].studentCount, 6);
   assert.equal(res.body.programmes[0].cohorts[0].name, 'G1');
-  assert.equal(res.body.programmes[0].cohorts[0].students.name, undefined);
   assert.equal(JSON.stringify(res.body).includes('email'), false);
 });
 

@@ -51,8 +51,9 @@ const programmes = (scope, readiness, { withStudents }) => scope.courses.map((c)
   cohorts: scope.memberships.filter((m) => String(m.course._id) === String(c._id)).map((m) => {
     const rows = m.students.map((s) => readiness.rows.get(String(s._id))).filter(Boolean)
       .sort((a, b) => (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase()) || a.studentId.localeCompare(b.studentId));
+    const { students: studentCount, ...cov } = agg.coverage(rows);
     return {
-      cohortId: String(m.cohort._id), name: m.cohort.name, ...agg.coverage(rows),
+      cohortId: String(m.cohort._id), name: m.cohort.name, studentCount, ...cov,
       ...(withStudents ? { meanInterviewAverages: agg.meanAverages(rows), students: rows } : {}),
     };
   }),
