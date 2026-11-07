@@ -102,7 +102,7 @@ export const installQuestionWorld = (world) => {
     .filter((a) => a.runKind === 'submit' && a.verdict === 'accepted' && same(a.institutionId, inst) && same(a.userId, uid)).map((a) => a.questionId))]);
   mock.method(questionRepo, 'countAttemptsFor', async (qid) => db.attempts.filter((a) => same(a.questionId, qid)).length);
 
-  mock.method(questionRepo, 'addEventBatch', async (doc) => { db.batches.push({ _id: newId(), ...clone(doc) }); });
+  mock.method(questionRepo, 'addEventBatch', async (doc) => { db.batches.push({ _id: newId(), createdAt: new Date(), ...clone(doc) }); });
   mock.method(questionRepo, 'countEventBatches', async (inst, aid) => db.batches.filter((b) => same(b.attemptId, aid) && same(b.institutionId, inst)).length);
 
   // seeding helpers for tests
