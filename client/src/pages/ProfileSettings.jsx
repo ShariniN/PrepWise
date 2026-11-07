@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import NavBar from "../components/NavBar";
+import PrivacyTab from "../components/PrivacyTab";
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -1457,7 +1458,8 @@ const renderCVTab = () => (
     { id: 'cv', label: 'CV Management', icon: FileText }, // NEW: CV Management tab
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'skills', label: 'Skills Assessment', icon: Brain },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'privacy', label: 'Privacy & data', icon: Lock }
   ];
 
   return (
@@ -1565,6 +1567,7 @@ const renderCVTab = () => (
             {activeTab === 'security' && renderSecurityTab()}
             {activeTab === 'skills' && renderSkillsTab()}
             {activeTab === 'settings' && renderSettingsTab()}
+            {activeTab === 'privacy' && <PrivacyTab />}
           </div>
         </div>
       </div>

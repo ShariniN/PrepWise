@@ -13,6 +13,7 @@ import SkillAssessor from './pages/SkillAssessor'
 import Interview from './pages/Interview'
 import StaffDashboard from './pages/StaffDashboard'
 import ManagePeople from './pages/ManagePeople'
+import DemoBanner from './components/DemoBanner'
 import ProtectedRoute from './components/ProtectedRoute'
 import { ROLES, STAFF_ROLES } from './utils/roles'
 
@@ -21,6 +22,7 @@ import { ROLES, STAFF_ROLES } from './utils/roles'
 const App = () => {
   return (
     <div>
+      <DemoBanner/>
       <ToastContainer/>
       <Routes>
         {/* Authentication Routes */}
