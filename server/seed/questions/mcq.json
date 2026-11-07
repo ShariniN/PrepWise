@@ -1,1 +1,481 @@
-[]
+[
+  {
+    "slug": "mcq-big-o-binary-search",
+    "title": "Cost of binary search",
+    "type": "mcq",
+    "topic": [
+      "complexity",
+      "searching"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "What is the worst-case time complexity of binary search on a sorted array of n elements?",
+    "options": [
+      "O(1)",
+      "O(log n)",
+      "O(n)",
+      "O(n log n)"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "Each comparison discards half of the remaining range, so after k steps n / 2^k elements remain. The search ends when that reaches 1, which takes about log2(n) steps."
+  },
+  {
+    "slug": "mcq-array-vs-linked-list",
+    "title": "Array or linked list?",
+    "type": "mcq",
+    "topic": [
+      "data-structures"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "Which operation is typically O(1) for an array but O(n) for a singly linked list?",
+    "options": [
+      "Insert at the head",
+      "Read the element at index i",
+      "Delete the head",
+      "Traverse all elements"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "An array computes the memory address of element i directly from the start address and i. A linked list has to follow i pointers. Inserting or deleting at the head is O(1) for the linked list."
+  },
+  {
+    "slug": "mcq-stack-order",
+    "title": "Stack behaviour",
+    "type": "mcq",
+    "topic": [
+      "data-structures",
+      "stacks"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "You push 1, 2, 3 onto an empty stack, then pop once. Which value comes out?",
+    "options": [
+      "1",
+      "2",
+      "3",
+      "It depends on the language"
+    ],
+    "correct": [
+      2
+    ],
+    "multi": false,
+    "explanation": "A stack is last-in first-out, so the most recently pushed value (3) is removed first."
+  },
+  {
+    "slug": "mcq-queue-order",
+    "title": "Queue behaviour",
+    "type": "mcq",
+    "topic": [
+      "data-structures",
+      "queues"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "You enqueue A, B, C into an empty queue and then dequeue once. What comes out?",
+    "options": [
+      "A",
+      "B",
+      "C",
+      "The queue is empty"
+    ],
+    "correct": [
+      0
+    ],
+    "multi": false,
+    "explanation": "A queue is first-in first-out, so the element that has waited longest (A) leaves first."
+  },
+  {
+    "slug": "mcq-hash-collision",
+    "title": "Hash tables",
+    "type": "mcq",
+    "topic": [
+      "data-structures",
+      "hashing"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "Two different keys produce the same hash index in a hash table. Which statements are true? (choose all that apply)",
+    "options": [
+      "It is called a collision",
+      "It is called overflow and the program must crash",
+      "The table can chain entries in a list at that index",
+      "The table can probe for another free slot",
+      "The second key is always discarded"
+    ],
+    "correct": [
+      0,
+      2,
+      3
+    ],
+    "multi": true,
+    "explanation": "A collision is expected, because there are far more possible keys than slots. Separate chaining stores several entries per slot; open addressing probes for another slot. Neither discards data, so the other statements are false."
+  },
+  {
+    "slug": "mcq-recursion-base-case",
+    "title": "What stops recursion?",
+    "type": "mcq",
+    "topic": [
+      "recursion"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "A recursive function never reaches its base case. What is the most likely result?",
+    "options": [
+      "It returns 0",
+      "The call stack grows until a stack overflow error",
+      "The compiler fixes it",
+      "It runs once and stops"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "Every call adds a frame to the call stack. Without a base case the calls never return, so the stack eventually runs out of space."
+  },
+  {
+    "slug": "mcq-stable-sort",
+    "title": "Stable sorting",
+    "type": "mcq",
+    "topic": [
+      "sorting"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "What does it mean for a sorting algorithm to be stable?",
+    "options": [
+      "It never crashes",
+      "Equal elements keep their original relative order",
+      "It always runs in O(n log n)",
+      "It sorts in place"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "If two records compare equal, a stable sort leaves them in the order they started. This matters when sorting by one column after another, for example by surname after sorting by first name."
+  },
+  {
+    "slug": "mcq-oop-encapsulation",
+    "title": "Encapsulation",
+    "type": "mcq",
+    "topic": [
+      "oop"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "Which choice best describes encapsulation?",
+    "options": [
+      "Making every field public for easy access",
+      "Bundling data with the methods that use it and hiding internal details",
+      "Creating many subclasses",
+      "Converting objects to strings"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "Encapsulation keeps an object's state behind a controlled interface, so the object can protect its own rules (for example \"a balance never goes negative\") and its internals can change without breaking callers."
+  },
+  {
+    "slug": "mcq-oop-polymorphism",
+    "title": "Polymorphism",
+    "type": "mcq",
+    "topic": [
+      "oop",
+      "polymorphism"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "A variable of type Shape holds a Circle object. Calling area() runs the Circle version. What is this called?",
+    "options": [
+      "Overloading",
+      "Dynamic dispatch (runtime polymorphism)",
+      "Encapsulation",
+      "Serialization"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "The method that runs is chosen from the actual runtime type of the object, not from the declared type of the variable. Overloading, by contrast, chooses between methods with different parameters at compile time."
+  },
+  {
+    "slug": "mcq-oop-inheritance-vs-composition",
+    "title": "Is-a or has-a?",
+    "type": "mcq",
+    "topic": [
+      "oop",
+      "design"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "A Car needs an Engine. Which relationship is the better model?",
+    "options": [
+      "Car inherits from Engine because they are related",
+      "Car has an Engine as a field (composition)",
+      "Engine inherits from Car",
+      "They must be one class"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "Inheritance models \"is a\" (a Car is not an Engine). A Car \"has an\" Engine, so the Car holds an Engine object. Composition is also easier to change later, for example swapping in an ElectricMotor."
+  },
+  {
+    "slug": "mcq-string-immutability",
+    "title": "Strings in JavaScript and Python",
+    "type": "mcq",
+    "topic": [
+      "fundamentals",
+      "strings"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "In both JavaScript and Python, what happens when you try to change one character of an existing string in place?",
+    "options": [
+      "It works and changes the string",
+      "Strings are immutable: you create a new string instead",
+      "It deletes the string",
+      "It works only for ASCII"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "Strings cannot be modified after creation. Operations like replace or slicing return new strings, and the original is unchanged."
+  },
+  {
+    "slug": "mcq-int-division",
+    "title": "Integer division",
+    "type": "mcq",
+    "topic": [
+      "fundamentals"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "In Python 3, what is the value of 7 // 2?",
+    "options": [
+      "3.5",
+      "3",
+      "4",
+      "2"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "// is floor division and returns the largest whole number not exceeding 7 / 2 = 3.5, which is 3. The single slash gives 3.5."
+  },
+  {
+    "slug": "mcq-equality-js",
+    "title": "Equality in JavaScript",
+    "type": "mcq",
+    "topic": [
+      "fundamentals",
+      "javascript"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "What does the expression  0 == \"0\"  evaluate to in JavaScript, and what about  0 === \"0\" ?",
+    "options": [
+      "true and true",
+      "true and false",
+      "false and false",
+      "false and true"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "== converts operands to a common type before comparing, so the string \"0\" becomes the number 0 and the result is true. === compares without converting, and a number is not a string, so it is false. Prefer ===."
+  },
+  {
+    "slug": "mcq-pass-by-reference",
+    "title": "Mutating a list in a function",
+    "type": "mcq",
+    "topic": [
+      "fundamentals",
+      "python"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "A Python function receives a list and calls .append(4) on it. What does the caller see afterwards?",
+    "options": [
+      "The original list is unchanged",
+      "The original list now contains the 4",
+      "An error is raised",
+      "A copy is created automatically"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "The parameter refers to the same list object as the caller's variable (the reference is passed by value). Mutating the object is visible to the caller; reassigning the parameter to a new list is not."
+  },
+  {
+    "slug": "mcq-bfs-structure",
+    "title": "Breadth-first search",
+    "type": "mcq",
+    "topic": [
+      "algorithms",
+      "graphs"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "Which data structure does breadth-first search use to decide which node to visit next?",
+    "options": [
+      "Stack",
+      "Queue",
+      "Heap",
+      "Binary search tree"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "BFS visits nodes in order of distance from the start, so nodes discovered first must be processed first. That is first-in first-out, a queue. Depth-first search uses a stack (or recursion)."
+  },
+  {
+    "slug": "mcq-dp-idea",
+    "title": "Dynamic programming",
+    "type": "mcq",
+    "topic": [
+      "algorithms",
+      "dynamic-programming"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "What property makes a problem a good fit for dynamic programming? (choose two)",
+    "options": [
+      "Overlapping subproblems",
+      "The input must be a string",
+      "Optimal substructure",
+      "It must be solved with recursion only",
+      "The answer is always an integer"
+    ],
+    "correct": [
+      0,
+      2
+    ],
+    "multi": true,
+    "explanation": "DP stores answers to subproblems that are needed repeatedly (overlapping subproblems), and builds the final answer from optimal answers to those smaller pieces (optimal substructure)."
+  },
+  {
+    "slug": "mcq-sql-join",
+    "title": "Joins",
+    "type": "mcq",
+    "topic": [
+      "databases",
+      "sql"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "Which SQL join returns all rows from the left table, with NULLs where the right table has no match?",
+    "options": [
+      "INNER JOIN",
+      "LEFT JOIN",
+      "CROSS JOIN",
+      "FULL INNER JOIN"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "A LEFT (OUTER) JOIN keeps every row of the left table. INNER JOIN keeps only matching pairs, and CROSS JOIN produces every combination."
+  },
+  {
+    "slug": "mcq-http-status",
+    "title": "HTTP status codes",
+    "type": "mcq",
+    "topic": [
+      "web",
+      "networking"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "A client sends a request for a resource that does not exist. Which status code should the server normally return?",
+    "options": [
+      "200",
+      "301",
+      "404",
+      "500"
+    ],
+    "correct": [
+      2
+    ],
+    "multi": false,
+    "explanation": "404 means the resource was not found. 200 is success, 301 a permanent redirect, and 500 a server-side failure."
+  },
+  {
+    "slug": "mcq-git-commit",
+    "title": "Version control",
+    "type": "mcq",
+    "topic": [
+      "tools",
+      "git"
+    ],
+    "difficulty": "easy",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "What does git commit do?",
+    "options": [
+      "Uploads your changes to the remote server",
+      "Records the staged changes as a new snapshot in your local history",
+      "Downloads changes from others",
+      "Deletes the working directory"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "A commit is local. It saves what you staged with git add. Sharing it with others needs git push."
+  },
+  {
+    "slug": "mcq-big-o-nested-loops",
+    "title": "Nested loops",
+    "type": "mcq",
+    "topic": [
+      "complexity"
+    ],
+    "difficulty": "medium",
+    "estimatedMinutes": 2,
+    "languages": [],
+    "statement": "for i in 1..n { for j in 1..n { work() } }  runs work() how many times, and what is the complexity?",
+    "options": [
+      "n times, O(n)",
+      "n squared times, O(n^2)",
+      "2n times, O(n)",
+      "log n times, O(log n)"
+    ],
+    "correct": [
+      1
+    ],
+    "multi": false,
+    "explanation": "The inner loop runs n times for each of the n iterations of the outer loop, so work() runs n x n = n^2 times."
+  }
+]

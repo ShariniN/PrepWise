@@ -10,7 +10,10 @@
     "owner:create-institution": "node scripts/create-institution.js",
     "owner:usage-report": "node scripts/usage-report.js",
     "owner:import-users": "node scripts/import-users.js",
-    "seed:demo": "node scripts/seed-demo.js"
+    "seed:demo": "node scripts/seed-demo.js",
+    "seed:questions": "node scripts/seed-questions.js",
+    "validate:seed": "node scripts/validate-seed.js",
+    "build:seed": "node tests/seed-build/build.js"
   },
   "author": "",
   "license": "ISC",

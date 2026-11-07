@@ -3,14 +3,14 @@
 // programs with stdin. The build fails if the two disagree, or if a hand-written expected output does not match,
 // so every shipped test has been confirmed by two independent implementations.
 //
-// Usage: node seed/src/build.js        (needs `node` and `python` on PATH)
+// Usage: node tests/seed-build/build.js        (needs `node` and `python` on PATH)
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const outDir = path.join(here, '..', 'questions');
+const outDir = path.join(here, '..', '..', 'seed', 'questions');
 
 // ---------- program generation ----------
 const JS_PARSE = {
