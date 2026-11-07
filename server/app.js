@@ -12,6 +12,10 @@ import userRouter from './routes/UserRoutes.js';
 import analysisRouter from './routes/CVanalysisRoutes.js';
 import interviewRouter from './routes/InterviewRoutes.js';
 import codeRouter from './routes/codeRoutes.js';
+import institutionRouter from './routes/InstitutionRoutes.js';
+import courseRouter from './routes/CourseRoutes.js';
+import meRouter from './routes/MeRoutes.js';
+import complianceRouter from './routes/ComplianceRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -30,7 +34,7 @@ const allowedOrigins = [
 app.use(cors({
   origin: allowedOrigins,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -41,6 +45,10 @@ app.use('/api/analyze', analysisRouter);
 app.use('/api/swot', skillAssessor);
 app.use('/api/interviews', interviewRouter);
 app.use('/api/code', codeRouter);
+app.use('/api/institution', institutionRouter);
+app.use('/api/courses', courseRouter);
+app.use('/api/me', meRouter);
+app.use('/api/compliance', complianceRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {
@@ -56,6 +64,10 @@ app.get(/.*/, (req, res) => {
 
 // ---------------- ERROR HANDLER ----------------
 app.use((error, req, res, next) => {
+  // Typed errors raised from shared code (tenancy, AI usage cap)
+  if (error?.code === 'AI_MONTHLY_CAP' || error?.name === 'TenantError') {
+    return res.status(error.status).json({ success: false, message: error.message, code: error.code });
+  }
   console.error(error);
   res.status(500).json({
     success: false,
