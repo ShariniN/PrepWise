@@ -84,7 +84,7 @@ export const autosave = async (req, res) => {
   if (!lang) return fail(res, 400, 'Unsupported language');
   const institutionId = institutionOf(req);
   const attempt = await questionRepo.findAttempt(institutionId, req.user.id, req.params.id);
-  if (!attempt || attempt.runKind !== 'draft') return fail(res, 404, 'Attempt not found');
+  if (!attempt || attempt.runKind !== 'draft' || attempt.assessmentSessionId) return fail(res, 404, 'Attempt not found'); // assessment drafts are only writable inside their session
   const updated = await questionRepo.updateAttempt(institutionId, req.user.id, req.params.id, { language: lang, source });
   res.json({ success: true, draft: draftView(updated) });
 };
@@ -98,7 +98,7 @@ export const addEvents = async (req, res) => {
 
   const institutionId = institutionOf(req);
   const attempt = await questionRepo.findAttempt(institutionId, req.user.id, req.params.id);
-  if (!attempt) return fail(res, 404, 'Attempt not found');
+  if (!attempt || attempt.assessmentSessionId) return fail(res, 404, 'Attempt not found');
   if (await questionRepo.countEventBatches(institutionId, attempt._id) >= EVENT_LIMITS.maxBatchesPerAttempt) return fail(res, 429, 'Too many event batches for this attempt');
   await questionRepo.addEventBatch({
     attemptId: attempt._id, questionId: attempt.questionId, userId: req.user.id, institutionId, seq: Number.isInteger(seq) ? seq : 0, events: clean,

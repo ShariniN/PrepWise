@@ -327,6 +327,8 @@ export const extendSession = async (req, res) => {
   if (typeof reason !== 'string' || reason.trim().length < 3) return fail(res, 400, 'A reason is required');
   const before = sessionDeadline(s);
   const updated = await assessmentRepo.updateSession(institutionId, s._id, {
+    // keep the practice lock in place for as long as this student can still be sitting
+    $set: { closesAt: new Date(Math.max(new Date(s.closesAt).getTime(), before.getTime() + minutes * 60 * 1000)) },
     $inc: { extensionMs: minutes * 60 * 1000 },
     $push: { extensions: { byUserId: req.user.id, minutes, reason: reason.trim().slice(0, 300), at: new Date() } },
   });
@@ -363,9 +365,9 @@ export const startSession = async (req, res) => {
     if (!base) return fail(res, 409, 'A question in this assessment is no longer available. Tell your lecturer.', { code: 'QUESTION_MISSING' });
     let chosen = base;
     if (base.variantGroup) {
-      const members = (await questionRepo.listVariantGroup(institutionId, base.variantGroup))
-        .filter((m) => m.type === base.type && !used.has(sid(m._id)));
-      if (members.length && members.some((m) => sid(m._id) === sid(base._id))) chosen = pickVariant(members, req.user.id, a._id, base.variantGroup);
+      const group = (await questionRepo.listVariantGroup(institutionId, base.variantGroup)).filter((m) => m.type === base.type);
+      const free = group.filter((m) => !used.has(sid(m._id)));
+      if (free.length && group.some((m) => sid(m._id) === sid(base._id))) chosen = pickVariant(free, req.user.id, a._id, base.variantGroup);
     }
     used.add(sid(chosen._id));
     slots.push({ baseQuestionId: base._id, resolvedQuestionId: chosen._id });

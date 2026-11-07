@@ -61,7 +61,7 @@ const questionRepo = {
   findDraft: (institutionId, userId, questionId) =>
     Attempt.findOne({ institutionId, userId, questionId, runKind: 'draft', assessmentSessionId: null }).lean(),
   solvedQuestionIds: (institutionId, userId) =>
-    Attempt.distinct('questionId', { institutionId, userId, runKind: 'submit', verdict: 'accepted' }),
+    Attempt.distinct('questionId', { institutionId, userId, runKind: 'submit', verdict: 'accepted', assessmentSessionId: null }), // assessment answers stay hidden until released
   countAttemptsFor: (questionId) => Attempt.countDocuments({ questionId }),
 
   // ---- edit events ----

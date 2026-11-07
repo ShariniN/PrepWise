@@ -432,3 +432,51 @@ test('autosave and edit events in assessment mode are stored against the session
   const practiceDraft = await request(app).get(`/api/practice/questions/${qCode._id}/draft`).set(as(stu));
   assert.equal(practiceDraft.status, 409);
 });
+
+// ---------------------------------------------------------------- side doors found in review
+test('assessment answers do not leak through practice "unseen" filtering or practice autosave after the lock lifts', async () => {
+  const a = base();
+  const s = await start(a);
+  await api(stu).post(`${mcqUrl(s)}/submit`, { selected: [1] }); // correct, accepted
+  const saved = await api(stu).put(`${mcqUrl(s, qCode)}/autosave`, { language: 'javascript', source: 'ASSESSMENT_DRAFT' });
+  const attemptId = saved.body.draft.attemptId;
+  await api(lecA).patch(`/${a._id}/status`, { status: 'closed' }); // lock lifts
+  const practice = (p) => request(app).get(`/api/practice${p}`).set(as(stu));
+  const unseen = (await practice('/questions?unseen=1')).body.questions.map((x) => x.id);
+  assert.ok(unseen.includes(String(qMcq._id)), 'a correct assessment answer must not hide the question from "unseen" while results are unreleased');
+  assert.equal((await practice(`/questions/${qCode._id}/draft`)).body.draft, null, 'the practice draft is separate from the session draft');
+  const put = await request(app).put(`/api/practice/attempts/${attemptId}/autosave`).set(as(stu)).send({ language: 'javascript', source: 'OVERWRITE' });
+  assert.equal(put.status, 404);
+  const ev = await request(app).post(`/api/practice/attempts/${attemptId}/events`).set(as(stu)).send({ events: [{ t: 1, type: 'insert' }] });
+  assert.equal(ev.status, 404);
+  assert.equal(w.qdb.attempts.find((x) => String(x._id) === attemptId).source, 'ASSESSMENT_DRAFT');
+});
+
+test('a lecturer extension past closesAt keeps the practice lock for as long as the student can sit', async () => {
+  const a = base();
+  const s = await start(a);
+  const row = w.adb.sessions[0];
+  row.closesAt = new Date(Date.now() - 1000);          // the assessment's original close time has passed
+  row.baseDeadline = new Date(Date.now() + 20 * 1000);
+  const practice = () => request(app).get(`/api/practice/questions/${qMcq._id}`).set(as(stu));
+  assert.equal((await practice()).status, 200, 'sanity: without an extension the lock has dropped');
+  assert.equal((await api(lecA).post(`/${a._id}/sessions/${s.id}/extend`, { minutes: 30, reason: 'late start' })).status, 200);
+  assert.ok(new Date(row.closesAt) > new Date(Date.now() + 29 * 60 * 1000));
+  assert.equal((await practice()).status, 409);
+});
+
+test('plain patches are wrapped in $set and operator documents are left alone', async () => {
+  const { asUpdate } = await import('../repositories/assessmentRepo.js');
+  assert.deepEqual(asUpdate({ status: 'x' }), { $set: { status: 'x' } });
+  const op = { $set: { a: 1 }, $push: { h: 2 } };
+  assert.equal(asUpdate(op), op);
+  assert.deepEqual(asUpdate({ $inc: { n: 1 } }), { $inc: { n: 1 } });
+});
+
+test('two slots in the same variant group never hand out the same question twice', async () => {
+  const group = 'twin';
+  const m = [1, 2].map((n) => db.addQuestion({ institutionId: IDS.instA, type: 'mcq', title: `T${n}`, options: ['a', 'b'], correct: [0], variantGroup: group }));
+  const a = base({ questionIds: [m[0]._id, m[1]._id] });
+  const s = await start(a, stu);
+  assert.equal(new Set(s.questions.map((q) => q.questionId)).size, 2);
+});

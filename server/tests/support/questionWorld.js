@@ -97,9 +97,9 @@ export const installQuestionWorld = (world) => {
     return clone(a);
   });
   mock.method(questionRepo, 'findDraft', async (inst, uid, qid) =>
-    clone(db.attempts.find((a) => a.runKind === 'draft' && same(a.institutionId, inst) && same(a.userId, uid) && same(a.questionId, qid))) || null);
+    clone(db.attempts.find((a) => a.runKind === 'draft' && !a.assessmentSessionId && same(a.institutionId, inst) && same(a.userId, uid) && same(a.questionId, qid))) || null);
   mock.method(questionRepo, 'solvedQuestionIds', async (inst, uid) => [...new Set(db.attempts
-    .filter((a) => a.runKind === 'submit' && a.verdict === 'accepted' && same(a.institutionId, inst) && same(a.userId, uid)).map((a) => a.questionId))]);
+    .filter((a) => a.runKind === 'submit' && a.verdict === 'accepted' && !a.assessmentSessionId && same(a.institutionId, inst) && same(a.userId, uid)).map((a) => a.questionId))]);
   mock.method(questionRepo, 'countAttemptsFor', async (qid) => db.attempts.filter((a) => same(a.questionId, qid)).length);
 
   mock.method(questionRepo, 'addEventBatch', async (doc) => { db.batches.push({ _id: newId(), createdAt: new Date(), ...clone(doc) }); });

@@ -2,7 +2,7 @@
 // real repository: every read and write matches the caller's institution. Attempts and edit-event batches live in
 // the question world (world.qdb), which installQuestionWorld creates first.
 import { mock } from 'node:test';
-import assessmentRepo from '../../repositories/assessmentRepo.js';
+import assessmentRepo, { asUpdate } from '../../repositories/assessmentRepo.js';
 import questionRepo from '../../repositories/questionRepo.js';
 import { newId } from '../helpers.js';
 
@@ -13,11 +13,16 @@ export const installAssessmentWorld = (world) => {
   const db = { assessments: [], sessions: [], events: [], cases: [], pairs: [], institutions: world.institutions };
   world.adb = db;
   const inst = (d, i) => same(d.institutionId, i);
+  // Mirrors the real repository: a plain patch is wrapped in $set, an operator document is used as is. A literal
+  // $-key inside $set (what a double wrap produces) is rejected, as MongoDB would reject it.
   const apply = (doc, patch) => {
-    if (!patch.$set && !patch.$inc && !patch.$push) { Object.assign(doc, clone(patch)); return; }
-    Object.assign(doc, clone(patch.$set || {}));
-    for (const [k, v] of Object.entries(patch.$inc || {})) doc[k] = (doc[k] || 0) + v;
-    for (const [k, v] of Object.entries(patch.$push || {})) doc[k] = [...(doc[k] || []), clone(v)];
+    const update = asUpdate(patch);
+    for (const [k, v] of Object.entries(update.$set || {})) {
+      if (k.startsWith('$')) throw new Error(`Mongo would reject a $-prefixed field name: ${k}`);
+      doc[k] = clone(v);
+    }
+    for (const [k, v] of Object.entries(update.$inc || {})) doc[k] = (doc[k] || 0) + v;
+    for (const [k, v] of Object.entries(update.$push || {})) doc[k] = [...(doc[k] || []), clone(v)];
   };
   const stamp = (d) => Object.assign(d, { updatedAt: new Date() });
 

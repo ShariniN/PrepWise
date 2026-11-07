@@ -7,6 +7,9 @@ import Attempt from '../models/Attempt.js';
 import EditEventBatch from '../models/EditEventBatch.js';
 import Institution from '../models/Institution.js';
 
+// A patch with any $-operator is already an update document; a plain patch is wrapped in $set.
+export const asUpdate = (patch) => (Object.keys(patch).some((k) => k.startsWith('$')) ? patch : { $set: patch });
+
 // Every function takes the caller's institutionId first and filters by it.
 const assessmentRepo = {
   // ---- assessments ----
@@ -32,7 +35,7 @@ const assessmentRepo = {
     return AssessmentSession.find(f).sort({ serverStartedAt: 1 }).limit(5000).lean();
   },
   updateSession: (institutionId, id, patch) =>
-    AssessmentSession.findOneAndUpdate({ _id: id, institutionId }, patch.$push || patch.$inc ? patch : { $set: patch }, { new: true }).lean(),
+    AssessmentSession.findOneAndUpdate({ _id: id, institutionId }, asUpdate(patch), { new: true }).lean(),
   // Sessions of this student whose assessment has not closed yet: the questions in them are off limits in practice mode.
   findLockingSessions: (institutionId, userId, now) =>
     AssessmentSession.find({ institutionId, userId, closesAt: { $gt: now } }).select('questions closesAt').lean(),
@@ -58,7 +61,7 @@ const assessmentRepo = {
   findCaseBySession: (institutionId, sessionId) => ReviewCase.findOne({ institutionId, sessionId }).lean(),
   createCase: async (doc) => (await ReviewCase.create(doc)).toObject(),
   updateCase: (institutionId, id, patch) =>
-    ReviewCase.findOneAndUpdate({ _id: id, institutionId }, patch.$push ? patch : { $set: patch }, { new: true }).lean(),
+    ReviewCase.findOneAndUpdate({ _id: id, institutionId }, asUpdate(patch), { new: true }).lean(),
   listCases: (institutionId, { courseIds, status, assessmentId, userId } = {}) => {
     const f = { institutionId };
     if (courseIds) f.courseId = { $in: courseIds };

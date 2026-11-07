@@ -184,7 +184,7 @@ Every evidence view or change writes an AuditLog entry with `actor`, `target`, `
 - **Timeline** items (ms since session start in `at`): `{kind:"session", type:"started|submitted|deadline"}`, `{kind:"integrity", type, technical, questionId, len?, inEditor?, ref}`,
   `{kind:"editing", at, until, questionId, events, inserted, deleted, pasted, pasteCount, ref}` (one per stored edit batch, positioned from the batch flush time), `{kind:"attempt", type:"run|submit", questionId, verdict, language, ref}`. Max 3000 items (`truncated`).
 
-## GET /api/integrity/cases
+## GET /api/integrity/cases   (audit: `integrity.list`)
 Query (all optional): `status` (comma list), `assessmentId`, `courseId`, `userId`. Lecturers only get cases of their courses.
 `200 { success, cases: [ { id, assessmentId, assessmentTitle, courseId, sessionId, userId, studentName, studentEmail, status, reasonCodes[], reasonCount, reviewerId, outcome, hasStudentResponse, createdAt, updatedAt } ] }`. `400` for a bad `status`.
 
@@ -263,10 +263,12 @@ plus dismissed/resolved cases older than the window. Evidence of sessions whose 
 The pure function is `purgeExpiredEvidence(now)` in `services/integrity/retention.js`.
 
 # 7. Audit actions written by this phase
-`assessment.create`, `assessment.update`, `assessment.status`, `assessment.accommodation`, `assessment.extend`, `assessment.start`, `assessment.finish`, `integrity.view`, `integrity.update`, `integrity.analyse`,
+`assessment.create`, `assessment.update`, `assessment.status`, `assessment.accommodation`, `assessment.extend`, `assessment.start`, `assessment.finish`, `integrity.list`, `integrity.view`, `integrity.update`, `integrity.analyse`,
 `integrity.similarity.run`, `integrity.similarity.view`, `integrity.replay`, `integrity.student_response`, `integrity.purge`.
 
 # 8. Changes to existing APIs
 - `POST/PUT /api/questions` accept `variantGroup` (string, max 80, `null` clears); staff question view includes it.
 - Practice routes return `409 ASSESSMENT_IN_PROGRESS` for questions inside an unfinished assessment of the caller (see principles). Otherwise unchanged; run/submit now share one service with assessment mode.
+- Practice autosave / edit-event routes return `404` for attempts that belong to an assessment session, and assessment answers are ignored by practice `?unseen=1` (so correctness is not revealed before results are released).
+- Extending a session also extends that session's practice lock, so the lock lasts until the extended deadline.
 - New collections: `assessments`, `assessmentsessions`, `integrityevents`, `reviewcases`, `similaritypairs`. `attempts` and `editeventbatches` gained `assessmentSessionId`.

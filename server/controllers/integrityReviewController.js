@@ -68,6 +68,7 @@ export const listCases = async (req, res) => {
   const cases = await assessmentRepo.listCases(institutionId, { ...filter, ...(courseIds ? { courseIds } : {}) });
   const assessments = await assessmentRepo.listAssessments(institutionId, courseIds ? { courseIds } : {});
   const users = cases.length ? await courseRepo.findUsersByIds(institutionId, [...new Set(cases.map((c) => sid(c.userId)))]) : [];
+  await audit({ actor: req.user.id, action: 'integrity.list', target: '', institutionId, meta: { count: cases.length, status: status ?? null, assessmentId: assessmentId ?? null, courseId: courseId ?? null, userId: userId ?? null } });
   res.json({
     success: true,
     cases: cases.map((c) => caseSummary(c, {
