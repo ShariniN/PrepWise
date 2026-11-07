@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { Badge, Button, Input, Select, Skeleton } from '../ui';
 import { listBank } from '../../api/questions';
 import { errorMessage } from '../../api/client';
 import { QUESTION_TYPES } from '../../utils/practice';
 
 const VariantChip = ({ group }) => (group
-  ? <span className="text-xs bg-purple-100 text-purple-700 rounded-full px-2 py-0.5" title="Each student gets one published question from this group, chosen consistently per student">
-      variant group: {group}
-    </span>
+  ? <Badge tone="warning" className="" ><span title="Each student gets one published question from this group, chosen consistently per student">variant group: {group}</span></Badge>
   : null);
 
 // Ordered selection of published bank questions. `meta` maps id -> { title, type, variantGroup }.
@@ -42,27 +41,27 @@ const QuestionPicker = ({ selected, meta, onChange, onMeta, disabled }) => {
   const add = (id) => { if (!selected.includes(id) && selected.length < 50) onChange([...selected, id]); };
 
   const shown = (bank || []).filter((q) => !selected.includes(q.id) && (!text.trim() || q.title.toLowerCase().includes(text.trim().toLowerCase())));
-  const btn = 'text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-40';
+  const row = 'flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-sm text-ink';
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-1">In this assessment ({selected.length}/50)</h3>
-        {selected.length === 0 && <p className="text-sm text-gray-500">Pick at least one question. Students may see them in a shuffled order if shuffling is on.</p>}
-        <ol className="space-y-1">
+    <div className="grid gap-5 md:grid-cols-2">
+      <div className="rounded-3xl bg-sand/60 p-4">
+        <h3 className="mb-2 text-sm font-semibold text-ink">In this assessment ({selected.length}/50)</h3>
+        {selected.length === 0 && <p className="text-sm text-ink-2">Pick at least one question. Students may see them in a shuffled order if shuffling is on.</p>}
+        <ol className="space-y-2">
           {selected.map((id, i) => {
             const m = meta[id] || { title: id, type: '' };
             return (
-              <li key={id} className="flex flex-wrap items-center gap-2 border rounded p-2 text-sm">
-                <span className="w-5 text-gray-500">{i + 1}.</span>
-                <span className="flex-1 min-w-[8rem]">{m.title}</span>
-                {m.type && <span className="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2 py-0.5">{m.type}</span>}
+              <li key={id} className={row}>
+                <span className="w-5 text-ink-2">{i + 1}.</span>
+                <span className="min-w-[8rem] flex-1">{m.title}</span>
+                {m.type && <Badge tone="primary">{m.type}</Badge>}
                 <VariantChip group={m.variantGroup} />
                 {!disabled && (
                   <span className="flex gap-1">
-                    <button type="button" className={btn} onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${m.title} up`}>Up</button>
-                    <button type="button" className={btn} onClick={() => move(i, 1)} disabled={i === selected.length - 1} aria-label={`Move ${m.title} down`}>Down</button>
-                    <button type="button" className={btn} onClick={() => remove(id)} aria-label={`Remove ${m.title}`}>Remove</button>
+                    <Button size="sm" variant="ghost" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${m.title} up`}>Up</Button>
+                    <Button size="sm" variant="ghost" onClick={() => move(i, 1)} disabled={i === selected.length - 1} aria-label={`Move ${m.title} down`}>Down</Button>
+                    <Button size="sm" variant="ghost" onClick={() => remove(id)} aria-label={`Remove ${m.title}`}>Remove</Button>
                   </span>
                 )}
               </li>
@@ -71,27 +70,27 @@ const QuestionPicker = ({ selected, meta, onChange, onMeta, disabled }) => {
         </ol>
       </div>
       {!disabled && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Published questions</h3>
-          <div className="flex gap-2 mb-2">
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search title" className="border border-gray-300 rounded px-2 py-1 text-sm flex-1" aria-label="Search questions" />
-            <select value={type} onChange={(e) => { setBank(null); setType(e.target.value); }} className="border border-gray-300 rounded px-2 py-1 text-sm" aria-label="Filter by type">
+        <div className="min-w-0">
+          <h3 className="mb-2 text-sm font-semibold text-ink">Published questions</h3>
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row">
+            <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search title" aria-label="Search questions" />
+            <Select value={type} onChange={(e) => { setBank(null); setType(e.target.value); }} aria-label="Filter by type" className="sm:w-44">
               <option value="">All types</option>
               {QUESTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
+            </Select>
           </div>
-          {bank === null && <p className="text-sm text-gray-500" role="status">Loading...</p>}
-          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-          <ul className="max-h-72 overflow-auto space-y-1">
+          {bank === null && <div role="status" aria-label="Loading" className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>}
+          {error && <p role="alert" className="text-sm text-danger-700">{error}</p>}
+          <ul className="max-h-72 space-y-2 overflow-auto">
             {shown.map((q) => (
-              <li key={q.id} className="flex flex-wrap items-center gap-2 border rounded p-2 text-sm">
-                <span className="flex-1 min-w-[8rem]">{q.title}</span>
-                <span className="text-xs text-gray-500">{q.type}, {q.difficulty}</span>
+              <li key={q.id} className={row}>
+                <span className="min-w-[8rem] flex-1">{q.title}</span>
+                <span className="text-xs text-ink-2">{q.type}, {q.difficulty}</span>
                 <VariantChip group={q.variantGroup} />
-                <button type="button" className={btn} onClick={() => add(q.id)}>Add</button>
+                <Button size="sm" variant="secondary" onClick={() => add(q.id)}>Add</Button>
               </li>
             ))}
-            {bank && shown.length === 0 && <li className="text-sm text-gray-500">No matching published questions.</li>}
+            {bank && shown.length === 0 && <li className="text-sm text-ink-2">No matching published questions.</li>}
           </ul>
         </div>
       )}

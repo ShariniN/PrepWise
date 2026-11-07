@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import NavBar from '../components/NavBar';
+import { ArrowLeft } from 'lucide-react';
+import AppShell from '../components/AppShell';
+import { Button, Card, Skeleton, StatusPill } from '../components/ui';
 import CourseCohortPicker from '../components/analytics/CourseCohortPicker';
 import QuestionPicker from '../components/assessment/QuestionPicker';
 import AccommodationsTable from '../components/assessment/AccommodationsTable';
@@ -22,13 +24,14 @@ const EMPTY = {
   durationMinutes: 60, attemptsAllowed: 1, integrityLevel: 0, shuffleQuestions: true, releaseResults: false,
 };
 
-const fieldCls = 'w-full border border-gray-300 rounded px-2 py-1.5 text-sm bg-white disabled:bg-gray-100';
+const fieldCls = 'w-full rounded-2xl border border-line bg-surface px-4 py-2.5 text-sm text-ink transition hover:border-primary-300 focus:border-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-600/15 disabled:cursor-not-allowed disabled:bg-sand disabled:opacity-70';
 const Field = ({ label, children, hint }) => (
-  <label className="block text-sm text-gray-700">
-    <span className="block mb-1 font-medium">{label}</span>{children}
-    {hint && <span className="block text-xs text-gray-500 mt-1">{hint}</span>}
+  <label className="block text-sm text-ink">
+    <span className="mb-1.5 block font-medium">{label}</span>{children}
+    {hint && <span className="mt-1.5 block text-xs text-ink-2">{hint}</span>}
   </label>
 );
+const checkCls = 'h-5 w-5 rounded border-line accent-primary-600';
 
 const AssessmentEditor = () => {
   const { id } = useParams();
@@ -124,18 +127,20 @@ const AssessmentEditor = () => {
     } catch (err) { setError(errorMessage(err, 'Could not save')); } finally { setBusy(false); }
   };
 
-  if (loadError) return <div className="min-h-screen bg-gray-100"><NavBar /><p role="alert" className="max-w-3xl mx-auto p-6 text-red-700">{loadError}</p></div>;
-  if (loading) return <div className="min-h-screen bg-gray-100"><NavBar /><p className="max-w-3xl mx-auto p-6 text-gray-500" role="status">Loading...</p></div>;
+  if (loadError) return <AppShell width="narrow"><Card role="alert" tone="sand" className="text-danger-700">{loadError}</Card></AppShell>;
+  if (loading) return <AppShell width="narrow"><Card role="status" aria-label="Loading" className="space-y-3"><Skeleton className="h-8 w-1/2" /><Skeleton className="h-32 w-full" /></Card></AppShell>;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <NavBar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-4">
-        <Link to="/assessments/manage" className="text-sm text-indigo-700 hover:underline">&larr; All assessments</Link>
-        <form onSubmit={save} className="bg-white rounded-2xl shadow p-6 space-y-5">
-          <h1 className="text-2xl font-bold text-gray-800">{isNew ? 'New assessment' : 'Edit assessment'}</h1>
-          {saved && <p className="text-sm text-gray-600">Status: <strong>{saved.effectiveStatus}</strong>. Once a student has started, only the title, instructions and result release can change.</p>}
-          {closed && <p className="text-sm text-amber-800">This assessment is closed and can no longer be edited.</p>}
+    <AppShell
+      width="default"
+      eyebrow="Lecturer"
+      title={isNew ? 'New assessment' : 'Edit assessment'}
+      actions={<Button as={Link} to="/assessments/manage" variant="ghost" size="sm" icon={<ArrowLeft size={16} aria-hidden="true" />}>All assessments</Button>}
+    >
+      <div className="space-y-5">
+        <Card as="form" onSubmit={save} className="space-y-6">
+          {saved && <p className="text-sm text-ink-2">Status: <StatusPill tone={{ open: 'success', scheduled: 'primary' }[saved.effectiveStatus] || 'neutral'}>{saved.effectiveStatus}</StatusPill> Once a student has started, only the title, instructions and result release can change.</p>}
+          {closed && <p className="rounded-2xl bg-sun-50 p-3 text-sm text-ink">This assessment is closed and can no longer be edited.</p>}
 
           <Field label="Title"><input className={fieldCls} value={form.title} maxLength={200} disabled={closed} onChange={(e) => set({ title: e.target.value })} /></Field>
           <Field label="Instructions (shown before starting, Markdown allowed)">
@@ -145,7 +150,7 @@ const AssessmentEditor = () => {
           {isNew ? (
             <CourseCohortPicker value={{ courseId: form.courseId, cohortId: form.cohortId }} onChange={(v) => set(v)} />
           ) : (
-            <p className="text-sm text-gray-600">Course and cohort cannot be changed after creation.</p>
+            <p className="text-sm text-ink-2">Course and cohort cannot be changed after creation.</p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -162,42 +167,42 @@ const AssessmentEditor = () => {
                 <option value={1}>1 - browser signals</option>
               </select>
             </Field>
-            <div className="space-y-2 pt-6">
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.shuffleQuestions} disabled={closed} onChange={(e) => set({ shuffleQuestions: e.target.checked })} /> Shuffle question order per student</label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.releaseResults} disabled={closed} onChange={(e) => set({ releaseResults: e.target.checked })} /> Release results to students</label>
+            <div className="space-y-3 sm:pt-7">
+              <label className="flex items-center gap-3 text-sm text-ink"><input type="checkbox" className={checkCls} checked={form.shuffleQuestions} disabled={closed} onChange={(e) => set({ shuffleQuestions: e.target.checked })} /> Shuffle question order per student</label>
+              <label className="flex items-center gap-3 text-sm text-ink"><input type="checkbox" className={checkCls} checked={form.releaseResults} disabled={closed} onChange={(e) => set({ releaseResults: e.target.checked })} /> Release results to students</label>
             </div>
           </div>
 
           <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-gray-700 mb-1">Questions</legend>
+            <legend className="mb-2 font-display text-lg font-semibold text-ink">Questions</legend>
             <QuestionPicker selected={form.questionIds} meta={meta} onChange={(ids) => set({ questionIds: ids })} onMeta={mergeMeta} disabled={closed} />
           </fieldset>
 
-          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          {error && <p role="alert" className="text-sm text-danger-700">{error}</p>}
           <div className="flex gap-3">
-            <button type="submit" disabled={busy || closed} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50">
+            <Button type="submit" disabled={closed} loading={busy}>
               {busy ? 'Saving...' : isNew ? 'Create draft' : 'Save changes'}
-            </button>
+            </Button>
           </div>
-        </form>
+        </Card>
 
         {saved && (
-          <section className="bg-white rounded-2xl shadow p-6 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-800">Accommodations</h2>
+          <Card as="section" className="space-y-3">
+            <h2 className="font-display text-xl font-semibold text-ink">Accommodations</h2>
             <AccommodationsTable assessment={saved} students={students} locked={closed} onChanged={(a) => setSaved((s) => ({ ...s, ...a }))} />
-          </section>
+          </Card>
         )}
         {saved?.effectiveThresholds && (
-          <section className="bg-white rounded-2xl shadow p-6 space-y-2">
-            <h2 className="text-lg font-semibold text-gray-800">When a session is shown to reviewers</h2>
-            <p className="text-sm text-gray-600">A session is listed for review when it passes one of these limits. They are reasons to look, not findings.</p>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-              {Object.entries(saved.effectiveThresholds).map(([k, v]) => (<div key={k}><dt className="text-xs text-gray-500">{k}</dt><dd>{String(v)}</dd></div>))}
+          <Card as="section" tone="sand" className="space-y-2">
+            <h2 className="font-display text-xl font-semibold text-ink">When a session is shown to reviewers</h2>
+            <p className="text-sm text-ink-2">A session is listed for review when it passes one of these limits. They are reasons to look, not findings.</p>
+            <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+              {Object.entries(saved.effectiveThresholds).map(([k, v]) => (<div key={k} className="rounded-2xl bg-surface px-4 py-3"><dt className="text-xs text-ink-2">{k}</dt><dd className="font-semibold text-ink">{String(v)}</dd></div>))}
             </dl>
-          </section>
+          </Card>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 };
 
