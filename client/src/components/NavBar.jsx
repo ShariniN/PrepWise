@@ -37,6 +37,7 @@ const NavBar = () => {
           { to: '/cv-analyzer', label: 'CV analyzer' },
           { to: '/swot', label: 'Skills' },
           { to: '/practice', label: 'Practice' },
+          { to: '/assessments', label: 'Assessments' },
           { to: '/interview', label: 'Interview' },
         ]
       : role === ROLES.LECTURER

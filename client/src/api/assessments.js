@@ -7,7 +7,7 @@ export const listAssessments = () => d(api.get('/api/assessments'));
 export const getAssessment = (id) => d(api.get(`/api/assessments/${id}`));
 
 // Student.
-export const startAssessment = (id) => d(api.post(`/api/assessments/${id}/start`, {}));
+export const startAssessment = (id, body = {}) => d(api.post(`/api/assessments/${id}/start`, body));
 export const getSession = (sid) => d(api.get(`/api/assessments/sessions/${sid}`));
 export const getSessionQuestion = (sid, qid) => d(api.get(`/api/assessments/sessions/${sid}/questions/${qid}`));
 export const runSessionQuestion = (sid, qid, body) => d(api.post(`/api/assessments/sessions/${sid}/questions/${qid}/run`, body));
