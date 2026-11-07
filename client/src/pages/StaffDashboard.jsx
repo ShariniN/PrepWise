@@ -1,11 +1,14 @@
 import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
 import NavBar from '../components/NavBar';
 import CoursesPanel from '../components/CoursesPanel';
+import LecturerDashboard from '../components/analytics/LecturerDashboard';
 import { AppContext } from '../context/AppContext';
-import { ROLE_LABELS } from '../utils/roles';
+import { ROLES, ROLE_LABELS } from '../utils/roles';
 
 const StaffDashboard = () => {
   const { userData, role } = useContext(AppContext);
+  const isLecturer = role === ROLES.LECTURER;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -16,15 +19,18 @@ const StaffDashboard = () => {
             Welcome{userData?.name ? `, ${userData.name}` : ''}
           </h1>
           <p className="text-sm text-gray-500 mt-1">{ROLE_LABELS[role]}</p>
-          <div className="mt-4 rounded-lg bg-indigo-50 border border-indigo-100 p-4 text-sm text-indigo-900">
-            <p className="font-semibold mb-1">Coming in Phase 3</p>
-            <p>
-              Cohort analytics will appear here: failure patterns, a topic heatmap, students who need help, and
-              question quality. For now you can set up your courses and cohorts below.
+          {isLecturer && (
+            <p className="text-sm text-gray-600 mt-3">
+              Answers waiting for your judgement are in the <Link to="/grading" className="text-indigo-700 underline">grading queue</Link>.
             </p>
-          </div>
+          )}
+          {role === ROLES.CAREER_OFFICER && (
+            <p className="text-sm text-gray-600 mt-3">
+              Cohort readiness is on the <Link to="/careers" className="text-indigo-700 underline">careers page</Link>.
+            </p>
+          )}
         </section>
-        <CoursesPanel />
+        {isLecturer ? <LecturerDashboard /> : <CoursesPanel />}
       </main>
     </div>
   );
