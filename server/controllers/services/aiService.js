@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
+import { consumeAi } from '../../services/aiUsage.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'MOCK_KEY');
 
 const questionCache = new Map();
 const CACHE_TTL = 3600000; 
@@ -13,7 +15,7 @@ setInterval(() => {
   requestCount = 0;
   lastResetTime = Date.now();
   console.log('🔄 Rate limit counter reset');
-}, 60000);
+}, 60000).unref();
 
 
 const checkRateLimit = async () => {
@@ -70,9 +72,20 @@ export const parseAIResponse = (rawText) => {
   console.log('🔍 Array bounds:', { arrayStart, arrayEnd });
   
   if (arrayStart === -1 || arrayEnd === -1) {
-    console.error('❌ No JSON array found in response');
+    // If not array, check for object (overall feedback or single question evaluation)
+    const objStart = cleanedText.indexOf('{');
+    const objEnd = cleanedText.lastIndexOf('}');
+    if (objStart !== -1 && objEnd !== -1) {
+      const jsonText = cleanedText.substring(objStart, objEnd + 1);
+      try {
+        return JSON.parse(jsonText);
+      } catch (e) {
+        console.error('Failed to parse object fallback:', e.message);
+      }
+    }
+    console.error('❌ No JSON found in response');
     console.error('Response preview:', cleanedText.substring(0, 500));
-    throw new Error('No JSON array found in response');
+    throw new Error('No JSON found in response');
   }
 
   let jsonText = cleanedText.substring(arrayStart, arrayEnd + 1)
@@ -115,11 +128,105 @@ export const parseAIResponse = (rawText) => {
   }
 };
 
+// Generic helper to route requests to correct AI Provider
+const callAIModel = async (instruction, inputPrompt, fallbackGeminiPrompt, config = {}) => {
+  await consumeAi(); // per-university monthly cap; throws AiLimitError when exceeded
+  const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+
+  if (provider === 'huggingface') {
+    const token = process.env.HF_API_TOKEN;
+    const modelUrl = process.env.HF_MODEL_URL || 'https://api-inference.huggingface.co/models/microsoft/Phi-3.5-mini-instruct';
+    
+    if (!token) {
+      console.warn('⚠️ HF_API_TOKEN is not set. Falling back to Gemini.');
+      return callGemini(fallbackGeminiPrompt, config);
+    }
+
+    // Standard ChatML format for Phi-3.5
+    const prompt = `<|system|>\n${instruction}<|end|>\n<|user|>\n${inputPrompt}<|end|>\n<|assistant|>\n`;
+
+    try {
+      console.log('📤 Sending request to Hugging Face Inference API:', modelUrl);
+      const response = await axios.post(
+        modelUrl,
+        {
+          inputs: prompt,
+          parameters: {
+            max_new_tokens: config.maxOutputTokens || 1500,
+            temperature: config.temperature || 0.1,
+            return_full_text: false
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 45000
+        }
+      );
+      
+      const resultText = Array.isArray(response.data) ? response.data[0].generated_text : response.data.generated_text;
+      return resultText;
+    } catch (error) {
+      console.error('❌ Hugging Face API call failed:', error.message);
+      console.log('🔄 Falling back to Gemini...');
+      return callGemini(fallbackGeminiPrompt, config);
+    }
+  } else if (provider === 'ollama') {
+    const ollamaUrl = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+    const modelName = process.env.OLLAMA_MODEL || 'prepwise-interview';
+
+    const prompt = `<|system|>\n${instruction}<|end|>\n<|user|>\n${inputPrompt}<|end|>\n<|assistant|>\n`;
+
+    try {
+      console.log('📤 Sending request to Ollama:', `${ollamaUrl}/api/generate`);
+      const response = await axios.post(
+        `${ollamaUrl}/api/generate`,
+        {
+          model: modelName,
+          prompt: prompt,
+          stream: false,
+          options: {
+            temperature: config.temperature || 0.1,
+            num_predict: config.maxOutputTokens || 1500
+          }
+        },
+        {
+          timeout: 45000
+        }
+      );
+      return response.data.response;
+    } catch (error) {
+      console.error('❌ Ollama API call failed:', error.message);
+      console.log('🔄 Falling back to Gemini...');
+      return callGemini(fallbackGeminiPrompt, config);
+    }
+  } else {
+    return callGemini(fallbackGeminiPrompt, config);
+  }
+};
+
+const callGemini = async (prompt, config) => {
+  const model = getModel(config);
+  let result;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      result = await model.generateContent(prompt);
+      break;
+    } catch (error) {
+      if (attempt >= 2 || !/429|quota|RESOURCE_EXHAUSTED/i.test(error.message || '')) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt)); // retry on 429: 1s, 2s
+    }
+  }
+  const response = await result.response;
+  return response.text();
+};
+
 // Generate personalized interview questions WITH CACHING
 export const generateInterviewQuestions = async (resumeText, jobDescription) => {
   console.log('🤖 Starting question generation with AI');
   
-  // Check cache first
   const cacheKey = getCacheKey(resumeText, jobDescription);
   const cached = questionCache.get(cacheKey);
   
@@ -128,28 +235,17 @@ export const generateInterviewQuestions = async (resumeText, jobDescription) => 
     return cached.questions;
   }
   
-  // Check rate limit
   await checkRateLimit();
-  
-  const model = getModel();
-  
-  const prompt = `You are creating personalized interview questions for a software engineering intern position.
 
-CANDIDATE'S CV (first 2000 chars):
+  const instruction = `You are creating personalized interview questions for a software engineering intern position. Generate exactly 10 questions (3 behavioral, 4 technical, 3 coding). Reference specific CV content and use only javascript, python, java, cpp, c. Return ONLY a valid JSON array.`;
+
+  const inputPrompt = `CANDIDATE'S CV (first 2000 chars):
 ${resumeText.substring(0, 2000)}
 
 JOB REQUIREMENTS (first 1000 chars):
-${jobDescription.substring(0, 1000)}
-
-REQUIREMENTS:
-- Generate exactly 10 questions
-- 3 behavioral, 4 technical, 3 coding questions
-- Reference specific CV content where possible
-- Use only supported languages: javascript, python, java, cpp, c
-- Keep questions concise and clear
-
-CRITICAL: Return ONLY a valid JSON array with this EXACT structure (do NOT add any text before or after):
-
+${jobDescription.substring(0, 1000)}`;
+  
+  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nCRITICAL: Return ONLY a valid JSON array with this EXACT structure:
 [
   {
     "questionId": "q1",
@@ -161,52 +257,20 @@ CRITICAL: Return ONLY a valid JSON array with this EXACT structure (do NOT add a
     "followUpQuestions": [],
     "starterCode": null,
     "language": null
-  },
-  {
-    "questionId": "q2",
-    "type": "technical",
-    "question": "Explain the difference between frontend and backend development.",
-    "category": "web_basics",
-    "difficulty": "easy",
-    "expectedDuration": 150,
-    "followUpQuestions": [],
-    "starterCode": null,
-    "language": null
-  },
-  {
-    "questionId": "q3",
-    "type": "coding",
-    "question": "Write a function that finds the largest number in an array.",
-    "category": "arrays",
-    "difficulty": "easy",
-    "expectedDuration": 300,
-    "followUpQuestions": [],
-    "starterCode": null,
-    "language": "javascript"
   }
-]
+]`;
 
-Generate all 10 questions following this exact format.`;
-
-  console.log('📤 Sending request to Gemini API');
-  
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const rawText = response.text();
-    
+    const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt);
     console.log('📥 Raw response length:', rawText.length);
-    console.log('🔍 First 200 chars:', rawText.substring(0, 200));
     
     const parsedQuestions = parseAIResponse(rawText);
     console.log('✅ Parsed questions count:', parsedQuestions.length);
     
-    // Cache the result
     questionCache.set(cacheKey, {
       questions: parsedQuestions,
       timestamp: Date.now()
     });
-    console.log('💾 Questions cached');
     
     return parsedQuestions;
   } catch (error) {
@@ -220,27 +284,24 @@ Generate all 10 questions following this exact format.`;
 
 export const generateAIFeedback = async (question, questionType, responseText, code, language, executionResults) => {
   await checkRateLimit(); 
-  const model = getModel({ temperature: 0.1, maxOutputTokens: 1500, topP: 0.6 });
-
+  
   const truncate = (text, max) => text?.length > max ? text.substring(0, max) + "..." : text;
 
-  const prompt = `You are evaluating an INTERN candidate's interview response. Provide CONSISTENT scoring where the numerical score EXACTLY matches the response type.
+  const instruction = `You are an expert interview evaluator for software engineering intern candidates. Evaluate the candidate's response to the following interview question. Provide a detailed, structured evaluation as JSON. Ensure the score and responseType match:
+- 85-100: perfectly-relevant
+- 65-84: mostly-relevant
+- 45-64: partially-relevant
+- 25-44: mostly-irrelevant
+- 0-24: completely-off-topic`;
 
+  const inputPrompt = `QUESTION TYPE: ${questionType}
 QUESTION: "${truncate(question, 800)}"
-QUESTION TYPE: ${questionType}
-CANDIDATE RESPONSE: "${truncate(responseText, 1500)}"
+CANDIDATE ANSWER: "${truncate(responseText, 1500)}"
 ${code ? `CODE SUBMITTED: "${truncate(code, 1500)}"` : ''}
 ${language ? `PROGRAMMING LANGUAGE: ${language}` : ''}
-${executionResults ? `CODE EXECUTION RESULT: "${executionResults.output || 'No output'}"${executionResults.error ? ' | ERROR: ' + executionResults.error : ''}` : ''}
+${executionResults ? `CODE EXECUTION RESULT: "${executionResults.output || 'No output'}"${executionResults.error ? ' | ERROR: ' + executionResults.error : ''}` : ''}`;
 
-STRICT SCORING GUIDELINES (MUST BE CONSISTENT):
-- 85-100 points = "perfectly-relevant" (Exceptional intern performance)
-- 65-84 points = "mostly-relevant" (Good intern performance) 
-- 45-64 points = "partially-relevant" (Acceptable intern performance)
-- 25-44 points = "mostly-irrelevant" (Below expectations)
-- 0-24 points = "completely-off-topic" (Inadequate response)
-
-Return ONLY this JSON format:
+  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON format:
 {
   "score": 67,
   "responseType": "mostly-relevant",
@@ -254,9 +315,7 @@ Return ONLY this JSON format:
   "technicalAccuracy": 6
 }`;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const rawText = response.text();
+  const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt, { temperature: 0.1, maxOutputTokens: 1500 });
 
   let cleanText = rawText.trim().replace(/```json\s*|```\s*/g, '');
   const jsonStart = cleanText.indexOf('{');
@@ -299,21 +358,20 @@ export const generateOverallInterviewFeedback = async (responses) => {
     return createAllSkippedFeedback(responses.length);
   }
 
-  await checkRateLimit(); // Rate limit check
+  await checkRateLimit(); 
 
-  const model = getModel({ temperature: 0.3, maxOutputTokens: 800 });
   const scores = answeredResponses.map(r => r.feedback?.score || 0);
   const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
 
-  const prompt = `You are a senior hiring manager conducting final assessment of an intern interview.
+  const instruction = `You are a senior hiring manager conducting final assessment of an intern interview. Provide a structured evaluation as JSON.`;
 
-INTERVIEW SUMMARY:
+  const inputPrompt = `INTERVIEW SUMMARY:
 - Total Questions: ${responses.length}
 - Questions Answered: ${answeredResponses.length}
 - Questions Skipped: ${skippedCount}
-- Average Score: ${averageScore.toFixed(1)}/100
+- Average Score: ${averageScore.toFixed(1)}/100`;
 
-Return ONLY this JSON:
+  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON:
 {
   "overallScore": 45,
   "readinessLevel": "Needs Development Before Ready",
@@ -324,9 +382,9 @@ Return ONLY this JSON:
   "hiringRecommendation": "Clear recommendation"
 }`;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const aiAnalysis = JSON.parse(response.text().trim().replace(/```json\s*|```\s*/g, ''));
+  const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt, { temperature: 0.3, maxOutputTokens: 800 });
+
+  const aiAnalysis = parseAIResponse(rawText);
 
   return {
     score: Math.round(aiAnalysis.overallScore || averageScore),
