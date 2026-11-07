@@ -32,6 +32,7 @@ import AssessmentEditor from './pages/AssessmentEditor'
 import IntegrityQueue from './pages/IntegrityQueue'
 import IntegrityCase from './pages/IntegrityCase'
 import IntegrityReplay from './pages/IntegrityReplay'
+import MyCases from './pages/MyCases'
 
 
 
@@ -58,6 +59,7 @@ const App = () => {
         <Route path='/practice/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeQuestion/></ProtectedRoute>}/>
 
         <Route path='/assessments' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentList/></ProtectedRoute>}/>
+        <Route path='/my-cases' element={<ProtectedRoute allow={[ROLES.STUDENT]}><MyCases/></ProtectedRoute>}/>
         <Route path='/assessments/session/:sessionId' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentSession/></ProtectedRoute>}/>
         <Route path='/assessments/session/:sessionId/results' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentResults/></ProtectedRoute>}/>
         <Route path='/assessments/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><AssessmentIntro/></ProtectedRoute>}/>
