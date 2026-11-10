@@ -2,10 +2,9 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-export const QUESTION_TYPES = ['coding', 'debug', 'trace', 'mcq'];
+export const QUESTION_TYPES = ['coding', 'trace', 'mcq'];
 export const QUESTION_STATUSES = ['draft', 'published', 'retired'];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
-export const AUTO_CODE_TYPES = ['coding', 'debug']; // marked by running tests in the sandbox
 
 const codeSchema = new Schema({
   language: { type: String, trim: true, maxlength: 20 },

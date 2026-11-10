@@ -1,11 +1,11 @@
-// Student practice API: tenancy, no leaking of hidden data, server-side scoring, outage behaviour, autosave and events.
+// Student practice API: tenancy, no leaking of hidden data, server-side scoring, outage behaviour, autosave.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import { installQuestionWorld } from './support/questionWorld.js';
 import { VmProvider } from './support/vmChecker.js';
-import practiceRepo from '../modules/practice/practice.repo.js';
+import practiceRepo, { STAFF_ONLY_EXCLUDE } from '../modules/practice/practice.repo.js';
 import Question from '../models/Question.js';
 import * as exec from '../services/execution/index.js';
 import app from '../app.js';
@@ -238,7 +238,13 @@ test('findCodingQuestion skips excluded ids and wrong language', async () => {
   seedQ('Draft', { status: 'draft' });
   seedQ('Mcq', { type: 'mcq' });
   db.addQuestion({ institutionId: IDS.instA, source: 'lecturer', title: 'Lecturer made' });
-  mock.method(Question, 'aggregate', async (pipeline) => db.questions.filter((d) => matchesFilter(d, pipeline[0].$match)).slice(0, 1));
+  const pipelines = [];
+  mock.method(Question, 'aggregate', async (pipeline) => {
+    pipelines.push(pipeline);
+    const [match, , project] = pipeline;
+    return db.questions.filter((d) => matchesFilter(d, match.$match)).slice(0, 1)
+      .map((d) => Object.fromEntries(Object.entries(d).filter(([k]) => !(project?.$project?.[k] === 0))));
+  });
   const find = (extra) => practiceRepo.findCodingQuestion({ institutionId: IDS.instA, difficulty: 'easy', language: 'javascript', excludeIds: [], ...extra });
 
   assert.equal(String((await find({ language: 'python' }))._id), String(py._id), 'wrong language is skipped');
@@ -248,6 +254,17 @@ test('findCodingQuestion skips excluded ids and wrong language', async () => {
   const all = db.questions.filter((d) => d.difficulty === 'easy' && d.type === 'coding' && d.source === 'seed' && d.languages.includes('javascript')).map((d) => d._id);
   assert.equal(await find({ excludeIds: all }), null, 'nothing left');
   assert.equal(await find({ difficulty: 'medium' }), null, 'no question at that difficulty');
+
+  // aggregate() ignores `select: false`, so the pipeline itself must exclude every staff-only field of the schema
+  const hidden = Object.entries(Question.schema.paths).filter(([, p]) => p.options.select === false).map(([k]) => k).sort();
+  assert.deepEqual(Object.keys(STAFF_ONLY_EXCLUDE).sort(), hidden);
+  const stage = pipelines.at(-1).find((s) => s.$project);
+  assert.deepEqual(stage.$project, Object.fromEntries(hidden.map((k) => [k, 0])));
+  const withSecrets = seedQ('Secrets', { difficulty: 'hard', referenceSolution: { language: 'javascript', source: 'x' }, wrongSolution: { language: 'javascript', source: 'y' }, correct: [1], traceAnswer: 't', explanation: 'e', altReferenceSolutions: [] });
+  const got = await find({ difficulty: 'hard' });
+  assert.ok(got);
+  for (const k of hidden) assert.ok(!(k in got), `${k} must not be returned`);
+  assert.ok(String(withSecrets._id));
 });
 
 // QA-13: the student is told why the sandbox is unavailable (a friendly version of the real reason).

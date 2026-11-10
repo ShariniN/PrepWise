@@ -6,6 +6,8 @@ import Attempt from '../../models/Attempt.js';
 // Every function takes the caller's institutionId and filters by it. The global seed bank has institutionId null
 // and is readable from every tenant but never writable: write functions match only `institutionId` exactly.
 const STAFF_ONLY = '+referenceSolution +altReferenceSolutions +wrongSolution +correct +traceAnswer +explanation';
+// The same fields as exclusions, for aggregate(), which ignores `select: false`.
+export const STAFF_ONLY_EXCLUDE = { referenceSolution: 0, altReferenceSolutions: 0, wrongSolution: 0, correct: 0, traceAnswer: 0, explanation: 0 };
 const readable = (institutionId) => ({ institutionId: { $in: [null, institutionId] } });
 
 // The filter findCodingQuestion runs: a published seeded coding question at this difficulty that allows this language.
@@ -39,6 +41,7 @@ const practiceRepo = {
     const [picked] = await Question.aggregate([
       { $match: codingQuestionFilter({ institutionId, difficulty, language, excludeIds }) },
       { $sample: { size: 1 } },
+      { $project: STAFF_ONLY_EXCLUDE },
     ]);
     return picked || null;
   },

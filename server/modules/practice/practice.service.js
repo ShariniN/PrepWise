@@ -8,7 +8,7 @@ import { normalizeLanguage } from '../../services/execution/languages.js';
 import { friendlyUnavailable, unavailableReason } from '../../services/execution/errors.js';
 import { studentTestResults, storedPerTest } from '../../services/questionSerializers.js';
 
-export const CODE_TYPES = ['coding', 'debug'];
+export const CODE_TYPES = ['coding'];
 const bad = (status, message, extra = {}) => ({ status, body: { success: false, message, ...extra } });
 const normText = (s) => String(s ?? '').trim().replace(/\r\n?/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n');
 
@@ -128,10 +128,10 @@ export const submitForQuestion = async (q, body, ctx) => {
     const ok = normText(body.answer) === normText(q.traceAnswer);
     return objective(await questionRepo.createAttempt({ ...base, verdict: ok ? 'accepted' : 'wrong_answer', score: ok ? 100 : 0, answer: body.answer }));
   }
-  // Anything that is not coding or debug (for example an old short or behavioural question) cannot be answered here.
+  // Anything that is not coding, mcq or trace (for example an old short or behavioural question) cannot be answered here.
   if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question type is not supported');
 
-  // coding / debug: server-side. Visible tests first; the hidden tests run only if every visible test passed
+  // coding: server-side. Visible tests first; the hidden tests run only if every visible test passed
   // (see gradeVisibleFirst). Skipped hidden tests are stored and shown as `not_run` and score as not passed.
   const picked = pickLanguage(q, body.language);
   if (picked.error) return picked.error;

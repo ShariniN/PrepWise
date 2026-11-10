@@ -85,6 +85,10 @@ test('practice submit refuses short answers', async () => {
   const res = await request(app).post(`/api/practice/questions/${sq._id}/submit`).set('Cookie', w.cookie(student)).send({ answer: 'Because.' });
   assert.equal(res.status, 400);
   assert.equal(db.attempts.length, 0);
+  const dq = db.addQuestion({ institutionId: IDS.instA, type: 'debug', title: 'Find the bug' });
+  const res2 = await request(app).post(`/api/practice/questions/${dq._id}/submit`).set('Cookie', w.cookie(student)).send({ language: 'javascript', source: 'x' });
+  assert.equal(res2.status, 400);
+  assert.equal(db.attempts.length, 0);
 });
 
 test('no source file imports a removed model, repository or service', () => {
