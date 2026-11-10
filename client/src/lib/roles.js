@@ -7,11 +7,6 @@ export const ROLES = {
 // Lecturer dashboard (/staff and the student pages under it). Admins open it as "Students".
 export const STAFF_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
-// Roles that may author questions.
-export const QUESTION_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
-
-export const GRADING_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
-
 export const ROLE_LABELS = {
   student: 'Student',
   lecturer: 'Lecturer',

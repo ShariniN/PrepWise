@@ -1,4 +1,4 @@
-import api from '../../api/client';
+import api from '../../lib/apiClient';
 
 // Admin analytics endpoints. Each returns response.data.
 const get = async (path, params) => (await api.get(path, { params })).data;

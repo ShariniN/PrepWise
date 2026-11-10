@@ -5,8 +5,7 @@ import CircularProgress from './components/CircularProgress';
 import StructuredRecommendations from './components/StructuredRecommendations';
 import { CheckCircle, XCircle, FileText, Target, BarChart3, Star, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
 import AppShell from "../../components/AppShell";
-import { useNavigate } from "react-router-dom";
-import { backendUrl } from '../../api/client';
+import { backendUrl } from '../../lib/apiClient';
 
 // API Configuration
 const API_BASE_URL = backendUrl;
@@ -18,7 +17,6 @@ const API_ENDPOINTS = {
 };
 
 const CVAnalyzer = () => {
-  const navigate = useNavigate();
   // State management
   const [resumeFile, setResumeFile] = useState(null);
   const [jobDescriptions, setJobDescriptions] = useState([""]);
@@ -810,23 +808,12 @@ const handleSaveIndividualAnalysis = async (index) => {
                           {resumeData && !resumeData.extractedTechnologies?.length && (
                             <p role="status" className="mt-2 rounded-xl bg-sun-100 px-3 py-2 text-sm text-ink">
                               {resumeData.technologiesUnavailable
-                                ? 'Could not extract technologies from your CV right now; add them manually or try again.'
-                                : 'No technologies were found on your CV. You can add them manually.'}
+                                ? 'Could not extract technologies from your CV right now. Try again in a moment.'
+                                : 'No technologies were found on your CV.'}
                             </p>
                           )}
                         </div>
                       </div>
-                      {resumeData && !resumeData.extractedTechnologies?.length ? (
-                        <button
-                          onClick={() => navigate('/swot', { state: { resumeHash: resumeData.resumeHash, extractedTechnologies: [], technologiesUnavailable: !!resumeData.technologiesUnavailable } })}
-                          className="px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all shadow-soft bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Plus className="w-5 h-5" />
-                            Add technologies manually
-                          </div>
-                        </button>
-                      ) : (
                       <button
                         onClick={handleNavigateToSkillsAssessment}
                         disabled={!resumeData || !resumeData.extractedTechnologies?.length}
@@ -841,7 +828,6 @@ const handleSaveIndividualAnalysis = async (index) => {
                           Start Assessment
                         </div>
                       </button>
-                      )}
                     </div>
                   </div>
 

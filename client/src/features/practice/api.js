@@ -1,4 +1,4 @@
-import api from './client';
+import api from '../../lib/apiClient';
 
 // Thin wrappers over /api/practice. Components handle errors themselves.
 export const listQuestions = (params) => api.get('/api/practice/questions', { params }).then((r) => r.data);

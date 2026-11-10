@@ -13,3 +13,8 @@ createRoot(document.getElementById('root')).render(
     </AppContextProvider>
   </BrowserRouter>,
 )
+
+// Dev builds only: lets tools/e2e/browser-runner-check.mjs drive the in-browser code runner.
+if (import.meta.env.DEV) {
+  import('./features/practice/browserRunner/index.js').then((runner) => { window.__prepwiseRunner = runner })
+}

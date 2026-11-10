@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import api, { errorMessage } from '../../../api/client';
-import { ROLE_LABELS } from '../../../utils/roles';
+import api, { errorMessage } from '../../../lib/apiClient';
+import { ROLE_LABELS } from '../../../lib/roles';
 import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../../../components/ui';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';

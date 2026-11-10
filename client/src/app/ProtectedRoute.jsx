@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AppContext } from './AppContext';
-import { homeForRole } from '../utils/roles';
+import { homeForRole } from '../lib/roles';
 
 // Redirects to /login when signed out, and to the user's own home when the
 // role is not in `allow`.

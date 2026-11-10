@@ -10,19 +10,15 @@ import StudentHome from '../features/home/StudentHome'
 import ProfileSettings from '../features/profile/ProfileSettings'
 import CVAnalyzer from '../features/cv/CVAnalyzer'
 import AcceptInvite from '../features/auth/AcceptInvite'
-import SkillAssessor from '../features/skills/SkillAssessor'
 import Interview from '../features/interview/Interview'
 import StaffDashboard from '../features/staff/StaffDashboard'
 import ManagePeople from '../features/admin/ManagePeople'
-import PracticeList from '../pages/PracticeList'
-import PracticeQuestion from '../pages/PracticeQuestion'
-import QuestionBank from '../features/questions/QuestionBank'
-import QuestionEditor from '../features/questions/QuestionEditor'
+import PracticeList from '../features/practice/PracticeList'
+import PracticeQuestion from '../features/practice/PracticeQuestion'
 import DemoBanner from './DemoBanner'
 import ProtectedRoute from './ProtectedRoute'
 import NotFound from './NotFound'
-import { ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES } from '../utils/roles'
-import GradingQueue from '../features/grading/GradingQueue'
+import { ROLES, STAFF_ROLES } from '../lib/roles'
 import AdminOverview from '../features/admin/AdminOverview'
 import StudentProfile from '../features/staff/StudentProfile'
 import StudentInterview from '../features/staff/StudentInterview'
@@ -46,7 +42,6 @@ const App = () => {
         {/* Student routes */}
         <Route path='/fresher-dashboard' element={<ProtectedRoute allow={[ROLES.STUDENT]}><StudentHome/></ProtectedRoute>}/>
         <Route path='/cv-analyzer' element={<ProtectedRoute allow={[ROLES.STUDENT]}><CVAnalyzer/></ProtectedRoute>}/>
-        <Route path='/swot' element={<ProtectedRoute allow={[ROLES.STUDENT]}><SkillAssessor/></ProtectedRoute>}/>
         <Route path='/interview' element={<ProtectedRoute allow={[ROLES.STUDENT]}><Interview/></ProtectedRoute>}/>
 
         <Route path='/practice' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeList/></ProtectedRoute>}/>
@@ -57,12 +52,7 @@ const App = () => {
         <Route path='/staff/students/:id' element={<ProtectedRoute allow={STAFF_ROLES}><StudentProfile/></ProtectedRoute>}/>
         <Route path='/staff/students/:id/interviews/:interviewId' element={<ProtectedRoute allow={STAFF_ROLES}><StudentInterview/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
-        <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/admin-overview' element={<ProtectedRoute allow={[ROLES.ADMIN]}><AdminOverview/></ProtectedRoute>}/>
-
-        <Route path='/questions' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionBank/></ProtectedRoute>}/>
-        <Route path='/questions/new' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionEditor/></ProtectedRoute>}/>
-        <Route path='/questions/:id' element={<ProtectedRoute allow={QUESTION_ROLES}><QuestionEditor/></ProtectedRoute>}/>
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AppShell from "../../components/AppShell";
 import PrivacyTab from "./components/PrivacyTab";
-import { PASSWORD_RULES, passwordProblems } from "../../utils/roles";
+import { PASSWORD_RULES, passwordProblems } from "../../lib/roles";
 
 const PHONE_OK = (v) => /^[\d\s\-.()]+$/.test(String(v).trim()) && /^\d{10,15}$/.test(String(v).replace(/\D/g, ''));
 
@@ -985,13 +985,6 @@ const renderCVTab = () => (
                   <Target className="mr-2" size={16} />
                   Analyze CV Against Jobs
                 </button>
-                <button
-                  onClick={() => navigate('/swot')}
-                  className="w-full px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700 flex items-center justify-center"
-                >
-                  <Brain className="mr-2" size={16} />
-                  Skills Assessment
-                </button>
               </div>
             </div>
           </div>
@@ -1118,12 +1111,6 @@ const renderCVTab = () => (
           <Brain className="mx-auto h-12 w-12 text-ink-muted mb-4" />
           <p className="text-ink-2 mb-2">No skills assessments completed yet.</p>
           <p className="text-sm text-ink-muted">Complete a SWOT analysis to see your technology proficiency results here.</p>
-          <button
-            onClick={() => navigate('/swot')}
-            className="mt-3 px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700"
-          >
-            Start Skills Assessment
-          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -1435,12 +1422,6 @@ const renderCVTab = () => (
                     className="px-3 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700"
                   >
                     CV Analyzer
-                  </button>
-                  <button
-                    onClick={() => navigate('/swot')}
-                    className="px-3 py-2 text-sm bg-success-600 text-white rounded-xl hover:bg-success-700"
-                  >
-                    Skills Assessment
                   </button>
                 </>
               ) : (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import api, { errorMessage } from '../../../api/client';
+import api, { errorMessage } from '../../../lib/apiClient';
 import { Badge, Button, Card, Field, Table, THead, TBody, Tr, Th, Td, Textarea } from '../../../components/ui';
 import CopyLinkButton from './CopyLinkButton';
 

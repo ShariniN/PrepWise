@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { errorMessage } from '../api/client';
+import { errorMessage } from '../lib/apiClient';
 
 // Loads data from `fetcher` whenever `key` changes (a string describing the inputs).
 // Pass enabled=false to skip. Stale responses are ignored.

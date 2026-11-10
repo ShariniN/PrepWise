@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import axios from 'axios';
 import { AppContext } from "./AppContext.js";
-import { backendUrl as apiOrigin } from '../api/client';
+import { backendUrl as apiOrigin } from '../lib/apiClient';
 
 export const AppContextProvider = (props) => {
     axios.defaults.withCredentials = true;

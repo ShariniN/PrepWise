@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { autosave, createDraft, getDraft } from '../api/practice';
-import { backendUrl } from '../api/client';
+import { autosave, createDraft, getDraft } from '../api';
+import { backendUrl } from '../../../lib/apiClient';
 
 const DEBOUNCE_MS = 1500;
 const MAX_SOURCE = 64 * 1024;

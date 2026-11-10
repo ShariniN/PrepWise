@@ -5,7 +5,7 @@ import UsageHeader from './components/UsageHeader';
 import PeopleTable from './components/PeopleTable';
 import InviteForm from './components/InviteForm';
 import ImportCsv from './components/ImportCsv';
-import api, { errorMessage } from '../../api/client';
+import api, { errorMessage } from '../../lib/apiClient';
 
 const ManagePeople = () => {
   const [usage, setUsage] = useState(null);

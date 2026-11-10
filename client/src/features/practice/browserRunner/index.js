@@ -1,16 +1,14 @@
 // Practice "Run" in the student's own browser, for Python (Pyodide) and JavaScript, so it spends no runner
 // credits. It is never graded: Submit and anything scored always run on the server.
 //
-// It follows the server's contract exactly: the test input is the program's stdin, stdout is compared with the
-// expected output by the same rules (compare.js), with the question's time limit. When the server's runner is
-// JDoodle, which merges stderr into the output and infers the verdict from that text, the result is read the same
-// way. Whatever cannot be reproduced exactly (an unsupported module, output formatting the shim cannot match, a
-// browser without workers, Pyodide failing to load) throws BrowserRunnerUnavailable, and the caller uses the
-// server's Run instead.
+// It follows the server's contract: the test input is the program's stdin, stdout is compared with the expected
+// output by the same rules (compare.js), with the question's time limit. Whatever cannot be reproduced exactly (an
+// unsupported module, output formatting the shim cannot match, a browser without workers, Pyodide failing to load)
+// makes runInBrowser return null, and the caller uses the server's Run instead.
 import nodeFormatSource from './nodeFormat.js?raw';
 import jsWorkerSource from './jsWorker.js?raw';
 import pyWorkerSource from './pyWorker.js?raw';
-import { outputsMatch, overallVerdict, jdoodleClassify } from './compare.js';
+import { outputsMatch } from './compare.js';
 
 export const PYODIDE_INDEX_URL = 'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/';
 export const OUTPUT_CAP = 64 * 1024; // stdout + stderr, per program
@@ -163,62 +161,37 @@ const runPython = async ({ source, stdin, limitMs, onStatus }) => {
 /** Starts loading Pyodide in the background (for example when a Python question opens). Errors are ignored. */
 export const warmUpPython = () => { pythonWorker().catch(() => {}); };
 
-// ---- reading a run the way the server does ----
-// `provider` is the server's runner name (GET /api/code/health). JDoodle sends back stdout and stderr as one text
-// and the server infers the verdict from it; every other provider keeps them apart and reports the real status.
-const asServerWouldSee = (r, provider) => {
-  if (provider === 'jdoodle' && ['accepted', 'exited', 'runtime_error'].includes(r.status)) {
-    const inferred = jdoodleClassify(r.merged);
-    const status = inferred === 'accepted' && r.status === 'runtime_error' ? 'runtime_error' : inferred;
-    return {
-      status,
-      stdout: status === 'accepted' ? r.merged : '',
-      stderr: status === 'accepted' || status === 'compile_error' ? '' : r.merged,
-      compileOutput: status === 'compile_error' ? r.merged : '',
-      timeMs: r.timeMs,
-    };
-  }
-  return {
-    status: r.status === 'exited' ? 'runtime_error' : r.status,
-    stdout: r.stdout,
-    stderr: r.stderr,
-    compileOutput: r.compileOutput,
-    timeMs: r.timeMs,
-  };
-};
-
 /**
- * Runs the program in the browser. With a non-empty `stdin` it is one run on that input (like the server's custom
- * Run); otherwise every visible test runs. Returns the same shape as POST /api/practice/questions/:id/run plus
- * `ranIn: 'browser'`. Throws BrowserRunnerUnavailable when the server must be used instead.
- * `onStatus('loading' | 'running')` reports progress (loading only happens on the first Python run).
+ * Runs the program on each test in the student's browser (Python via Pyodide, JavaScript in a worker). Each test's
+ * `input` is the program's stdin and its stdout is compared with `expectedOutput` by the server's rules.
+ * tests: [{ id, input, expectedOutput, comparison? }]. Resolves with
+ * { perTest: [{ testId, passed, stdout, stderr, timedOut }], ranIn: 'browser' }, or with null when the browser
+ * cannot run this program exactly as the server would (the caller then uses the server Run).
  */
-export const runInBrowser = async ({ language, source, stdin, tests, timeLimitMs, provider, onStatus }) => {
-  const blocker = browserRunBlocker(language, source);
-  if (blocker) throw new BrowserRunnerUnavailable(blocker);
-  const limitMs = Number(timeLimitMs) > 0 ? Number(timeLimitMs) : 2000;
-  const once = async (input) => asServerWouldSee(language === 'python'
-    ? await runPython({ source, stdin: input, limitMs, onStatus })
-    : await runJavaScript({ source, stdin: input, limitMs }), provider);
-
-  if (typeof stdin === 'string' && stdin !== '') {
-    const r = await once(stdin);
-    return {
-      success: true, mode: 'custom', ranIn: 'browser', verdict: r.status, stdout: r.stdout, stderr: r.stderr,
-      compileOutput: r.compileOutput, timeMs: r.timeMs, memoryKb: null,
-    };
+export const runInBrowser = async ({ language, source, tests, timeLimitMs }) => {
+  try {
+    const blocker = browserRunBlocker(language, source);
+    if (blocker || !tests?.length) return null;
+    const limitMs = Number(timeLimitMs) > 0 ? Number(timeLimitMs) : 2000;
+    const perTest = [];
+    for (const t of tests) {
+      const input = String(t.input ?? '');
+      const r = language === 'python'
+        ? await runPython({ source, stdin: input, limitMs })
+        : await runJavaScript({ source, stdin: input, limitMs });
+      const ranOk = r.status === 'accepted';
+      const timedOut = r.status === 'time_limit';
+      perTest.push({
+        testId: t.id,
+        passed: ranOk && outputsMatch(r.stdout, t.expectedOutput, t.comparison || 'trim'),
+        stdout: r.stdout,
+        stderr: r.stderr || r.compileOutput || '',
+        timedOut,
+      });
+    }
+    return { perTest, ranIn: 'browser' };
+  } catch (e) {
+    if (e instanceof BrowserRunnerUnavailable) return null;
+    throw e;
   }
-  if (!tests?.length) throw new BrowserRunnerUnavailable('no visible tests');
-  const results = [];
-  for (const [i, t] of tests.entries()) {
-    const r = await once(String(t.input ?? ''));
-    const ranOk = r.status === 'accepted';
-    const passed = ranOk && outputsMatch(r.stdout, t.expectedOutput, t.comparison || 'trim');
-    results.push({
-      index: i + 1, testId: t.id, visible: true, passed, verdict: passed ? 'accepted' : (ranOk ? 'wrong_answer' : r.status),
-      timeMs: r.timeMs, memoryKb: null, input: t.input, expectedOutput: t.expectedOutput, actualOutput: r.stdout,
-      error: r.compileOutput || r.stderr || '',
-    });
-  }
-  return { success: true, mode: 'visible_tests', ranIn: 'browser', verdict: overallVerdict(results), tests: results };
 };

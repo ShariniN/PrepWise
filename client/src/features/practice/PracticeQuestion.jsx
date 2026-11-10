@@ -1,20 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import AppShell from '../components/AppShell';
+import AppShell from '../../components/AppShell';
 import { ArrowLeft } from 'lucide-react';
-import { Badge, Button, Card, Skeleton, Textarea } from '../components/ui';
-import Markdown from '../components/Markdown';
-import CodeEditor from '../components/CodeEditor';
-import ResultView from '../components/ResultView';
-import AnswerInput from '../components/AnswerInput';
-import VerdictBadge from '../components/VerdictBadge';
-import UnavailableNotice from '../components/UnavailableNotice';
-import { getQuestion, runQuestion, submitQuestion, isUnavailable } from '../api/practice';
-import { errorMessage } from '../api/client';
-import usePracticeDraft from '../hooks/usePracticeDraft';
-import useEditEvents from '../hooks/useEditEvents';
-import { isCodeType } from '../utils/practice';
+import { Badge, Button, Card, Skeleton, Textarea } from '../../components/ui';
+import Markdown from '../../components/Markdown';
+import CodeEditor from '../../components/CodeEditor';
+import ResultView from './components/ResultView';
+import AnswerInput from '../../components/AnswerInput';
+import VerdictBadge from './components/VerdictBadge';
+import UnavailableNotice from '../../components/UnavailableNotice';
+import { getQuestion, runQuestion, submitQuestion, isUnavailable } from './api';
+import { errorMessage } from '../../lib/apiClient';
+import usePracticeDraft from './hooks/usePracticeDraft';
+import { isCodeType } from './utils';
 
 // True when the statement already contains this test's input and output (e.g. in its own "Example" section),
 // so the page does not show the same example twice.
@@ -42,7 +41,6 @@ const PracticeQuestion = () => {
 
   const code = isCodeType(question?.type);
   const draft = usePracticeDraft(id, code && !!question);
-  const events = useEditEvents(draft.attemptId);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,7 +179,6 @@ const PracticeQuestion = () => {
               language={language}
               languages={question.languages}
               onLanguageChange={onLanguage}
-              recorder={events}
             />
             <div className="flex items-center justify-between text-xs text-ink-muted">
               <span aria-live="polite">{saveLabel || ''}</span>

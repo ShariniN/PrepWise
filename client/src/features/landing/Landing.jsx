@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Menu, X, ArrowRight, Mail, Code2, MessagesSquare, Grid3x3, ShieldCheck, FileText, Lock, Eye, UserCheck, VideoOff, Plus } from 'lucide-react';
 import { AppContext } from '../../app/AppContext';
-import { homeForRole } from '../../utils/roles';
+import { homeForRole } from '../../lib/roles';
 import { Button, Reveal, ScrollNarrative, Section, Tabs, TabPanel, Accordion, Spinner, cn } from '../../components/ui';
 import Logo from '../../components/Logo';
 import HeroVisual from './components/HeroVisual';

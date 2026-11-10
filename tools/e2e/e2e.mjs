@@ -54,11 +54,13 @@ if (st.codingId) {
   await p.screenshot({ path: 'e2e/practice-question.png' });
 }
 
-// 3. Skills page without a CV analysis: no debug text, link to the CV analyzer
-await p.goto(B + '/swot', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
-const sk = await body(p);
-ok('skills page asks for a CV analysis, no debug text', /Analyse your CV first/.test(sk) && !/Debug info/.test(sk));
-ok('skills page links to the CV analyzer', await p.getByRole('link', { name: /CV Analyzer/i }).count() > 0);
+// 3. Removed pages (skills, question authoring, grading) are gone, with no link left in the navigation or on the home page
+for (const path of ['/swot', '/questions', '/grading']) {
+  await p.goto(B + path, { waitUntil: 'networkidle' });
+  ok(`removed page (${path}) shows "Page not found"`, /Page not found/.test(await body(p)));
+}
+await p.goto(B + '/fresher-dashboard', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
+ok('student home and navigation have no link to the removed pages', await p.locator('a[href="/swot"], a[href^="/questions"], a[href="/grading"]').count() === 0);
 
 // 4. Profile: a bad phone is refused before saving
 await p.goto(B + '/profile-settings', { waitUntil: 'networkidle' }); await p.waitForTimeout(800);

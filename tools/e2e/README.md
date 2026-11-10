@@ -17,7 +17,7 @@ and the same passwords for `@demo-b.test`).
    - `node deep.mjs` - 30 students answer MCQ practice questions, then checks that the lecturer table and the admin
      overview pick it up. No AI, no code runner.
    - `node prep.mjs && node e2e.mjs` - real-browser walk: student login, `/login` while signed in, "Page not found" for
-     unknown and removed pages, Practice, the Skills page without a CV analysis, profile phone validation, the lecturer
+     unknown and removed pages, Practice, the removed Skills, Questions and Grading pages, profile phone validation, the lecturer
      dashboard (overview, student, interview) and cancelling a pending invitation in Manage people. Screenshots go to `e2e/`.
    - `node shot.mjs /login out.png --role student --width 1440` - screenshot any page (add `--full` for the whole page).
 

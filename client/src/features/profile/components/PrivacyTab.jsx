@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api, { errorMessage } from '../../../api/client';
+import api, { errorMessage } from '../../../lib/apiClient';
 import { AppContext } from '../../../app/AppContext';
 
 const inputCls = 'w-full bg-sand rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-400';

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Download, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AppShell from '../../components/AppShell';
@@ -9,14 +9,13 @@ import OverviewPanel, { OverviewSkeleton } from './components/OverviewPanel';
 import StudentTable from './components/StudentTable';
 import useApiData from '../../hooks/useApiData';
 import { getOverview, listStudents, downloadStudentsCsv } from './api';
-import { saveBlob } from '../../utils/download';
-import { errorMessage } from '../../api/client';
+import { saveBlob } from '../../lib/download';
+import { errorMessage } from '../../lib/apiClient';
 import { AppContext } from '../../app/AppContext';
-import { ROLES } from '../../utils/roles';
+import { ROLES } from '../../lib/roles';
 import { ATTENTION_FILTERS } from './utils';
 
 const PAGE_SIZE = 25;
-const linkCls = 'font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800';
 
 // attention filter value -> API query
 const attentionParams = (a) => (a === 'any' ? { needsAttention: 1 } : a ? { attention: a } : {});
@@ -79,7 +78,6 @@ const StaffDashboard = () => {
       subtitle={(
         <>
           How your students do in mock interviews, CV analysis and Practice.
-          {role === ROLES.LECTURER && <> Answers waiting for your judgement are in the <Link to="/grading" className={linkCls}>grading queue</Link>.</>}
         </>
       )}
       actions={(
