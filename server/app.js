@@ -6,9 +6,9 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import authRouter from './routes/AuthRoutes.js';
+import authRouter from './modules/auth/auth.routes.js';
 import skillAssessor from './routes/SkillAssessorRoutes.js';
-import userRouter from './routes/UserRoutes.js';
+import userRouter from './modules/users/users.routes.js';
 import analysisRouter from './routes/CVanalysisRoutes.js';
 import interviewRouter from './routes/InterviewRoutes.js';
 import codeRouter from './routes/codeRoutes.js';

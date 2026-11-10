@@ -1,6 +1,6 @@
 import express from "express";
-import userAuth from "../middleware/userAuth.js";
-import pdfUpload from "../middleware/pdfUpload.js";
+import userAuth from "../../middleware/userAuth.js";
+import pdfUpload from "../../middleware/pdfUpload.js";
 import {
   getUserProfile,
   updateUserProfile,
@@ -8,15 +8,15 @@ import {
   uploadCV,
   getCurrentCV,
   deleteCV,
-} from "../controllers/userController.js";
+} from "./users.controller.js";
 
 import { 
   getSavedAnalysis, 
   deleteAnalysis
-} from '../controllers/cvAnalysiscontroller.js';
+} from '../../controllers/cvAnalysiscontroller.js';
 
 // Import Skills Assessment controller methods
-import { getRatings, deleteRatings } from '../controllers/skillAssessorController.js';
+import { getRatings, deleteRatings } from '../../controllers/skillAssessorController.js';
 
 const userRouter = express.Router();
 

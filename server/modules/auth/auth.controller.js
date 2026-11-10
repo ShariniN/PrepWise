@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import userModel from "../models/User.js";
-import transporter from "../config/nodemailer.js";
-import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../config/emailTemplates.js";
-import { hashToken } from "../services/inviteTokens.js";
-import { audit } from "../services/audit.js";
-import { isKnownRole } from "../config/roles.js";
-import { passwordOk, PASSWORD_MESSAGE } from "../services/accountRules.js";
+import userModel from "../../models/User.js";
+import transporter from "../../config/nodemailer.js";
+import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../../config/emailTemplates.js";
+import { hashToken } from "../../services/inviteTokens.js";
+import { audit } from "../../services/audit.js";
+import { isKnownRole } from "../../config/roles.js";
+import { passwordOk, PASSWORD_MESSAGE } from "../../services/accountRules.js";
 
 const cookieOptions = () => ({
   httpOnly: true,

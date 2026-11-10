@@ -1,9 +1,9 @@
-import userModel from "../models/User.js";
+import userModel from "../../models/User.js";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto';
 import pdf from 'pdf-parse';
-import { NOT_PDF_MESSAGE } from '../middleware/pdfUpload.js';
-import { passwordOk, PASSWORD_MESSAGE, normalizePhone, PHONE_MESSAGE } from '../services/accountRules.js';
+import { NOT_PDF_MESSAGE } from '../../middleware/pdfUpload.js';
+import { passwordOk, PASSWORD_MESSAGE, normalizePhone, PHONE_MESSAGE } from '../../services/accountRules.js';
 
 // A file that is not a readable PDF is the user's problem to fix, so it is a 400, not a 500.
 class NotPdfError extends Error {}
