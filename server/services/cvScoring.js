@@ -8,12 +8,16 @@ export const SKILL_GROUPS = {
   languages: ['python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'c', 'golang', 'rust', 'swift', 'kotlin', 'scala', 'ruby', 'php', 'matlab'],
   web: ['react', 'angular', 'vue', 'node.js', 'nodejs', 'express', 'django', 'flask', 'spring', 'html', 'css', 'tailwind', 'next.js'],
   fundamentals: ['data structures', 'algorithms', 'recursion', 'dynamic programming', 'big o', 'object oriented', 'oop'],
-  tools: ['git', 'github', 'docker', 'kubernetes', 'ci/cd', 'unit testing', 'testing', 'agile', 'scrum', 'rest', 'api', 'graphql', 'linux'],
+  tools: ['git', 'github', 'docker', 'kubernetes', 'ci/cd', 'unit testing', 'unit tests', 'unit test', 'testing', 'tests', 'tested', 'jest', 'mocha', 'pytest', 'junit', 'agile', 'scrum', 'rest', 'api', 'graphql', 'linux'],
   databases: ['sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'sqlite', 'firebase', 'nosql'],
 };
 
 // The same skill written differently counts once.
-const ALIASES = { nodejs: 'node.js', apis: 'api', 'rest api': 'rest', 'rest apis': 'rest' };
+const ALIASES = {
+  nodejs: 'node.js', apis: 'api', 'rest api': 'rest', 'rest apis': 'rest',
+  'unit tests': 'unit testing', 'unit test': 'unit testing',
+  tests: 'testing', tested: 'testing', jest: 'testing', mocha: 'testing', pytest: 'testing', junit: 'testing',
+};
 const ALL_SKILLS = [...new Set(Object.values(SKILL_GROUPS).flat())];
 
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -25,6 +29,7 @@ const REGEXES = new Map(ALL_SKILLS.map((s) => [s, termRegex(s)]));
 export const findSkills = (text) => {
   const lower = String(text || '').toLowerCase();
   const found = ALL_SKILLS.filter((s) => REGEXES.get(s).test(lower)).map((s) => ALIASES[s] || s);
+  if (found.includes('unit testing')) found.push('testing');
   return [...new Set(found)];
 };
 

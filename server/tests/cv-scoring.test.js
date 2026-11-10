@@ -61,3 +61,12 @@ test('the AI prompt is not anchored with the keyword score', async () => {
   assert.doesNotMatch(prompt, /baseline/i);
   assert.match(prompt, /evidence/i, 'the prompt asks for evidence, so listed-but-unsupported skills score low');
 });
+
+test('common word forms count as the same skill', () => {
+  // "wrote 60 Jest unit tests" shows unit testing; it must not be reported as missing.
+  const found = findSkills('Wrote 60 Jest unit tests and tested the API with Postman.');
+  assert.ok(found.includes('unit testing'));
+  assert.ok(found.includes('testing'));
+  assert.ok(findSkills('Used pytest and JUnit').includes('testing'));
+  assert.ok(!findSkills('I like to read').includes('testing'));
+});

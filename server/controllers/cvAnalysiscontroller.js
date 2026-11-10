@@ -1,15 +1,11 @@
 import pdfParse from "pdf-parse";
 import crypto from 'crypto';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import CVAnalysis from "../models/CVAnalysisModel.js";
 import userModel from '../models/userModel.js';
-import { GEMINI_MODEL, CV_MODELS } from '../config/ai.js';
+import { GEMINI_MODEL, CV_MODELS, AI_MODELS } from '../config/ai.js';
 import { generateWithFallback } from '../services/geminiClient.js';
 import { scoreResume } from '../services/cvScoring.js';
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 // Utility functions
 function convertMarkdownToHTML(text) {
@@ -108,9 +104,7 @@ Confidence level must be 1-10.
 Only include technical skills relevant to software development.
 Return ONLY the JSON array, no other text.`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const content = response.text().trim();
+    const { text: content } = await generateWithFallback(prompt, { models: AI_MODELS });
     
     console.log("Technology extraction response:", content.substring(0, 200) + "...");
     

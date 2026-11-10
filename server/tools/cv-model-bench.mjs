@@ -1,8 +1,9 @@
-// Benchmark Gemini models for CV scoring. Usage (from server/): node tools/cv-model-bench.mjs [model ...]
+// Benchmark AI models for CV scoring. Usage (from server/): node tools/cv-model-bench.mjs [model ...]
+// Gemini models by name, Groq models as groq:<model>, e.g. groq:openai/gpt-oss-120b.
 // Six fake CVs of known quality are scored against one job description, twice per model.
 // A good model ranks them in the expected order, gives similar scores on repeat runs, and responds reliably.
 import 'dotenv/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateWithFallback } from '../services/geminiClient.js';
 import { buildPrompt, parseScore } from '../services/cvScoring.js';
 
 const JD = `Software Engineering Intern (Backend/Full-stack). Required: JavaScript or TypeScript, Node.js and Express,
@@ -32,7 +33,6 @@ trained new staff. Skills: customer service, communication, teamwork, Microsoft 
 const models = process.argv.slice(2).length ? process.argv.slice(2)
   : ['gemini-2.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.8-flash'];
 const RUNS = Number(process.env.RUNS || 2);
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Spearman rank correlation between expected and observed order (1 = perfect).
@@ -45,16 +45,15 @@ const spearman = (expected, observed) => {
 
 const results = [];
 for (const name of models) {
-  const model = genAI.getGenerativeModel({ model: name, generationConfig: { temperature: 0 } });
   const scores = CVS.map(() => []);
   let failures = 0; let msTotal = 0; let calls = 0; let firstError = '';
   for (let run = 0; run < RUNS; run++) {
     for (const [i, cv] of CVS.entries()) {
       const t0 = Date.now();
       try {
-        const res = await model.generateContent(buildPrompt(cv.text, JD));
-        const s = parseScore(res.response.text().trim());
-        if (s === null) { failures++; firstError ||= `unparseable: ${res.response.text().slice(0, 60)}`; } else scores[i].push(s);
+        const { text } = await generateWithFallback(buildPrompt(cv.text, JD), { models: [name], temperature: 0, sleep: async () => {} });
+        const s = parseScore(text);
+        if (s === null) { failures++; firstError ||= `unparseable: ${text.slice(0, 60)}`; } else scores[i].push(s);
       } catch (e) { failures++; firstError ||= String(e.message).slice(0, 120); }
       msTotal += Date.now() - t0; calls++;
       await sleep(400);

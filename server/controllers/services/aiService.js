@@ -1,9 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_MODEL } from '../../config/ai.js';
+import { GEMINI_MODEL, AI_MODELS } from '../../config/ai.js';
+import { generateWithFallback } from '../../services/geminiClient.js';
 import axios from 'axios';
 import { consumeAi } from '../../services/aiUsage.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'MOCK_KEY');
 
 const questionCache = new Map();
 const CACHE_TTL = 3600000; 
@@ -32,19 +31,6 @@ const checkRateLimit = async () => {
   requestCount++;
 };
 
-const getModel = (config = {}) => {
-  return genAI.getGenerativeModel({ 
-    model: GEMINI_MODEL,
-    generationConfig: { 
-      temperature: 0.2,
-      maxOutputTokens: 4000,
-      topP: 0.7,
-      topK: 30,
-      candidateCount: 1,
-      ...config
-    }
-  });
-};
 
 const getCacheKey = (resumeText, jobDescription) => {
   const key = `${resumeText.substring(0, 200)}_${jobDescription.substring(0, 200)}`;
@@ -208,20 +194,11 @@ const callAIModel = async (instruction, inputPrompt, fallbackGeminiPrompt, confi
   }
 };
 
-const callGemini = async (prompt, config) => {
-  const model = getModel(config);
-  let result;
-  for (let attempt = 0; ; attempt++) {
-    try {
-      result = await model.generateContent(prompt);
-      break;
-    } catch (error) {
-      if (attempt >= 2 || !/429|quota|RESOURCE_EXHAUSTED/i.test(error.message || '')) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt)); // retry on 429: 1s, 2s
-    }
-  }
-  const response = await result.response;
-  return response.text();
+// All AI calls go through the model chain in config/ai.js (Groq first, then Gemini), which skips
+// models that are over quota or retired and retries overloaded ones.
+const callGemini = async (prompt, config = {}) => {
+  const { text } = await generateWithFallback(prompt, { models: AI_MODELS, temperature: config.temperature });
+  return text;
 };
 
 // Generate personalized interview questions WITH CACHING

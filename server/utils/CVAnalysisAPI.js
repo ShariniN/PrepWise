@@ -1,11 +1,9 @@
 // Enhanced CV Analysis API using Gemini 2.5 Flash directly
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from "crypto";
-import { GEMINI_MODEL } from '../config/ai.js';
+import { AI_MODELS } from '../config/ai.js';
+import { generateWithFallback } from '../services/geminiClient.js';
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 const validateInputs = (text1, text2) => {
   if (
@@ -177,9 +175,7 @@ Consider the technical match baseline score: ${technicalMatchScore.toFixed(2)}
 
 Return ONLY a decimal between 0.0-1.0 representing the overall match quality:`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const scoreText = response.text().trim();
+    const { text: scoreText } = await generateWithFallback(prompt, { models: AI_MODELS });
     const aiScore = parseFloat(scoreText);
 
     if (isNaN(aiScore) || aiScore < 0 || aiScore > 1) {
@@ -227,9 +223,7 @@ Categories: "Programming Languages", "Web Frameworks", "Development Tools", "Dat
 
 Only include technical skills relevant to software development. Return only the JSON array.`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const content = response.text().trim();
+    const { text: content } = await generateWithFallback(prompt, { models: AI_MODELS });
     
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
@@ -341,9 +335,7 @@ ${truncatedJobDesc}
 
 Focus specifically on CS/Software Engineering internship requirements. Be precise about technical gaps and provide actionable recommendations for improving technical qualifications.`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const responseText = response.text().trim();
+    const { text: responseText } = await generateWithFallback(prompt, { models: AI_MODELS });
 
     if (responseText === "NON_CS_ROLE" || responseText.includes("NON_CS_ROLE")) {
       return {

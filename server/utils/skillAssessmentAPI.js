@@ -1,15 +1,10 @@
-import OpenAI from "openai";
-import { GEMINI_MODEL } from '../config/ai.js';
+import { AI_MODELS } from '../config/ai.js';
+import { generateWithFallback } from '../services/geminiClient.js';
 import TechnologyRating from "../models/SkillAssessorModel.js";
 import CVAnalysis from "../models/CVAnalysisModel.js";
 import { extractTechnologies } from "./CVAnalysisAPI.js";
 import mongoose from "mongoose";
 
-// Initialize the OpenAI instance with Gemini
-const AI = new OpenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
-});
 
 // Helper function to validate technology ratings
 const validateTechnologyRatings = (technologies) => {
@@ -62,23 +57,12 @@ Categories should be one of:
 
 Be thorough and include all technical skills mentioned.`;
 
-    const response = await AI.chat.completions.create({
-      model: GEMINI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: "You are a technical skills extraction expert. Respond only with valid JSON. Extract all technologies mentioned in the resume."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 2000
-    });
+    const { text: responseText } = await generateWithFallback(
+      `You are a technical skills extraction expert. Respond only with valid JSON. Extract all technologies mentioned in the resume.
 
-    const responseText = response.choices?.[0]?.message?.content?.trim();
+${prompt}`,
+      { models: AI_MODELS, temperature: 0.1 },
+    );
     
     try {
       // Clean the response to extract JSON
