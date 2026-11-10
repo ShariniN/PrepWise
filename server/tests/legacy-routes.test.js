@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import axios from 'axios';
 import request from 'supertest';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { makeWorld, IDS, newId } from './helpers.js';
 import CVAnalysis from '../models/CvAnalysis.js';
 import SkillsAssessment from '../models/SkillsAssessment.js';
@@ -152,6 +153,34 @@ test('POST /api/analyze/analyze-resume input validation', async () => {
   snap('analyze no jds', await post('/api/analyze/analyze-resume', { jobDescriptions: '[]' }));
   snap('analyze no file', await post('/api/analyze/analyze-resume', { jobDescriptions: '["JD"]' }));
   snap('analyze no profile cv', await post('/api/analyze/analyze-resume', { jobDescriptions: '["JD"]', useProfileCV: 'true' }));
+});
+
+// The Gemini SDK is stubbed (Groq has no key here, so it is skipped): each prompt kind gets a canned reply.
+const stubGemini = ({ score = '0.8', technologies = '[{"name":"Node.js","category":"Web Frameworks","confidenceLevel":7},{"name":"Bad","confidenceLevel":11}]' } = {}) =>
+  mock.method(GoogleGenerativeAI.prototype, 'getGenerativeModel', () => ({
+    generateContent: async (prompt) => {
+      let text;
+      if (prompt.includes('extract ONLY technical skills')) text = technologies;
+      else if (prompt.includes('Reply with ONLY the number')) text = score;
+      else if (prompt.includes('Head chef')) text = 'NON_CS_ROLE';
+      else text = '```json\n{"strengths":["Node.js projects"],"contentWeaknesses":["no tests"],"structureWeaknesses":[],"contentRecommendations":["add tests"],"structureRecommendations":["add links"]}\n```';
+      return { response: { text: () => text } };
+    },
+  }));
+
+test('POST /api/analyze/analyze-resume with the profile CV: CS role, non-CS role, too-short JD, AI score unreadable', async () => {
+  delete process.env.GROQ_API_KEY;
+  student.currentCV = { text: `Student CV. Education: BSc Computer Science. Skills: Node.js, Express, MongoDB, Git. ${'Built a REST API project. '.repeat(5)}`, fileName: 'cv.pdf', hash: 'cvhash' };
+  const jds = [
+    'Software engineering intern: **Node.js**, Express and MongoDB.\n\nWork on our REST API with Git.',
+    'Head chef wanted for a busy restaurant kitchen, full time, weekends included.',
+    'Short JD',
+  ];
+  const gemini = stubGemini();
+  snap('analyze profile cv', await post('/api/analyze/analyze-resume', { jobDescriptions: JSON.stringify(jds), useProfileCV: 'true' }));
+  gemini.mock.restore();
+  stubGemini({ score: 'about half', technologies: 'none found' });
+  snap('analyze ai unavailable', await post('/api/analyze/analyze-resume', { jobDescriptions: JSON.stringify(jds.slice(0, 1)), useProfileCV: 'true' }));
 });
 
 // ---------------------------------------------------------------- skills self-assessment

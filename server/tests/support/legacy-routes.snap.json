@@ -1,4 +1,69 @@
 {
+  "analyze ai unavailable": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "resumeHash": "cvhash",
+      "resumeText": "Profile CV content",
+      "extractedTechnologies": [],
+      "technologiesUnavailable": true,
+      "analysis": [
+        {
+          "matchPercentage": 0,
+          "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
+          "hasError": true,
+          "isNonTechRole": false,
+          "timestamp": "<date>",
+          "strengths": [],
+          "contentWeaknesses": [],
+          "structureWeaknesses": [],
+          "contentRecommendations": [],
+          "structureRecommendations": [],
+          "recommendationsUnavailable": true,
+          "message": "AI analysis is unavailable right now, so no match score was calculated.",
+          "scoreBreakdown": {
+            "aiAvailable": false,
+            "aiScore": null,
+            "aiWeight": 0.7,
+            "keywordScore": 1,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "matchedSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "missingSkills": [],
+            "aiError": "Unreadable AI reply: about half",
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": []
+        }
+      ],
+      "metadata": {
+        "useProfileCV": true,
+        "resumeFileName": "cv.pdf",
+        "analysisDate": "<date>",
+        "jobDescriptionCount": 1,
+        "technologiesFound": 0,
+        "technologiesUnavailable": true,
+        "apiUsed": "Gemini 2.5 Flash Enhanced",
+        "realAnalysis": true,
+        "enhancedParsing": true
+      }
+    }
+  },
   "analyze bad json": {
     "status": 400,
     "body": {
@@ -26,6 +91,133 @@
     "body": {
       "success": false,
       "message": "No CV found in your profile. Please upload a CV first."
+    }
+  },
+  "analyze profile cv": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "resumeHash": "cvhash",
+      "resumeText": "Profile CV content",
+      "extractedTechnologies": [
+        {
+          "name": "Node.js",
+          "category": "Web Frameworks",
+          "confidenceLevel": 7
+        }
+      ],
+      "technologiesUnavailable": false,
+      "analysis": [
+        {
+          "matchPercentage": 86,
+          "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
+          "hasError": false,
+          "isNonTechRole": false,
+          "rawSimilarity": 0.86,
+          "timestamp": "<date>",
+          "strengths": [
+            "Node.js projects"
+          ],
+          "contentWeaknesses": [
+            "no tests"
+          ],
+          "structureWeaknesses": [],
+          "contentRecommendations": [
+            "add tests"
+          ],
+          "structureRecommendations": [
+            "add links"
+          ],
+          "recommendationsUnavailable": false,
+          "message": null,
+          "scoreBreakdown": {
+            "aiAvailable": true,
+            "aiScore": 0.8,
+            "aiWeight": 0.7,
+            "keywordScore": 1,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "matchedSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "missingSkills": [],
+            "aiError": null,
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web Frameworks",
+              "confidenceLevel": 7
+            }
+          ]
+        },
+        {
+          "matchPercentage": 0,
+          "jobDescription": "Head chef wanted for a busy restaurant kitchen, full time, weekends included.",
+          "hasError": false,
+          "isNonTechRole": true,
+          "timestamp": "<date>",
+          "strengths": [],
+          "contentWeaknesses": [],
+          "structureWeaknesses": [],
+          "contentRecommendations": [],
+          "structureRecommendations": [],
+          "recommendationsUnavailable": false,
+          "message": "This position is not a Computer Science or Software Engineering internship. Please provide a CS/Software Engineering job description for accurate analysis.",
+          "scoreBreakdown": {
+            "aiAvailable": true,
+            "aiScore": 0.8,
+            "aiWeight": 0.7,
+            "keywordScore": 0,
+            "keywordWeight": 0.3,
+            "requiredSkills": [],
+            "matchedSkills": [],
+            "missingSkills": [],
+            "aiError": null,
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web Frameworks",
+              "confidenceLevel": 7
+            }
+          ]
+        },
+        {
+          "matchPercentage": 0,
+          "isNonTechRole": true,
+          "hasError": true,
+          "message": "Analysis failed: Job description too short. Please provide a detailed job posting.",
+          "jobDescription": "Short JD",
+          "extractedTechnologies": []
+        }
+      ],
+      "metadata": {
+        "useProfileCV": true,
+        "resumeFileName": "cv.pdf",
+        "analysisDate": "<date>",
+        "jobDescriptionCount": 3,
+        "technologiesFound": 1,
+        "technologiesUnavailable": false,
+        "apiUsed": "Gemini 2.5 Flash Enhanced",
+        "realAnalysis": true,
+        "enhancedParsing": true
+      }
     }
   },
   "cv delete bad id": {
