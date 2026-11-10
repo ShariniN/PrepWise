@@ -186,6 +186,7 @@ export const createInterview = async (req, res) => {
     }
 
     let questions;
+    let usedFallbackQuestions = false;
     try {
       console.log('🤖 Calling generateInterviewQuestions...');
       const rawQuestions = await generateInterviewQuestions(resumeText, jobDescription);
@@ -233,6 +234,7 @@ export const createInterview = async (req, res) => {
       console.error('Error stack:', questionError.stack);
       console.log('🔄 Using fallback questions');
       questions = getFallbackQuestions();
+      usedFallbackQuestions = true;
     }
 
     if (!Array.isArray(questions) || questions.length === 0) {
@@ -252,6 +254,7 @@ export const createInterview = async (req, res) => {
       currentQuestionIndex: 0,
       status: 'created',
       responses: [],
+      usedFallbackQuestions,
       cvSource: 'manual',
       usedProfileCV: false,
       createdAt: new Date(),
@@ -265,6 +268,7 @@ export const createInterview = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Interview created successfully',
+      usedFallbackQuestions,
       interview: {
         id: savedInterview._id,
         _id: savedInterview._id,
@@ -274,6 +278,7 @@ export const createInterview = async (req, res) => {
         totalQuestions: savedInterview.totalQuestions,
         status: savedInterview.status,
         cvSource: savedInterview.cvSource,
+        usedFallbackQuestions: !!savedInterview.usedFallbackQuestions,
         createdAt: savedInterview.createdAt
       }
     });
@@ -329,6 +334,7 @@ export const createInterviewWithProfileCV = async (req, res) => {
     console.log('CV Text length:', actualCVText.length);
 
     let questions;
+    let usedFallbackQuestions = false;
     try {
       console.log('🤖 Calling generateInterviewQuestions with profile CV...');
       const rawQuestions = await generateInterviewQuestions(actualCVText, jobDescription);
@@ -367,6 +373,7 @@ export const createInterviewWithProfileCV = async (req, res) => {
       console.error('Error stack:', questionError.stack);
       console.log('🔄 Using fallback questions');
       questions = getFallbackQuestions();
+      usedFallbackQuestions = true;
     }
 
     const interview = new InterviewModel({
@@ -379,6 +386,7 @@ export const createInterviewWithProfileCV = async (req, res) => {
       currentQuestionIndex: 0,
       status: 'created',
       responses: [],
+      usedFallbackQuestions,
       cvSource: 'profile',
       usedProfileCV: true,
       createdAt: new Date(),
@@ -392,12 +400,14 @@ export const createInterviewWithProfileCV = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Interview created successfully with profile CV',
+      usedFallbackQuestions,
       interview: {
         id: savedInterview._id,
         questions: savedInterview.questions,
         totalQuestions: savedInterview.totalQuestions,
         status: savedInterview.status,
         cvSource: savedInterview.cvSource,
+        usedFallbackQuestions: !!savedInterview.usedFallbackQuestions,
         createdAt: savedInterview.createdAt
       }
     });
@@ -699,12 +709,19 @@ export const completeInterview = async (req, res) => {
       });
     }
 
+    // Only answers with a real score feed the overall feedback. If the AI scored none of them, asking it for an
+    // overall judgement would only restate the basic estimates, so the plain summary is used instead.
+    const scoredResponses = interview.responses.filter(isScoredAnswer);
     let overallAnalysis;
-    try {
-      overallAnalysis = await generateOverallInterviewFeedback(interview.responses);
-    } catch (feedbackError) {
-      console.error('Overall feedback generation failed:', feedbackError.message);
+    if (scoredResponses.length === 0) {
       overallAnalysis = generateFastOverallFeedback(interview.responses);
+    } else {
+      try {
+        overallAnalysis = await generateOverallInterviewFeedback(interview.responses.filter((r) => r.skipped || isScoredAnswer(r)));
+      } catch (feedbackError) {
+        console.error('Overall feedback generation failed:', feedbackError.message);
+        overallAnalysis = generateFastOverallFeedback(interview.responses);
+      }
     }
 
     interview.status = 'completed';
@@ -743,15 +760,34 @@ export const completeInterview = async (req, res) => {
   }
 };
 
-// Fast fallback for overall feedback
+// An answer with a real score: answered, and not scored by the basic fallback (feedback.source === 'fallback').
+const isScoredAnswer = (r) => !r.skipped && !!r.feedback && r.feedback.source !== 'fallback';
+
+// Plain overall summary without AI, from the answers that have a real score only.
 const generateFastOverallFeedback = (responses) => {
-  const scores = responses.map(r => r.feedback?.score || 0);
-  const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  
-  const readinessLevel = averageScore >= 75 ? 'Ready for Intern Position' : 
-                        averageScore >= 60 ? 'Nearly Ready' : 
+  const scored = responses.filter(isScoredAnswer);
+  const excluded = responses.filter((r) => !r.skipped && r.feedback && r.feedback.source === 'fallback').length;
+  if (scored.length === 0) {
+    return {
+      score: null,
+      feedback: {
+        readinessLevel: null,
+        strengths: [],
+        improvements: [],
+        recommendations: [],
+        generalFeedback: excluded
+          ? `AI feedback was unavailable for all ${excluded} answered questions, so this interview has no overall score. Try another interview later.`
+          : 'No questions were answered, so there is no overall score.',
+        categoryScores: null
+      }
+    };
+  }
+  const averageScore = scored.reduce((sum, r) => sum + (r.feedback?.score || 0), 0) / scored.length;
+
+  const readinessLevel = averageScore >= 75 ? 'Ready for Intern Position' :
+                        averageScore >= 60 ? 'Nearly Ready' :
                         averageScore >= 45 ? 'Needs Development' : 'Not Ready Yet';
-  
+
   return {
     score: Math.round(averageScore),
     feedback: {
@@ -759,8 +795,9 @@ const generateFastOverallFeedback = (responses) => {
       strengths: ['Completed all interview questions'],
       improvements: ['Focus on technical fundamentals', 'Practice explaining concepts clearly'],
       recommendations: ['Build personal projects', 'Practice coding problems'],
-      generalFeedback: `Completed ${responses.length} questions with ${averageScore.toFixed(1)}% average.`,
-      categoryScores: calculateCategoryScores(responses)
+      generalFeedback: `Average ${averageScore.toFixed(1)}% over ${scored.length} AI-scored answers` +
+        (excluded ? ` (${excluded} answered without AI feedback ${excluded === 1 ? 'is' : 'are'} not counted).` : '.'),
+      categoryScores: calculateCategoryScores(scored)
     }
   };
 };

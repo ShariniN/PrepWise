@@ -146,6 +146,11 @@ In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, As
 
 - AI limit: when a university reaches its monthly AI call cap (default 20000, `Institution.monthlyAiCallCap`), the interview answer endpoint still succeeds but its `feedback.source` is `"fallback"` (basic scoring). Other AI endpoints (CV analysis, question generation) catch errors in their own way and may report a generic failure; only an uncaught cap error reaches the global handler as `429 { code: "AI_MONTHLY_CAP" }`.
 - `feedback.source` on interview answers is `"ai"` or `"fallback"` (`"tests"` and `"human"` are reserved for later phases). Dashboards must exclude `"fallback"`. Older stored responses have no `source`.
+- The student's own interview results (`PUT /api/interviews/:id/complete`, `GET /api/interviews/:id/feedback`) also leave fallback-scored
+  answers out of `score` and `categoryPercentages`, and add `excludedFallbackAnswers`, `scoredAnswers` and `scoreIsPartial`
+  (true when some answers were left out). When no answer has a real score, `score` is `null` and no AI call is made for the overall feedback.
+- `POST /api/interviews/create` and `/create-with-profile-cv` return `usedFallbackQuestions` (top level and on `interview`; also stored on the
+  interview): `true` when the AI could not generate tailored questions and the generic practice set was used.
 - Interviews, CV analyses and skills assessments now store `institutionId` (set at creation).
 
 ## Audit actions written

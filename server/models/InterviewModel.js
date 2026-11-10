@@ -128,7 +128,13 @@ const interviewSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  
+
+  // True when the AI could not generate tailored questions and the generic practice set was used instead.
+  usedFallbackQuestions: {
+    type: Boolean,
+    default: false
+  },
+
   cvSource: {
     type: String,
     enum: ['profile', 'manual', 'upload'],
