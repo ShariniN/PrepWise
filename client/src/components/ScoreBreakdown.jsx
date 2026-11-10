@@ -5,6 +5,15 @@ import { AlertTriangle, ChevronDown, Info } from 'lucide-react';
 // were found or missing. Shows an honest "unavailable" state when the AI could not run.
 const pct = (n) => (typeof n === 'number' ? `${Math.round(n * 100)}%` : '-');
 
+// Turn the provider's raw error into a reason a student or lecturer can act on.
+const reasonFor = (aiError = '') => {
+  if (/429|quota/i.test(aiError)) return "The AI service's usage limit has been reached (the free plan allows a small number of requests per model each day). It resets daily, or sooner with a paid API key.";
+  if (/503|overloaded|high demand/i.test(aiError)) return 'The AI service is busy right now. Please try again in a few minutes.';
+  if (/404|no longer available/i.test(aiError)) return 'The configured AI model is no longer offered by Google. An administrator needs to update GEMINI_CV_MODELS.';
+  if (/401|403|api key/i.test(aiError)) return 'The AI service rejected the API key. An administrator needs to check GEMINI_API_KEY.';
+  return 'The AI service could not be reached. Please try again in a minute.';
+};
+
 const SkillList = ({ title, items, tone }) => (
   <div>
     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">{title}</p>
@@ -39,13 +48,18 @@ const ScoreBreakdown = ({ breakdown }) => {
           <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sun-600" />
           <div className="space-y-3">
             <p className="font-semibold text-sun-700">AI analysis is unavailable, so no match score was calculated.</p>
+            <p className="text-sm text-ink-2">{reasonFor(aiError)}</p>
             <p className="text-sm text-ink-2">
               The keyword check still ran: {matchedSkills?.length || 0} of {requiredSkills?.length || 0} skills from the job description appear in this CV.
-              Try again in a minute.
             </p>
             <SkillList title="Skills found" items={matchedSkills} tone="good" />
             <SkillList title="Skills missing" items={missingSkills} tone="bad" />
-            {aiError && <p className="text-xs text-ink-muted">Technical detail: {aiError}</p>}
+            {aiError && (
+              <details className="text-xs text-ink-muted">
+                <summary className="cursor-pointer">Technical detail</summary>
+                <p className="mt-1 break-words">{aiError.replace(/\[GoogleGenerativeAI Error\]: Error fetching from \S+/g, '').slice(0, 600)}</p>
+              </details>
+            )}
           </div>
         </div>
       </div>
@@ -82,6 +96,7 @@ const ScoreBreakdown = ({ breakdown }) => {
           </div>
           <SkillList title="Required skills found" items={matchedSkills} tone="good" />
           <SkillList title="Required skills missing" items={missingSkills} tone="bad" />
+          {breakdown.model && <p className="text-xs text-ink-muted">Scored by {breakdown.model}.</p>}
         </div>
       )}
     </div>

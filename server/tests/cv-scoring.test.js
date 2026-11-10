@@ -49,6 +49,12 @@ test('when the AI works, the blended score and its parts are all reported', asyn
   assert.ok(Array.isArray(r.matchedSkills) && r.matchedSkills.includes('python'));
 });
 
+test('the model that produced the score is reported', async () => {
+  const r = await scoreResume({ resumeText: CASHIER_CV, jobDesc: JD, generate: async () => ({ text: '0.05', model: 'gemini-x' }) });
+  assert.equal(r.model, 'gemini-x');
+  assert.equal(r.aiScore, 0.05);
+});
+
 test('the AI prompt is not anchored with the keyword score', async () => {
   let prompt = '';
   await scoreResume({ resumeText: CASHIER_CV, jobDesc: JD, generate: async (p) => { prompt = p; return '0.1'; } });

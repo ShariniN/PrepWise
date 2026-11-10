@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import CVAnalysis from "../models/CVAnalysisModel.js";
 import userModel from '../models/userModel.js';
-import { GEMINI_MODEL } from '../config/ai.js';
+import { GEMINI_MODEL, CV_MODELS } from '../config/ai.js';
+import { generateWithFallback } from '../services/geminiClient.js';
 import { scoreResume } from '../services/cvScoring.js';
 
 // Initialize Gemini AI
@@ -213,9 +214,7 @@ ${truncatedJobDesc}
 
 Return ONLY the JSON object, no other text or formatting.`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const responseText = response.text().trim();
+    const { text: responseText } = await generateWithFallback(prompt, { models: CV_MODELS, temperature: 0.2 });
 
     console.log("Recommendations response preview:", responseText.substring(0, 100) + "...");
 
@@ -282,12 +281,12 @@ const getDefaultCSRecommendations = () => ({
   structureRecommendations: []
 });
 
-const generateText = async (prompt) => (await model.generateContent(prompt)).response.text().trim();
+const generateScore = (prompt) => generateWithFallback(prompt, { models: CV_MODELS, temperature: 0 });
 
 // Main analysis: score (services/cvScoring.js) and written feedback run in parallel.
 const analyzeResumeMatch = async (resumeText, jobDesc) => {
   const [score, structuredAnalysis] = await Promise.all([
-    scoreResume({ resumeText, jobDesc, generate: generateText }),
+    scoreResume({ resumeText, jobDesc, generate: generateScore }),
     getStructuredRecommendations(resumeText, jobDesc).catch((err) => {
       console.error("Structured analysis failed:", err.message);
       return getDefaultCSRecommendations();
@@ -304,7 +303,7 @@ const analyzeResumeMatch = async (resumeText, jobDesc) => {
     matchedSkills: score.matchedSkills,
     missingSkills: score.missingSkills,
     aiError: score.aiError,
-    model: GEMINI_MODEL
+    model: score.model
   };
 
   if (structuredAnalysis.isNonTechRole) {

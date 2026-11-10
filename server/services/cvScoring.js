@@ -81,16 +81,20 @@ export const scoreResume = async ({ resumeText, jobDesc, generate }) => {
     matchedSkills: kw.matched,
     missingSkills: kw.missing,
   };
+  // `generate` returns either the reply text or { text, model } (model = which AI model answered).
   let raw;
+  let model = null;
   try {
-    raw = await generate(buildPrompt(resumeText, jobDesc));
+    const out = await generate(buildPrompt(resumeText, jobDesc));
+    raw = typeof out === 'string' ? out : out?.text;
+    model = typeof out === 'string' ? null : out?.model ?? null;
   } catch (err) {
-    return { ...base, aiAvailable: false, aiScore: null, aiError: String(err?.message || err), matchPercentage: null };
+    return { ...base, aiAvailable: false, aiScore: null, aiError: String(err?.message || err), model, matchPercentage: null };
   }
   const aiScore = parseScore(raw);
   if (aiScore === null) {
-    return { ...base, aiAvailable: false, aiScore: null, aiError: `Unreadable AI reply: ${String(raw).slice(0, 80)}`, matchPercentage: null };
+    return { ...base, aiAvailable: false, aiScore: null, aiError: `Unreadable AI reply: ${String(raw).slice(0, 80)}`, model, matchPercentage: null };
   }
   const blended = aiScore * AI_WEIGHT + kw.score * (1 - AI_WEIGHT);
-  return { ...base, aiAvailable: true, aiScore, aiError: null, matchPercentage: Math.round(blended * 100) };
+  return { ...base, aiAvailable: true, aiScore, aiError: null, model, matchPercentage: Math.round(blended * 100) };
 };

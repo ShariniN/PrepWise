@@ -567,7 +567,7 @@ const API_ENDPOINTS = {
 };
 
 // Enhanced Circular Progress Component
-const CircularProgress = ({ percentage, label, colorIndex = 0 }) => {
+const CircularProgress = ({ percentage, label, colorIndex = 0, unavailable = false }) => {
   const colors = [
     { primary: "#4f46e5", secondary: "#e0e7ff", gradient: "from-primary-500 to-primary-600" },
     { primary: "#059669", secondary: "#d1fae5", gradient: "from-success-500 to-success-600" },
@@ -607,7 +607,7 @@ const CircularProgress = ({ percentage, label, colorIndex = 0 }) => {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-xl md:text-2xl font-bold" style={{ color: color.primary }}>
-            {percentage}%
+            {unavailable ? '-' : `${percentage}%`}
           </span>
         </div>
       </div>
@@ -1506,6 +1506,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                         <CircularProgress
                           key={idx}
                           percentage={res.matchPercentage || 0}
+                          unavailable={!!(res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false)}
                           label={res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false ? `Job Description ${idx + 1} (AI unavailable)` : `Job Description ${idx + 1}`}
                           colorIndex={idx}
                         />
