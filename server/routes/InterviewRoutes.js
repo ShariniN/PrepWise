@@ -103,6 +103,8 @@ const transcribeWithAssemblyAI = async (audioPath) => {
     const transcriptionData = {
       audio_url: audioUrl,
       speech_model: "universal",
+      // Keep "um", "uh" and similar: the interview coaching counts filler words from this transcript.
+      disfluencies: true,
     };
 
     const transcriptionResponse = await axios.post(
