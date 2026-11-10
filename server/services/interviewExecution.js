@@ -10,7 +10,9 @@ export const verifyCodeServerSide = async ({ question, code, language }) => {
   try {
     const tests = Array.isArray(question.tests) ? question.tests.filter((t) => t && t.expectedOutput !== undefined) : [];
     if (tests.length) {
-      // Questions with tests (hidden from the candidate): mark against all of them
+      // Questions with tests (hidden from the candidate): mark against all of them. Interview tests have no
+      // visible/hidden split, so practice's visible-first gating does not apply; stopping early would make
+      // testsPassed/testsTotal (shown to the student and lecturer) less accurate.
       const graded = await gradeTests({ language, source: code, tests, limits: {} });
       const passed = graded.perTest.filter((t) => t.passed).length;
       const executionResults = {

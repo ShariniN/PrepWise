@@ -1,7 +1,7 @@
 // The Phase 2 run / submit / event-cleaning logic as plain functions that return { status, body }, used by the
 // practice API. `ctx.attemptExtra` (optional) is merged into every stored attempt.
 import questionRepo from '../repositories/questionRepo.js';
-import { gradeTests } from './grading.js';
+import { gradeTests, gradeVisibleFirst } from './grading.js';
 import {
   run as runOnce, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError,
 } from './execution/index.js';
@@ -35,6 +35,8 @@ const handleRunError = (error) => {
   if (error instanceof UnsupportedLanguageError) return bad(400, error.message);
   throw error;
 };
+
+export const notRunMessage = (n) => `A visible test failed, so the ${n} hidden test${n === 1 ? ' was' : 's were'} not run and count${n === 1 ? 's' : ''} as not passed. Make the visible tests pass, then submit again.`;
 
 const detailFor = (graded, tests) => {
   const d = {};
@@ -119,7 +121,8 @@ export const submitForQuestion = async (q, body, ctx) => {
     };
   }
 
-  // coding / debug: every test, server-side, as one batch
+  // coding / debug: server-side. Visible tests first; the hidden tests run only if every visible test passed
+  // (see gradeVisibleFirst). Skipped hidden tests are stored and shown as `not_run` and score as not passed.
   const picked = pickLanguage(q, body.language);
   if (picked.error) return picked.error;
   const srcErr = checkSource(body.source);
@@ -127,7 +130,7 @@ export const submitForQuestion = async (q, body, ctx) => {
   const tests = await questionRepo.listTests(q._id);
   if (!tests.length) return bad(409, 'This question has no tests yet');
   try {
-    const graded = await gradeTests({ language: picked.lang, source: body.source, tests, limits: { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb } });
+    const graded = await gradeVisibleFirst({ language: picked.lang, source: body.source, tests, limits: { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb } });
     const attempt = await questionRepo.createAttempt({
       ...base, language: picked.lang, source: body.source, verdict: graded.verdict, perTest: storedPerTest(graded.perTest), score: graded.score,
     });
@@ -137,6 +140,8 @@ export const submitForQuestion = async (q, body, ctx) => {
       body: {
         success: true, attemptId: String(attempt._id), verdict: graded.verdict, score: graded.score,
         passed: graded.perTest.filter((t) => t.passed).length, total: graded.perTest.length,
+        notRun: graded.notRun,
+        ...(graded.notRun ? { message: notRunMessage(graded.notRun) } : {}),
         tests: studentTestResults(graded.perTest, { detail: detailFor(graded, tests) }),
       },
     };
