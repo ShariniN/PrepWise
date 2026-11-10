@@ -25,9 +25,10 @@ const fakeUser = {
   name: 'Test Student',
   email: 'student@example.com',
   accountType: 'Fresher',
+  role: 'student',
   isAccountVerified: true,
   toObject() {
-    return { _id: this._id, name: this.name, email: this.email, accountType: this.accountType };
+    return { _id: this._id, name: this.name, email: this.email, accountType: this.accountType, role: this.role };
   },
 };
 

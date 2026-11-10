@@ -4,7 +4,9 @@ import { audit } from './audit.js';
 import { createInviteToken, buildInviteLink, exposeInviteLinks } from './inviteTokens.js';
 import { parseUsersCsv } from './csv.js';
 
-export const ROLES = ['student', 'lecturer', 'career_officer', 'university_admin'];
+import { ROLES } from '../config/roles.js';
+
+export { ROLES };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export class PeopleError extends Error {

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ROLES } from '../config/roles.js';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -26,11 +27,19 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{10,15}$/, 'Please enter a valid phone number']
   },
+  // Checked only when the role is set or changed, so an older account with a removed role (career_officer)
+  // can still be saved (deactivated, re-roled by an admin, password reset) without a validation error.
   role: {
     type: String,
-    enum: ['student', 'lecturer', 'career_officer', 'university_admin'],
     default: 'student',
-    required: true
+    required: true,
+    validate: {
+      validator: function (v) {
+        if (typeof this?.isModified === 'function' && !this.isNew && !this.isModified('role')) return true;
+        return ROLES.includes(v);
+      },
+      message: (props) => `\`${props.value}\` is not a valid role`
+    }
   },
   institutionId: {
     type: mongoose.Schema.Types.ObjectId,

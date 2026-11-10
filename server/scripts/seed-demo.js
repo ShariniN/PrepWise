@@ -18,7 +18,6 @@ export const DEMOS = [
 export const DEMO_PASSWORDS = {
   university_admin: 'admin@123',
   lecturer: 'lecturer@123',
-  career_officer: 'careers@123',
   student: 'student@123',
 };
 
@@ -68,7 +67,6 @@ export const main = async () => {
       ['Dana Admin', `admin@${d.loginDomain}`, 'university_admin'],
       ['Leo Lecturer', `lecturer@${d.loginDomain}`, 'lecturer'],
       ['Lena Lecturer', `lecturer2@${d.domain}`, 'lecturer'],
-      ['Cara Careers', `careers@${d.loginDomain}`, 'career_officer'],
     ]) {
       const password = DEMO_PASSWORDS[role];
       staff.push(await make(name, email, role, password));

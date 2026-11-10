@@ -6,6 +6,7 @@ import transporter from "../config/nodemailer.js";
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../config/emailTemplates.js";
 import { hashToken } from "../services/inviteTokens.js";
 import { audit } from "../services/audit.js";
+import { isKnownRole } from "../config/roles.js";
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -59,6 +60,9 @@ export const acceptInvite = async (req, res) => {
     }
     if (!user.inviteExpiresAt || new Date(user.inviteExpiresAt).getTime() < Date.now()) {
       return res.status(400).json({ success: false, code: "INVITE_EXPIRED", message: "This invitation has expired. Ask your administrator to send a new one." });
+    }
+    if (!isKnownRole(user.role)) {
+      return res.status(403).json({ success: false, code: "ROLE_NOT_SUPPORTED", message: "This invitation is for a role PrepWise no longer has. Ask your administrator to change it." });
     }
 
     user.password = await bcrypt.hash(password, 10);
@@ -119,6 +123,15 @@ export const login = async (req, res) => {
         message: user.status === "deactivated"
           ? "This account has been deactivated. Contact your university administrator."
           : "This account has not been activated yet. Use the link in your invitation email.",
+      });
+    }
+
+    // Accounts that still carry a removed role (career_officer) get no session at all.
+    if (!isKnownRole(user.role)) {
+      return res.status(403).json({
+        success: false,
+        code: "ROLE_NOT_SUPPORTED",
+        message: "Your account has no role with access to PrepWise. Ask your university administrator to assign one.",
       });
     }
 
