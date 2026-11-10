@@ -114,6 +114,20 @@ a `deliverySummary`.
   browsers get "could not start" and carry on without coaching. The GPU path is tried first, with a CPU
   fallback.
 
+## Testing
+
+- Unit: `cd server && npm test` (`tests/coaching-metrics.test.js` for the maths,
+  `tests/interview-delivery.test.js` for validation, storage, the report and "never reaches the AI").
+- Browser: Chrome with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream` shows a test pattern
+  with no face, so expect `faceVisiblePct: 0` and "No face detected".
+- Headless Chrome's fake camera sometimes ends its own track a fraction of a second after it starts. Afterwards
+  it reports no camera at all. This happens with no app code involved: 5 of 10 plain `getUserMedia` runs. The
+  app then shows "The camera was disconnected" / "No camera was found", which is the intended handling. Retry
+  or restart the browser rather than debugging the app.
+- No automated check covers a real face. Eye contact, look-aways, head movement and the "look at the camera"
+  hint have only been verified on synthetic head-pose matrices. Do a one-minute manual check with a real
+  webcam: look at the camera, then turn your head well away for 2 seconds, then nod.
+
 ## Files
 
 - `src/hooks/useFaceCoaching.js`: camera, model, sampling loop and live hint. It keeps everything in refs and
