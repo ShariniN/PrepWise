@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { AppContext } from "../context/AppContext.jsx";
+import { AppContext } from "../app/AppContext.js";
 import { useContext } from "react";
 import axios from "axios";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
