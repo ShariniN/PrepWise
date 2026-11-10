@@ -3,11 +3,12 @@ import { Check } from 'lucide-react';
 
 const TESTS = ['returns [0, 1] for the basic case', 'handles duplicates', 'handles negative numbers', 'runs in O(n) on 10k items'];
 
+// Illustrative grid: one square per student (0 = no activity yet, 1 = low score, 2-4 = higher scores).
 const HEAT = [
-  [3, 4, 4, 2, 4, 3, 4],
+  [3, 4, 4, 2, 4, 3, 0],
   [4, 3, 2, 4, 4, 1, 3],
-  [2, 4, 4, 3, 1, 4, 4],
-  [4, 2, 3, 4, 4, 3, 2],
+  [2, 0, 4, 3, 1, 4, 4],
+  [4, 2, 3, 4, 0, 3, 2],
   [3, 4, 1, 3, 4, 4, 3],
 ];
 const HEAT_CLS = ['bg-sand', 'bg-sun-300', 'bg-primary-200', 'bg-primary-400', 'bg-primary-600'];
@@ -48,7 +49,7 @@ export const Heatmap = ({ className = '' }) => (
   </div>
 );
 
-/** Pure CSS/SVG hero illustration: stacked glass cards (editor with ticking tests, readiness gauge, cohort heatmap). */
+/** Pure CSS/SVG hero illustration: stacked glass cards (editor with ticking tests, readiness gauge, students-by-interview-score grid). */
 const HeroVisual = () => {
   const n = useCycle(7, 900);
   const passed = Math.min(n, TESTS.length);
@@ -89,9 +90,9 @@ const HeroVisual = () => {
         <p className="mt-1 text-center text-[11px] font-semibold text-ink-2">Readiness</p>
       </div>
 
-      {/* Heatmap */}
+      {/* Students by mock interview score */}
       <div className="glass absolute bottom-0 right-2 w-[64%] animate-float-slow rounded-3xl p-4 [animation-delay:-3s] sm:right-6 sm:w-[56%]">
-        <div className="mb-2.5 flex items-center justify-between"><span className="text-xs font-semibold text-ink">Cohort heatmap</span><span className="text-[10px] text-ink-muted">35 students</span></div>
+        <div className="mb-2.5 flex items-center justify-between"><span className="text-xs font-semibold text-ink">Mock interviews, Group 1</span><span className="text-[10px] text-ink-muted">35 students</span></div>
         <Heatmap />
       </div>
     </div>

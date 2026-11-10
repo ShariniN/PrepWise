@@ -61,6 +61,11 @@ const cvAnalysisSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    // True when the AI could not write the advice (strengths, weaknesses, recommendations are then empty).
+    recommendationsUnavailable: {
+      type: Boolean,
+      default: false
+    },
     // How the match percentage was calculated: AI score, keyword score, matched/missing skills,
     // and whether the AI was available. Shown to the student so the number can be checked.
     scoreBreakdown: {

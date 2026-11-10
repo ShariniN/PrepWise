@@ -14,6 +14,14 @@ const reasonFor = (aiError = '') => {
   return 'The AI service could not be reached. Please try again in a minute.';
 };
 
+// For lecturers looking at a student's stored analysis: neutral, past tense, nothing for them to retry.
+const lecturerReasonFor = (aiError = '') => {
+  if (/429|quota/i.test(aiError)) return "The AI service's usage limit had been reached at the time.";
+  if (/503|overloaded|high demand/i.test(aiError)) return 'The AI service was busy at the time.';
+  if (/404|no longer available|401|403|api key/i.test(aiError)) return 'The AI service was not configured correctly at the time.';
+  return 'The AI service could not be reached at the time.';
+};
+
 const SkillList = ({ title, items, tone }) => (
   <div>
     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">{title}</p>
@@ -36,7 +44,9 @@ const SkillList = ({ title, items, tone }) => (
   </div>
 );
 
-const ScoreBreakdown = ({ breakdown }) => {
+// audience: 'student' (default: their own analysis, they can retry) or 'lecturer' (a student's stored analysis).
+const ScoreBreakdown = ({ breakdown, audience = 'student' }) => {
+  const lecturer = audience === 'lecturer';
   const [open, setOpen] = useState(false);
   if (!breakdown) return null;
   const { aiAvailable, aiScore, aiWeight = 0.7, keywordScore, keywordWeight = 0.3, matchedSkills, missingSkills, requiredSkills, aiError } = breakdown;
@@ -47,14 +57,18 @@ const ScoreBreakdown = ({ breakdown }) => {
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sun-600" />
           <div className="space-y-3">
-            <p className="font-semibold text-sun-700">AI analysis is unavailable, so no match score was calculated.</p>
-            <p className="text-sm text-ink-2">{reasonFor(aiError)}</p>
+            <p className="font-semibold text-sun-700">
+              {lecturer
+                ? 'AI analysis was unavailable for this result, so no match score was calculated. It is not counted in averages.'
+                : 'AI analysis is unavailable, so no match score was calculated.'}
+            </p>
+            <p className="text-sm text-ink-2">{lecturer ? lecturerReasonFor(aiError) : reasonFor(aiError)}</p>
             <p className="text-sm text-ink-2">
               The keyword check still ran: {matchedSkills?.length || 0} of {requiredSkills?.length || 0} skills from the job description appear in this CV.
             </p>
             <SkillList title="Skills found" items={matchedSkills} tone="good" />
             <SkillList title="Skills missing" items={missingSkills} tone="bad" />
-            {aiError && (
+            {aiError && !lecturer && (
               <details className="text-xs text-ink-muted">
                 <summary className="cursor-pointer">Technical detail</summary>
                 <p className="mt-1 break-words">{aiError.replace(/\[GoogleGenerativeAI Error\]: Error fetching from \S+/g, '').slice(0, 600)}</p>

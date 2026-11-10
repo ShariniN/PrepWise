@@ -1,15 +1,20 @@
 import userModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto';
-import pdf from 'pdf-parse'; 
+import pdf from 'pdf-parse';
+import { NOT_PDF_MESSAGE } from '../middleware/pdfUpload.js';
+import { passwordOk, PASSWORD_MESSAGE, normalizePhone, PHONE_MESSAGE } from '../services/accountRules.js';
+
+// A file that is not a readable PDF is the user's problem to fix, so it is a 400, not a 500.
+class NotPdfError extends Error {}
 
 const extractTextFromPDF = async (buffer) => {
   try {
     const data = await pdf(buffer);
     return data.text;
   } catch (error) {
-    console.error('PDF extraction error:', error);
-    throw new Error('Failed to extract text from PDF');
+    console.error('PDF extraction error:', error.message);
+    throw new NotPdfError(NOT_PDF_MESSAGE);
   }
 };
 
@@ -70,24 +75,30 @@ export const updateUserProfile = async (req, res) => {
 
     const userId = req.user._id || req.user.id;
     // Only these fields can be changed by the user. Role and plan are never accepted from the client.
-    const { name, phoneNumber } = req.body;
+    const { name, phoneNumber } = req.body || {};
 
-    if (!name || !phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Name and phone number are required"
-      });
+    const cleanName = typeof name === 'string' ? name.trim() : '';
+    if (!cleanName || cleanName.length > 100) {
+      return res.status(400).json({ success: false, message: "Name is required (1 to 100 characters)" });
+    }
+
+    // The phone is optional: absent = leave it as it is, "" or null = clear it, anything else must be 10-15 digits.
+    const $set = { name: cleanName, lastActive: new Date() };
+    const update = { $set };
+    if (phoneNumber === '' || phoneNumber === null) {
+      update.$unset = { phoneNumber: 1 };
+    } else if (phoneNumber !== undefined) {
+      const phone = normalizePhone(phoneNumber);
+      if (!phone) return res.status(400).json({ success: false, message: PHONE_MESSAGE });
+      $set.phoneNumber = phone;
     }
 
     const updatedUser = await userModel.findByIdAndUpdate(
       userId,
+      update,
       {
-        name,
-        phoneNumber,
-        lastActive: new Date()
-      },
-      { 
         new: true,
+        runValidators: true,
         select: '-password -resetOtp -verifyOtp -resetOtpExpireAt -verifyOtpExpireAt'
       }
     );
@@ -133,11 +144,9 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be at least 6 characters long"
-      });
+    // Same strength rule as accepting an invitation.
+    if (!passwordOk(newPassword)) {
+      return res.status(400).json({ success: false, message: PASSWORD_MESSAGE });
     }
 
     const user = await userModel.findById(userId);
@@ -228,10 +237,11 @@ export const uploadCV = async (req, res) => {
       }
     });
   } catch (error) {
+    if (error instanceof NotPdfError) return res.status(400).json({ success: false, message: error.message });
     console.error('Upload CV error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to upload CV' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload CV' 
     });
   }
 };

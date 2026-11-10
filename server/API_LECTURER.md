@@ -102,7 +102,9 @@ Query: `group` (optional).
     "excludedAiUnavailableResults": 0,        // CV results left out because scoreBreakdown.aiAvailable === false
     "topMissingSkills": [ { "skill": "docker", "students": 14 } ],  // up to 10; from each student's latest analysis
                                               // (scoreBreakdown.missingSkills of all its jobs, case-insensitive);
-                                              // sorted by students desc, then name
+                                              // sorted by students desc, then name;
+                                              // [] when fewer than 5 students have a CV analysis (studentsWithAnalysis < 5)
+    "topMissingSkillsInsufficientData": false, // true when the chips are held back for that reason
     "studentsWithAnalysis": 25,
     "insufficientData": false, "notice": null, "minimum": 5
   },

@@ -18,8 +18,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    // Invited users have no password until they accept the invitation
-    required: [function () { return this.status !== 'invited'; }, 'Password is required'],
+    // Only active accounts need one: invited users have no password until they accept the invitation,
+    // and a cancelled invitation (invited -> deactivated) never had one.
+    required: [function () { return this.status === 'active'; }, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
   phoneNumber: {
@@ -145,6 +146,17 @@ userSchema.virtual('cvAge').get(function() {
 // Ensure virtuals are included when converting to JSON
 userSchema.set('toJSON', { virtuals: true });
 userSchema.set('toObject', { virtuals: true });
+
+// Older accounts may hold a phone number that was stored without validation (e.g. 'abc'). Such a value must not
+// make an unrelated save fail (CV upload, deactivation, password reset): keep it as digits when that makes it valid,
+// otherwise drop it. A phone the user is setting right now is still validated normally.
+userSchema.pre('validate', function(next) {
+  if (this.phoneNumber && !this.isNew && !this.isModified('phoneNumber')) {
+    const digits = String(this.phoneNumber).replace(/[\s\-.()]/g, '');
+    this.phoneNumber = /^\d{10,15}$/.test(digits) ? digits : undefined;
+  }
+  next();
+});
 
 // Pre-save middleware
 userSchema.pre('save', function(next) {

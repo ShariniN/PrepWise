@@ -727,6 +727,23 @@ const StructuredRecommendations = ({ result, index }) => {
 
       <ScoreBreakdown breakdown={result.scoreBreakdown} />
 
+      {/* The AI could not write the advice: say so instead of four empty "No items" tabs. */}
+      {result.recommendationsUnavailable && (
+        <div role="status" className="flex items-start gap-3 rounded-2xl border border-sun-200 bg-sun-100 p-4 text-sm text-ink">
+          <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-sun-700" aria-hidden="true" />
+          <div>
+            <p className="font-semibold">AI advice is unavailable right now</p>
+            <p className="mt-1 text-ink-2">
+              {result.scoreBreakdown && result.scoreBreakdown.aiAvailable === false
+                ? 'Neither the match score nor the written feedback could be produced. The keyword check above still shows which skills from the job description appear in your CV.'
+                : 'The match score above was calculated, but the written feedback (strengths, issues and recommendations) could not be produced.'}
+              {' '}Try analysing again in a few minutes.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!result.recommendationsUnavailable && <>
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-8 bg-sand p-2 rounded-2xl shadow-inner">
         {tabs.map((tab) => {
@@ -752,11 +769,13 @@ const StructuredRecommendations = ({ result, index }) => {
       <div className="min-h-[200px]">
         {renderTabContent()}
       </div>
+      </>}
     </div>
   );
 };
 
 const CVAnalyzer = () => {
+  const navigate = useNavigate();
   // State management
   const [resumeFile, setResumeFile] = useState(null);
   const [jobDescriptions, setJobDescriptions] = useState([""]);
@@ -1001,6 +1020,8 @@ const CVAnalyzer = () => {
         resumeHash: resumeHash,
         jobDescriptions: jobDescriptions.filter(jd => jd.trim()),
         extractedTechnologies: data.extractedTechnologies || [],
+        // The AI could not extract technologies right now (not the same as "none on the CV")
+        technologiesUnavailable: !!data.technologiesUnavailable,
         usedProfileCV: useProfileCV,
         metadata: {
           fileName: useProfileCV ? profileCV?.fileName : resumeFile?.name,
@@ -1555,8 +1576,26 @@ const handleSaveIndividualAnalysis = async (index) => {
                               </span>
                             )}
                           </p>
+                          {resumeData && !resumeData.extractedTechnologies?.length && (
+                            <p role="status" className="mt-2 rounded-xl bg-sun-100 px-3 py-2 text-sm text-ink">
+                              {resumeData.technologiesUnavailable
+                                ? 'Could not extract technologies from your CV right now; add them manually or try again.'
+                                : 'No technologies were found on your CV. You can add them manually.'}
+                            </p>
+                          )}
                         </div>
                       </div>
+                      {resumeData && !resumeData.extractedTechnologies?.length ? (
+                        <button
+                          onClick={() => navigate('/swot', { state: { resumeHash: resumeData.resumeHash, extractedTechnologies: [], technologiesUnavailable: !!resumeData.technologiesUnavailable } })}
+                          className="px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all shadow-soft bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Plus className="w-5 h-5" />
+                            Add technologies manually
+                          </div>
+                        </button>
+                      ) : (
                       <button
                         onClick={handleNavigateToSkillsAssessment}
                         disabled={!resumeData || !resumeData.extractedTechnologies?.length}
@@ -1571,6 +1610,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                           Start Assessment
                         </div>
                       </button>
+                      )}
                     </div>
                   </div>
 

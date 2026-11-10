@@ -1,5 +1,5 @@
 import express from 'express';
-import multer from 'multer';
+import pdfUpload from '../middleware/pdfUpload.js';
 import { 
   analyzeResume,
   saveAnalysis,
@@ -15,28 +15,12 @@ import userAuth from '../middleware/userAuth.js';
 
 const analysisRouter = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage(); // Store files in memory
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'), false);
-    }
-  }
-});
-
 // All routes require authentication
 analysisRouter.use(userAuth);
 
 analysisRouter.post('/toggle-save', toggleSaveStatus); 
 // POST /api/analyze/analyze-resume - Analyze resume against job descriptions (with uploaded file)
-analysisRouter.post('/analyze-resume', upload.single('resume'), analyzeResume);
+analysisRouter.post('/analyze-resume', pdfUpload('resume'), analyzeResume);
 
 // NEW: POST /api/analyze/analyze-profile-cv - Analyze using profile CV (no file upload needed)
 analysisRouter.post('/analyze-profile-cv', analyzeWithProfileCV);

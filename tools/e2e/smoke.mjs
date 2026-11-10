@@ -1,143 +1,209 @@
-// Live smoke test against the local embedded-DB server. Reads demo passwords from the server log.
-import fs from 'node:fs';
-const LOG = process.argv[2];
+// Live API smoke test against a freshly seeded local stack (`npm run dev:local -- --fresh`). Fake demo data only.
+// Usage: node smoke.mjs            (API=http://localhost:4000 by default)
+//   SANDBOX=1  also call Practice run/submit and question validation (uses code-runner credits when JDoodle is set up)
+//   SKIP_AI=1  skip the mock interview checks (they make 2-3 AI calls; with no AI key they use the fallback path)
 const BASE = process.env.API || 'http://localhost:4000';
-const log = fs.readFileSync(LOG, 'utf8');
-const pw = (label, who) => {
-  const re = new RegExp(`${who}[^\\n]*password(?: \\(all 40\\))?: (\\S+)`);
-  const m = log.match(re); if (!m) throw new Error('no pw for ' + who); return m[1];
-};
+const SANDBOX = process.env.SANDBOX === '1';
+const SKIP_AI = process.env.SKIP_AI === '1';
+
+// Fixed demo logins seeded by seed-demo.js (local demo data only).
 const creds = {
-  adminA: ['admin@email.com', pw('', 'admin@email.com')],
-  lectA: ['lecturer@email.com', pw('', 'lecturer@email.com')],
-  careersA: ['careers@email.com', pw('', 'careers@email.com')],
-  studentA: ['student@email.com', pw('', 'student@email.com')],
-  adminB: ['admin@demo-b.test', pw('', 'admin@demo-b.test')],
-  studentB: ['student@demo-b.test', pw('', 'student@demo-b.test')],
+  adminA: ['admin@email.com', 'admin@123'],
+  lectA: ['lecturer@email.com', 'lecturer@123'],
+  studentA: ['student@email.com', 'student@123'],
+  adminB: ['admin@demo-b.test', 'admin@123'],
+  studentB: ['student@demo-b.test', 'student@123'],
 };
 
 class Client {
   constructor(name) { this.name = name; this.cookie = ''; }
-  async req(method, path, body) {
-    const res = await fetch(BASE + path, {
-      method, headers: { 'Content-Type': 'application/json', ...(this.cookie ? { Cookie: this.cookie } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const set = res.headers.getSetCookie?.() || [];
-    for (const c of set) if (c.startsWith('token=')) this.cookie = c.split(';')[0];
-    let data; const text = await res.text(); try { data = JSON.parse(text); } catch { data = text.slice(0, 200); }
-    return { status: res.status, data };
+  async raw(method, path, { body, headers = {} } = {}) {
+    const res = await fetch(BASE + path, { method, headers: { ...headers, ...(this.cookie ? { Cookie: this.cookie } : {}) }, body });
+    for (const c of res.headers.getSetCookie?.() || []) if (c.startsWith('token=')) this.cookie = c.split(';')[0];
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { data = text; }
+    return { status: res.status, data, text, headers: res.headers };
   }
-  async login([email, password]) { const r = await this.req('POST', '/api/auth/login', { email, password }); return r; }
+  req(method, path, body) {
+    return this.raw(method, path, body === undefined ? {} : { body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } });
+  }
+  login([email, password]) { return this.req('POST', '/api/auth/login', { email, password }); }
 }
 
 const results = []; const fails = [];
-const check = (name, ok, detail = '') => { results.push({ name, ok }); if (!ok) fails.push(`${name} ${detail}`); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  -> ' + detail}`); };
+const short = (x) => (typeof x === 'string' ? x : JSON.stringify(x) ?? String(x)).slice(0, 220);
+const check = (name, ok, detail = '') => {
+  results.push({ name, ok: !!ok }); if (!ok) fails.push(`${name}  ${detail}`);
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  -> ' + detail}`);
+};
+const stamp = Date.now().toString(36);
 
-const adminA = new Client('adminA'), lectA = new Client('lectA'), careersA = new Client('careersA'), stuA = new Client('stuA'), adminB = new Client('adminB'), stuB = new Client('stuB');
-for (const [c, k] of [[adminA, 'adminA'], [lectA, 'lectA'], [careersA, 'careersA'], [stuA, 'studentA'], [adminB, 'adminB'], [stuB, 'studentB']]) {
-  const r = await c.login(creds[k]); check(`login ${k}`, r.status === 200 && r.data.success, JSON.stringify(r.data).slice(0, 150));
+const adminA = new Client('adminA'), lectA = new Client('lectA'), stuA = new Client('stuA'), adminB = new Client('adminB'), stuB = new Client('stuB');
+for (const [c, k] of [[adminA, 'adminA'], [lectA, 'lectA'], [stuA, 'studentA'], [adminB, 'adminB'], [stuB, 'studentB']]) {
+  const r = await c.login(creds[k]); check(`login ${k} (${creds[k][0]})`, r.status === 200 && r.data.success, short(r.data));
 }
-check('is-auth returns role', (await stuA.req('GET', '/api/auth/is-auth')).data?.user?.role === 'student');
+let r = await stuA.req('GET', '/api/auth/is-auth'); check('is-auth returns role', r.data?.user?.role === 'student', short(r.data));
+r = await new Client('x').login(['student@email.com', 'wrong']); check('wrong password is refused', r.status === 401);
 
-// ---- admin / people
-let r = await adminA.req('GET', '/api/institution/usage'); check('admin usage', r.status === 200 && r.data.studentLimit === 60, JSON.stringify(r.data).slice(0, 200));
-r = await adminA.req('GET', '/api/institution/people?role=student'); check('admin people list', r.status === 200 && (r.data.people?.length ?? r.data.data?.length) > 0, JSON.stringify(r.data).slice(0, 200));
-r = await adminA.req('POST', '/api/institution/people/invite', { email: `newkid${Date.now()}@demo-a.test`, name: 'New Kid', role: 'student' }); check('admin invite student', r.status === 200 || r.status === 201, JSON.stringify(r.data).slice(0, 200));
-const inviteLink = r.data.inviteLink; check('invite link returned in dev', !!inviteLink);
+// ---------------------------------------------------------------- admin: people, invites, groups
+r = await adminA.req('GET', '/api/institution/usage'); check('admin usage', r.status === 200 && r.data.studentLimit === 60, short(r.data));
+const remainingBefore = r.data.remaining;
+r = await adminA.req('GET', '/api/institution/people?role=student'); check('admin people list', r.status === 200 && r.data.people?.length >= 40, short(r.data));
+r = await adminA.req('POST', '/api/institution/people/invite', { email: `newkid-${stamp}@demo-a.test`, name: 'New Kid', role: 'student', group: 'Group 1' });
+check('admin invites a student into a group', r.status === 201 && r.data.user?.group === 'Group 1', short(r.data));
+const inviteLink = r.data.inviteLink; check('invite link returned outside production', !!inviteLink);
 if (inviteLink) {
   const token = new URL(inviteLink).searchParams.get('token');
-  const anon = new Client('anon');
-  const a = await anon.req('POST', '/api/auth/accept-invite', { token, password: 'Newpass1!', name: 'New Kid' });
-  check('accept invite', a.status === 200 && a.data.success, JSON.stringify(a.data).slice(0, 200));
-  const again = await new Client('x').req('POST', '/api/auth/accept-invite', { token, password: 'Newpass1!' }); check('invite is single use', again.status === 400);
+  const weak = await new Client('anon').req('POST', '/api/auth/accept-invite', { token, password: 'abcdef' });
+  check('accept-invite refuses a weak password', weak.status === 400);
+  const a = await new Client('anon').req('POST', '/api/auth/accept-invite', { token, password: 'Newpass1!', name: 'New Kid' });
+  check('accept invite', a.status === 200 && a.data.success, short(a.data));
+  const again = await new Client('x').req('POST', '/api/auth/accept-invite', { token, password: 'Newpass1!' });
+  check('invite link is single use', again.status === 400);
 }
-r = await adminA.req('POST', '/api/institution/people/invite', { email: 'x@evil.com', name: 'Bad', role: 'student' }); check('email domain enforced', r.status >= 400, JSON.stringify(r.data).slice(0, 120));
-r = await adminA.req('POST', '/api/institution/people/import', { csv: 'email,name,role\nimp1@demo-a.test,Imp One,student\nimp2@demo-a.test,Imp Two,student\n' }); check('csv import', r.status === 200, JSON.stringify(r.data).slice(0, 200));
+// Cancel a pending invitation: deactivate the invited person, the link dies and the seat comes back.
+r = await adminA.req('POST', '/api/institution/people/invite', { email: `cancel-${stamp}@demo-a.test`, role: 'student' });
+const cancelId = r.data.user?.id; const cancelToken = r.data.inviteLink && new URL(r.data.inviteLink).searchParams.get('token');
+r = await adminA.req('PATCH', `/api/institution/people/${cancelId}/deactivate`);
+check('cancel a pending invitation (deactivate an invited user)', r.status === 200 && r.data.user?.status === 'deactivated', `${r.status} ${short(r.data)}`);
+if (cancelToken) {
+  const dead = await new Client('anon').req('POST', '/api/auth/accept-invite', { token: cancelToken, password: 'Newpass1!' });
+  check('a cancelled invitation link no longer works', dead.status === 400 && dead.data.code === 'INVITE_INVALID', short(dead.data));
+}
+r = await adminA.req('GET', '/api/institution/usage');
+check('cancelling frees the seat (only the accepted invite uses one)', r.data.remaining === remainingBefore - 1, `before ${remainingBefore} now ${r.data.remaining}`);
 
-// ---- tenancy
-r = await adminB.req('GET', '/api/institution/people?search=student01'); const bEmails = JSON.stringify(r.data); check('B admin cannot see A people', !bEmails.includes('demo-a.test') && !bEmails.includes('@email.com'));
+r = await adminA.req('POST', '/api/institution/people/invite', { email: 'x@evil.com', name: 'Bad', role: 'student' }); check('email domain enforced', r.status === 400 && r.data.code === 'DOMAIN_NOT_ALLOWED', short(r.data));
+r = await adminA.req('POST', '/api/institution/people/import', { csv: `email,name,role,group\nimp1-${stamp}@demo-a.test,Imp One,student,Group 2\nstudent@email.com,Exists,student,\nnot-an-email,Bad,student,\n` });
+const by = Object.fromEntries((r.data.results || []).map((x) => [x.line, x.status]));
+check('csv import labels rows (invited / skipped existing / error)', r.status === 200 && by[2] === 'invited' && by[3] === 'skipped' && by[4] === 'error', short(r.data));
+
+// Group editing
+r = await adminA.req('GET', '/api/institution/people?search=student05@demo-a.test');
+const s05 = r.data.people?.[0];
+r = await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: `Smoke ${stamp}` });
+check('admin edits a group', r.status === 200 && r.data.user?.group === `Smoke ${stamp}`, short(r.data));
+r = await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: 'x'.repeat(61) }); check('group longer than 60 is refused', r.status === 400 && r.data.code === 'INVALID_GROUP');
+r = await lectA.req('GET', `/api/lecturer/students?group=${encodeURIComponent(`Smoke ${stamp}`)}`);
+check('lecturer group filter finds the re-grouped student', r.status === 200 && r.data.total === 1 && r.data.students[0].email === 'student05@demo-a.test', short(r.data));
+await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: s05?.group || '' });
+
+// ---------------------------------------------------------------- tenancy and roles
+r = await adminB.req('GET', '/api/institution/people?search=student'); check('B admin cannot see A people', r.status === 200 && !/demo-a\.test|@email\.com/.test(r.text));
 r = await stuA.req('GET', '/api/institution/people'); check('student blocked from manage-people', r.status === 403);
-r = await stuA.req('GET', '/api/user/freshers'); check('old admin route gone', r.status === 404);
+r = await stuA.req('GET', '/api/lecturer/overview'); check('student blocked from the lecturer API', r.status === 403);
+r = await new Client('anon').req('GET', '/api/lecturer/overview'); check('lecturer API needs a login', r.status === 401);
 
-// ---- courses
-r = await lectA.req('GET', '/api/courses/mine'); const courses = r.data.courses || r.data.data || []; check('lecturer courses', r.status === 200, JSON.stringify(r.data).slice(0, 200));
-const courseId = courses[0]?.id || courses[0]?._id; const cohortId = courses[0]?.cohorts?.[0]?.id || courses[0]?.cohorts?.[0]?._id;
-check('course+cohort ids found', !!courseId && !!cohortId, JSON.stringify(courses).slice(0, 300));
-r = await stuA.req('GET', '/api/courses/mine'); check('student courses', r.status === 200);
+// ---------------------------------------------------------------- lecturer dashboard API
+r = await lectA.req('GET', '/api/lecturer/overview');
+check('lecturer overview', r.status === 200 && r.data.totals?.students >= 40 && Array.isArray(r.data.groups), short(r.data));
+check('overview lists Group 1 and Group 2', ['Group 1', 'Group 2'].every((g) => r.data.groups?.includes(g)), short(r.data.groups));
+check('overview interview averages shown (>= 5 students)', typeof r.data.interview?.overall?.average === 'number', short(r.data.interview));
+check('overview top missing skills shown with enough students', r.data.cv?.topMissingSkillsInsufficientData === false && Array.isArray(r.data.cv?.topMissingSkills), short(r.data.cv));
+r = await lectA.req('GET', '/api/lecturer/overview?group=Group%201'); check('overview filtered by group', r.status === 200 && r.data.group === 'Group 1' && r.data.totals.students >= 20, short(r.data.totals));
+r = await lectA.req('GET', '/api/lecturer/students?group=Group%202&pageSize=100');
+check('students list with group filter', r.status === 200 && r.data.total >= 20 && r.data.students.every((s) => s.group === 'Group 2'), short(r.data));
+r = await lectA.req('GET', '/api/lecturer/students?sort=-avgInterviewScore&pageSize=5');
+check('students list sorts by score', r.status === 200 && r.data.students.length === 5 && r.data.sort === '-avgInterviewScore', short(r.data));
+const withInterview = r.data.students?.find((s) => s.interviewsCompleted > 0);
+r = await lectA.req('GET', '/api/lecturer/students?sort=bogus'); check('unknown sort key is a 400', r.status === 400);
+if (withInterview) {
+  const prof = await lectA.req('GET', `/api/lecturer/students/${withInterview.id}`);
+  check('student profile', prof.status === 200 && prof.data.student?.id === withInterview.id && Array.isArray(prof.data.interviews), short(prof.data));
+  check('student profile never contains CV text or secrets', !/resumeText|currentCV|password|inviteToken|Otp|audioUrl/.test(prof.text));
+  const iv = prof.data.interviews?.find((x) => x.status === 'completed');
+  const det = iv && await lectA.req('GET', `/api/lecturer/students/${withInterview.id}/interviews/${iv.id}`);
+  check('interview detail', det?.status === 200 && Array.isArray(det.data.interview?.questions), det ? short(det.data) : 'no completed interview');
+  const otherB = await adminB.req('GET', `/api/lecturer/students/${withInterview.id}`); check('B cannot open an A student (404)', otherB.status === 404);
+} else check('a student with a completed interview exists', false, 'none in the first page');
+r = await lectA.raw('GET', '/api/lecturer/students.csv?group=Group%201');
+check('students CSV export', r.status === 200 && /text\/csv/.test(r.headers.get('content-type') || '') && r.text.startsWith('name,email,group,last_active'), `${r.status} ${short(r.text)}`);
+const groupOne = (await lectA.req('GET', '/api/lecturer/students?group=Group%201&pageSize=100')).data.total;
+check('CSV has one row per student of the group (+ header)', r.text.trim().split(/\r?\n/).length === groupOne + 1, `${r.text.trim().split(/\r?\n/).length} lines, ${groupOne} students`);
 
-// ---- practice (student)
-r = await stuA.req('GET', '/api/practice/questions?type=coding'); const qs = r.data.questions || r.data.data || []; check('practice list', r.status === 200 && qs.length > 0, JSON.stringify(r.data).slice(0, 200));
-const q = qs[0]; const qid = q?.id || q?._id;
-r = await stuA.req('GET', `/api/practice/questions/${qid}`); const qj = JSON.stringify(r.data);
-check('question detail', r.status === 200); check('no reference solution leaked', !/referenceSolution|wrongSolution/.test(qj));
-const hiddenLeak = (r.data.question?.tests || r.data.tests || []).some?.((t) => t.visible === false && (t.input != null || t.expectedOutput != null));
-check('no hidden test data leaked', !hiddenLeak);
-r = await stuA.req('POST', `/api/practice/questions/${qid}/run`, { language: 'python', source: 'print(1)' }); check('run gives a real verdict, or 503 when no sandbox is set up (never fake success)', r.status === 503 || (r.status === 200 && ['wrong_answer','accepted','runtime_error','compile_error'].includes(r.data.verdict)), `${r.status} ${JSON.stringify(r.data).slice(0, 160)}`);
-r = await stuA.req('POST', `/api/practice/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('submit gives a real graded result, or 503 with no score', r.status === 503 || (r.status === 200 && typeof r.data.score === 'number' && r.data.verdict !== 'accepted'), `${r.status}`);
+// ---------------------------------------------------------------- removed features answer 404
+for (const [c, path] of [
+  [lectA, '/api/courses/mine'], [lectA, '/api/assessments'], [lectA, '/api/integrity/cases'], [stuA, '/api/integrity/my/cases'],
+  [lectA, '/api/analytics/lecturer/topic-heatmap'], [adminA, '/api/analytics/careers/readiness'], [stuA, '/api/user/freshers'],
+]) {
+  const x = await c.req('GET', path); check(`removed route ${path} is 404`, x.status === 404, String(x.status));
+}
+r = await lectA.req('GET', '/api/no-such-thing'); check('unknown API path is JSON 404', r.status === 404 && r.data?.success === false);
+
+// ---------------------------------------------------------------- practice
+r = await stuA.req('GET', '/api/practice/questions?type=coding'); const qs = r.data.questions || []; check('practice list', r.status === 200 && qs.length > 0, short(r.data));
+const qid = qs[0]?.id || qs[0]?._id;
+r = await stuA.req('GET', `/api/practice/questions/${qid}`);
+check('question detail', r.status === 200); check('no reference or wrong solution leaked', !/referenceSolution|wrongSolution/.test(r.text));
+check('no hidden test data leaked', !(r.data.question?.tests || []).some?.((t) => t.visible === false && (t.input != null || t.expectedOutput != null)));
+if (SANDBOX) {
+  r = await stuA.req('POST', `/api/practice/questions/${qid}/run`, { language: 'python', source: 'print(1)' });
+  check('run gives a real verdict, or 503 with a reason (never fake success)', (r.status === 503 && !!r.data.reason && /Nothing was scored/.test(r.data.message)) || (r.status === 200 && r.data.verdict), `${r.status} ${short(r.data)}`);
+  r = await stuA.req('POST', `/api/practice/questions/${qid}/submit`, { language: 'python', source: 'print(1)' });
+  check('submit gives a graded result, or 503 with no score', (r.status === 503 && r.data.score === undefined) || (r.status === 200 && typeof r.data.score === 'number'), `${r.status}`);
+} else console.log('SKIP  practice run/submit (set SANDBOX=1)');
 r = await stuA.req('GET', '/api/practice/questions?type=mcq'); const mcq = (r.data.questions || [])[0];
-if (mcq) { const mid = mcq.id || mcq._id; const d = await stuA.req('GET', `/api/practice/questions/${mid}`); const opts = d.data.question?.options || d.data.options || []; const s = await stuA.req('POST', `/api/practice/questions/${mid}/submit`, { answer: [0], selected: [0], choice: 0 }); check('mcq submit works server-side', s.status === 200 || s.status === 400, `${s.status} ${JSON.stringify(s.data).slice(0, 200)}`); }
+if (mcq) { const s = await stuA.req('POST', `/api/practice/questions/${mcq.id || mcq._id}/submit`, { selected: [0] }); check('mcq submit is graded on the server', s.status === 200 && typeof s.data.score === 'number', `${s.status} ${short(s.data)}`); }
 
-// ---- question bank (lecturer)
-r = await lectA.req('GET', '/api/questions'); check('lecturer question list', r.status === 200, JSON.stringify(r.data).slice(0, 150));
-r = await lectA.req('POST', '/api/questions', { title: 'Sum two numbers', statement: 'Read two ints, print sum.', type: 'coding', difficulty: 'easy', topic: ['basics'], languages: ['python'], referenceSolution: { language: 'python', source: 'a,b=map(int,input().split())\nprint(a+b)' } });
-check('lecturer creates question', r.status === 200 || r.status === 201, `${r.status} ${JSON.stringify(r.data).slice(0, 250)}`);
-const newQ = r.data.question || r.data.data; const newQid = newQ?.id || newQ?._id;
+// ---------------------------------------------------------------- question bank (lecturer)
+r = await lectA.req('GET', '/api/questions'); check('lecturer question list', r.status === 200, short(r.data));
+r = await lectA.req('POST', '/api/questions', { title: `Sum two numbers ${stamp}`, statement: 'Read two ints, print sum.', type: 'coding', difficulty: 'easy', topic: ['basics'], languages: ['python'], referenceSolution: { language: 'python', source: 'a,b=map(int,input().split())\nprint(a+b)' } });
+check('lecturer creates a question', r.status === 201 || r.status === 200, `${r.status} ${short(r.data)}`);
+const newQid = (r.data.question || r.data.data)?.id;
 if (newQid) {
-  const t = await lectA.req('POST', `/api/questions/${newQid}/tests`, { input: '1 2', expectedOutput: '3', visible: true, weight: 1 }); check('add test case', t.status === 200 || t.status === 201, `${t.status} ${JSON.stringify(t.data).slice(0, 200)}`);
-  const v = await lectA.req('POST', `/api/questions/${newQid}/validate`, {}); check('validate runs the reference solution in the sandbox, or reports unavailable', v.status === 503 || v.data?.unavailable || (v.status === 200 && v.data.referencePassed === true), `${v.status} ${JSON.stringify(v.data).slice(0, 200)}`);
-  const pub = await lectA.req('PATCH', `/api/questions/${newQid}/status`, { status: 'published' }); check('publish allowed only after a passing validation', v.data?.referencePassed === true ? pub.status === 200 : pub.status >= 400, `${pub.status} ${JSON.stringify(pub.data).slice(0, 160)}`);
-}
-r = await stuA.req('GET', '/api/questions'); check('student blocked from question API', r.status === 403);
-r = await adminB.req('GET', '/api/questions'); check('B admin question list excludes A-owned', !JSON.stringify(r.data).includes('Sum two numbers'));
-
-// ---- analytics (real Mongo queries)
-const an = async (c, path, name) => { const x = await c.req('GET', path); check(name, x.status === 200, `${x.status} ${JSON.stringify(x.data).slice(0, 200)}`); return x; };
-if (courseId) {
-  const qs2 = `?courseId=${courseId}${cohortId ? `&cohortId=${cohortId}` : ''}`;
-  await an(lectA, `/api/analytics/lecturer/failure-patterns${qs2}`, 'analytics failure-patterns');
-  await an(lectA, `/api/analytics/lecturer/topic-heatmap${qs2}`, 'analytics topic-heatmap');
-  await an(lectA, `/api/analytics/lecturer/students-needing-help${qs2}`, 'analytics students-needing-help');
-  await an(lectA, `/api/analytics/lecturer/question-quality${qs2}`, 'analytics question-quality');
-  await an(lectA, `/api/analytics/lecturer/activity${qs2}`, 'analytics activity');
-  const o = await adminB.req('GET', `/api/analytics/lecturer/failure-patterns${qs2}`); check('B cannot read A course analytics', o.status === 404 || o.status === 403, String(o.status));
-  const s = await stuA.req('GET', `/api/analytics/lecturer/activity${qs2}`); check('student blocked from analytics', s.status === 403);
-}
-await an(careersA, '/api/analytics/careers/readiness', 'careers readiness');
-await an(careersA, '/api/analytics/careers/coverage', 'careers coverage');
-await an(careersA, '/api/analytics/careers/skills-gap', 'careers skills-gap');
-const csv = await careersA.req('GET', '/api/analytics/careers/readiness.csv'); check('careers csv', csv.status === 200);
-await an(adminA, '/api/analytics/admin/overview', 'admin overview');
-await an(adminA, '/api/analytics/admin/evidence', 'admin evidence');
-r = await lectA.req('GET', '/api/grading/queue'); check('grading queue', r.status === 200, `${r.status} ${JSON.stringify(r.data).slice(0, 150)}`);
-
-// ---- assessments end-to-end
-if (courseId && qid) {
-  const now = Date.now();
-  r = await lectA.req('POST', '/api/assessments', { title: 'Smoke Test Quiz', courseId, cohortId, questionIds: [qid, mcq && (mcq.id || mcq._id)].filter(Boolean), opensAt: new Date(now - 60000).toISOString(), closesAt: new Date(now + 3600000).toISOString(), durationMinutes: 30, attemptsAllowed: 1, integrityLevel: 1 });
-  check('create assessment', r.status === 200 || r.status === 201, `${r.status} ${JSON.stringify(r.data).slice(0, 250)}`);
-  const aid = (r.data.assessment || r.data.data)?.id || (r.data.assessment || r.data.data)?._id;
-  if (aid) {
-    let st = await lectA.req('PATCH', `/api/assessments/${aid}/status`, { status: 'open' }); check('open assessment', st.status === 200, `${st.status} ${JSON.stringify(st.data).slice(0, 200)}`);
-    const list = await stuA.req('GET', '/api/assessments'); check('student sees assessment', JSON.stringify(list.data).includes('Smoke Test Quiz'), JSON.stringify(list.data).slice(0, 200));
-    const start = await stuA.req('POST', `/api/assessments/${aid}/start`, {}); check('student starts session', start.status === 200 || start.status === 201, `${start.status} ${JSON.stringify(start.data).slice(0, 250)}`);
-    const sess = start.data.session || start.data.data; const sid = sess?.id || sess?._id;
-    check('server deadline present', !!(sess?.deadline || sess?.deadlineAt));
-    if (sid) {
-      const ev = await stuA.req('POST', `/api/assessments/sessions/${sid}/integrity-events`, { events: [{ type: 'tab_hidden', t: 1000 }, { type: 'tab_visible', t: 9000 }, { type: 'paste', t: 12000, meta: { length: 1800, inEditor: true } }] }); check('integrity events accepted', ev.status === 200 || ev.status === 201, `${ev.status} ${JSON.stringify(ev.data).slice(0, 200)}`);
-      const run = await stuA.req('POST', `/api/assessments/sessions/${sid}/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('assessment submit records the answer without revealing a verdict', (run.status === 200 && !('verdict' in run.data)) || run.status === 503, `${run.status} ${JSON.stringify(run.data).slice(0, 200)}`);
-      const fin = await stuA.req('POST', `/api/assessments/sessions/${sid}/finish`, {}); check('finish session', fin.status === 200, `${fin.status} ${JSON.stringify(fin.data).slice(0, 200)}`);
-      const cases = await lectA.req('GET', '/api/integrity/cases'); check('integrity case list (real Mongo)', cases.status === 200, `${cases.status} ${JSON.stringify(cases.data).slice(0, 250)}`);
-      const sc = await stuA.req('GET', '/api/integrity/cases'); check('student cannot list integrity cases', sc.status === 403 || (sc.status === 200 && (sc.data.cases || []).length === 0), String(sc.status));
-      const rep = await lectA.req('GET', `/api/integrity/sessions/${sid}/replay?questionId=${qid}`); check('replay endpoint', rep.status === 200, `${rep.status} ${JSON.stringify(rep.data).slice(0, 150)}`);
-    }
+  const t = await lectA.req('POST', `/api/questions/${newQid}/tests`, { input: '1 2', expectedOutput: '3', visible: true, weight: 1 }); check('add a test case', t.status === 201 || t.status === 200, `${t.status}`);
+  const pub = await lectA.req('PATCH', `/api/questions/${newQid}/status`, { status: 'published' }); check('publishing an unvalidated coding question is refused', pub.status === 409, `${pub.status}`);
+  if (SANDBOX) {
+    const v = await lectA.req('POST', `/api/questions/${newQid}/validate`, {});
+    check('validate runs the reference, or 503 with a reason', (v.status === 503 && !!v.data.reason) || (v.status === 200 && v.data.referencePassed === true), `${v.status} ${short(v.data)}`);
   }
 }
+r = await stuA.req('GET', '/api/questions'); check('student blocked from the question API', r.status === 403);
+r = await adminB.req('GET', '/api/questions'); check('B question list excludes A-owned questions', !r.text.includes(`Sum two numbers ${stamp}`));
+r = await lectA.req('GET', '/api/grading/queue'); check('grading queue', r.status === 200, `${r.status}`);
+r = await adminA.req('GET', '/api/analytics/admin/overview'); check('admin overview', r.status === 200, `${r.status}`);
+r = await adminA.req('GET', '/api/analytics/admin/evidence'); check('admin evidence', r.status === 200, `${r.status}`);
 
-// ---- compliance
-r = await stuA.req('GET', '/api/me/export'); check('student data export', r.status === 200 && JSON.stringify(r.data).includes('student@email.com'), String(r.status));
-r = await new Client('anon').req('GET', '/api/compliance/subprocessors'); check('subprocessors public', r.status === 200);
-r = await stuB.req('GET', '/api/practice/questions'); check('B student can read global seed bank', r.status === 200 && (r.data.questions || []).length > 0);
+// ---------------------------------------------------------------- profile settings
+r = await stuA.req('PUT', '/api/user/profile', { name: 'Amara Adams', phoneNumber: 'abc' }); check('profile refuses a bad phone with 400', r.status === 400 && /10 to 15 digits/.test(r.data.message), short(r.data));
+r = await stuA.req('PUT', '/api/user/profile', { name: 'Amara Adams' }); check('profile name-only update works', r.status === 200, short(r.data));
+r = await stuA.req('PUT', '/api/user/change-password', { currentPassword: 'student@123', newPassword: 'abcdef' }); check('change password refuses a weak password', r.status === 400);
+{
+  const fd = new FormData(); fd.append('cv', new Blob(['plain text, not a PDF'], { type: 'application/pdf' }), 'x.pdf');
+  const up = await stuA.raw('PUT', '/api/user/upload-cv', { body: fd });
+  check('CV upload of a non-PDF is a 400', up.status === 400 && /Only PDF files are accepted/.test(up.data.message), `${up.status} ${short(up.data)}`);
+}
+
+// ---------------------------------------------------------------- mock interview, no camera, delivery metrics stored
+if (!SKIP_AI) {
+  const cv = 'Amara Adams. BSc Computer Science student. Projects: a REST API in Node.js and Express with MongoDB, tested with Jest; a React timetable app used by 200 students. Skills: JavaScript, Node.js, MongoDB, Git, SQL.';
+  const jd = 'Junior backend developer (intern). Build REST APIs with Node.js and MongoDB, write tests, use Git, work in a small team.';
+  const c = await stuA.req('POST', '/api/interviews/create', { jobDescription: jd, resumeText: cv });
+  const iv = c.data.interview;
+  check('create a mock interview', c.status === 201 && iv?.questions?.length > 0, `${c.status} ${short(c.data)}`);
+  check('interview says whether generic fallback questions were used', typeof c.data.usedFallbackQuestions === 'boolean', short(c.data.usedFallbackQuestions));
+  if (iv) {
+    await stuA.req('PUT', `/api/interviews/${iv.id}/start`);
+    const q1 = iv.questions[0];
+    const metrics = { cameraUsed: false, faceVisiblePct: 99, eyeContactPct: 99, lookAwayCount: 1, headMovement: 'low', wordsPerMinute: 124, fillerWordCount: 3, durationSec: 41 };
+    const a = await stuA.req('POST', `/api/interviews/${iv.id}/submit-answer`, {
+      questionId: q1.questionId, responseText: 'I built a REST API in Node.js with Express and MongoDB for a society timetable. I wrote Jest tests for each route and used Git branches with reviews.',
+      answerMode: 'text', responseTime: 60, deliveryMetrics: metrics,
+    });
+    check('camera-free answer is accepted', a.status === 200 && ['ai', 'fallback'].includes(a.data.feedback?.source), `${a.status} ${short(a.data)}`);
+    check('camera values are dropped when the camera was off', a.data.deliveryMetrics?.cameraUsed === false && a.data.deliveryMetrics?.eyeContactPct === null && a.data.deliveryMetrics?.wordsPerMinute === 124, short(a.data.deliveryMetrics));
+    const g = await stuA.req('GET', `/api/interviews/${iv.id}`);
+    const stored = g.data.interview?.responses?.[0]?.deliveryMetrics;
+    check('deliveryMetrics stored on the interview', stored?.cameraUsed === false && stored?.fillerWordCount === 3 && stored?.durationSec === 41, short(stored));
+    const fb = await stuA.req('GET', `/api/interviews/${iv.id}/feedback`);
+    check('feedback reports excluded fallback answers', fb.status === 200 && typeof fb.data.feedback?.excludedFallbackAnswers === 'number', short(fb.data.feedback));
+  }
+} else console.log('SKIP  mock interview (SKIP_AI=1)');
+
+// ---------------------------------------------------------------- compliance
+r = await stuA.req('GET', '/api/me/export'); check('student data export', r.status === 200 && r.text.includes('student@email.com'), String(r.status));
+r = await new Client('anon').req('GET', '/api/compliance/subprocessors'); check('subprocessors are public', r.status === 200);
+r = await stuB.req('GET', '/api/practice/questions'); check('B student can read the global seed bank', r.status === 200 && (r.data.questions || []).length > 0);
 
 console.log(`\n${results.filter((x) => x.ok).length}/${results.length} passed`);
-if (fails.length) { console.log('\nFAILURES:'); fails.forEach((f) => console.log(' - ' + f)); }
+if (fails.length) { console.log('\nFAILURES:'); fails.forEach((f) => console.log(' - ' + f)); process.exitCode = 1; }

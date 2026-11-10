@@ -55,7 +55,7 @@ export class VmProvider {
     this.calls += 1;
     if (this.down) {
       const { ExecutionUnavailableError } = await import('../../services/execution/errors.js');
-      throw new ExecutionUnavailableError('down for test', 'network');
+      throw new ExecutionUnavailableError('down for test', typeof this.down === 'string' ? this.down : 'network');
     }
     if (language !== 'javascript') throw new Error(`VmProvider only runs javascript, got ${language}`);
     return runJs(source, stdin);

@@ -145,7 +145,8 @@ test('profile update still accepts only name and phone, whatever else is sent', 
   const res = await request(app).put('/api/user/profile').set('Cookie', w.cookie(student))
     .send({ name: 'N', phoneNumber: '0771234567', role: 'university_admin', institutionId: IDS.instB, status: 'active', accountType: 'Admin' });
   assert.equal(res.status, 200);
-  assert.deepEqual(Object.keys(captured).sort(), ['lastActive', 'name', 'phoneNumber']);
+  assert.deepEqual(Object.keys(captured), ['$set']); // only $set (no $unset when a phone is sent)
+  assert.deepEqual(Object.keys(captured.$set).sort(), ['lastActive', 'name', 'phoneNumber']);
 });
 
 test('hashToken is SHA-256 hex and invite tokens are 32 random bytes', () => {
@@ -155,4 +156,16 @@ test('hashToken is SHA-256 hex and invite tokens are 32 random bytes', () => {
   assert.notEqual(a.token, b.token);
   assert.equal(a.hash, hashToken(a.token));
   assert.equal(hashToken('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+});
+
+// QA-16: a bogus token and a missing password get their own message, not one combined sentence.
+test('accept-invite says which part is wrong: the link or the password', async () => {
+  const bogus = await request(app).post('/api/auth/accept-invite').send({ token: 'not-a-token', password: 'Good@123' });
+  assert.equal(bogus.status, 400);
+  assert.equal(bogus.body.code, 'INVITE_INVALID');
+  assert.doesNotMatch(bogus.body.message, /password/i);
+  const noPw = await request(app).post('/api/auth/accept-invite').send({ token: 'a'.repeat(64) });
+  assert.equal(noPw.status, 400);
+  assert.equal(noPw.body.code, undefined);
+  assert.match(noPw.body.message, /password/i);
 });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import api, { errorMessage, errorCode } from '../../api/client';
+import api, { errorMessage } from '../../api/client';
 import { ROLE_LABELS } from '../../utils/roles';
 import { Button, Card, CardTitle, Field, Input, Select } from '../ui';
 import CopyLinkButton from './CopyLinkButton';
@@ -27,12 +27,8 @@ const InviteForm = ({ onDone }) => {
       setForm({ email: '', name: '', role: form.role, group: form.group });
       onDone();
     } catch (err) {
-      const code = errorCode(err);
-      setError(
-        code === 'STUDENT_LIMIT_REACHED'
-          ? `${errorMessage(err)} Deactivate a student or ask PrepWise to raise your limit.`
-          : errorMessage(err, 'Could not send invitation')
-      );
+      // The server message already says what to do (e.g. the student limit message), so show it as it is.
+      setError(errorMessage(err, 'Could not send invitation'));
     } finally {
       setBusy(false);
     }

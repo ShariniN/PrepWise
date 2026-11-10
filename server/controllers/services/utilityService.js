@@ -36,57 +36,69 @@ export const normalizeQuestionType = (type) => {
   return typeMapping[normalized] || 'technical';
 };
 
+// Scores come only from answers the AI (or the tests) scored. Answers with feedback.source === 'fallback' were scored
+// by the basic estimate because the AI was unavailable: they still count as answered, but not towards any score
+// (the lecturer dashboard leaves them out the same way). excludedFallbackAnswers says how many were left out,
+// scoreIsPartial is true when some were, and score is null when no answer had a real score.
 export const calculateFinalResults = (responses, totalDuration) => {
   const answeredResponses = responses.filter(r => !r.skipped && r.feedback);
+  const scoredResponses = answeredResponses.filter(r => r.feedback?.source !== 'fallback');
+  const excludedFallbackAnswers = answeredResponses.length - scoredResponses.length;
   const skippedCount = responses.filter(r => r.skipped).length;
-  
+
+  const byType = (list, type) => list.filter(r => r.questionType === type);
+  const breakdown = {
+    totalQuestions: responses.length,
+    answeredQuestions: answeredResponses.length,
+    skippedQuestions: skippedCount,
+    behavioralQuestions: byType(answeredResponses, 'behavioral').length,
+    technicalQuestions: byType(answeredResponses, 'technical').length,
+    codingQuestions: byType(answeredResponses, 'coding').length,
+    averageResponseTime: answeredResponses.length > 0
+      ? Math.round(answeredResponses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / answeredResponses.length)
+      : 0
+  };
+  const counts = { excludedFallbackAnswers, scoredAnswers: scoredResponses.length, scoreIsPartial: excludedFallbackAnswers > 0 && scoredResponses.length > 0 };
+
   if (answeredResponses.length === 0) {
     return {
       score: 0,
       duration: totalDuration,
-      categoryPercentages: {
-        behavioral: 0,
-        technical: 0,
-        coding: 0,
-        communication: 0,
-        technicalAccuracy: 0,
-        problemSolving: 0
-      },
-      breakdown: {
-        totalQuestions: responses.length,
-        answeredQuestions: 0,
-        skippedQuestions: skippedCount,
-        behavioralQuestions: 0,
-        technicalQuestions: 0,
-        codingQuestions: 0,
-        averageResponseTime: 0
-      }
+      categoryPercentages: { behavioral: 0, technical: 0, coding: 0, communication: 0, technicalAccuracy: 0, problemSolving: 0 },
+      breakdown,
+      ...counts
     };
   }
-  
-  const scores = answeredResponses.map(r => r.feedback?.score || 0);
-  const overallScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  
-  const behavioralResponses = answeredResponses.filter(r => r.questionType === 'behavioral');
-  const technicalResponses = answeredResponses.filter(r => r.questionType === 'technical');
-  const codingResponses = answeredResponses.filter(r => r.questionType === 'coding');
 
-  const avgScore = (arr) => arr.length > 0 
+  if (scoredResponses.length === 0) {
+    return {
+      score: null,
+      duration: totalDuration,
+      categoryPercentages: { behavioral: null, technical: null, coding: null, communication: null, technicalAccuracy: null, problemSolving: null },
+      breakdown,
+      ...counts
+    };
+  }
+
+  const scores = scoredResponses.map(r => r.feedback?.score || 0);
+  const overallScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+  const avgScore = (arr) => arr.length > 0
     ? Math.round(arr.reduce((sum, r) => sum + (r.feedback?.score || 0), 0) / arr.length)
     : Math.round(overallScore);
 
   const categoryScores = {
-    behavioral: avgScore(behavioralResponses),
-    technical: avgScore(technicalResponses),
-    coding: avgScore(codingResponses)
+    behavioral: avgScore(byType(scoredResponses, 'behavioral')),
+    technical: avgScore(byType(scoredResponses, 'technical')),
+    coding: avgScore(byType(scoredResponses, 'coding'))
   };
 
   const communicationScore = Math.round(
-    answeredResponses.reduce((sum, r) => sum + (r.feedback?.communicationClarity || 5), 0) / answeredResponses.length
+    scoredResponses.reduce((sum, r) => sum + (r.feedback?.communicationClarity || 5), 0) / scoredResponses.length
   );
 
   const technicalAccuracyScore = Math.round(
-    answeredResponses.reduce((sum, r) => sum + (r.feedback?.technicalAccuracy || 5), 0) / answeredResponses.length
+    scoredResponses.reduce((sum, r) => sum + (r.feedback?.technicalAccuracy || 5), 0) / scoredResponses.length
   );
 
   const problemSolvingScore = Math.round((categoryScores.coding + categoryScores.technical) / 2);
@@ -102,17 +114,8 @@ export const calculateFinalResults = (responses, totalDuration) => {
       technicalAccuracy: (technicalAccuracyScore / 10) * 100,
       problemSolving: problemSolvingScore
     },
-    breakdown: {
-      totalQuestions: responses.length,
-      answeredQuestions: answeredResponses.length,
-      skippedQuestions: skippedCount,
-      behavioralQuestions: behavioralResponses.length,
-      technicalQuestions: technicalResponses.length,
-      codingQuestions: codingResponses.length,
-      averageResponseTime: answeredResponses.length > 0 
-        ? Math.round(answeredResponses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / answeredResponses.length)
-        : 0
-    }
+    breakdown,
+    ...counts
   };
 };
 

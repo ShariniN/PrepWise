@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, Button } from '../ui';
 
-const ConfirmDialog = ({ title, message, confirmLabel = 'Confirm', danger, busy, onConfirm, onCancel }) => (
+const ConfirmDialog = ({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', confirmDisabled = false, danger, busy, onConfirm, onCancel }) => (
   <Modal
     open
     onClose={onCancel}
@@ -9,8 +9,8 @@ const ConfirmDialog = ({ title, message, confirmLabel = 'Confirm', danger, busy,
     size="sm"
     footer={(
       <>
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button variant={danger ? 'danger' : 'primary'} loading={busy} onClick={onConfirm}>{busy ? 'Working...' : confirmLabel}</Button>
+        <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
+        <Button variant={danger ? 'danger' : 'primary'} loading={busy} disabled={confirmDisabled || busy} onClick={onConfirm}>{busy ? 'Working...' : confirmLabel}</Button>
       </>
     )}
   >

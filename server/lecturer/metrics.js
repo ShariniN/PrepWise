@@ -254,12 +254,15 @@ export const overview = (rows, now) => {
       skillCounts.get(k).students += 1;
     }
   }
-  const topMissingSkills = [...skillCounts.values()]
+  // Held back below MIN_N contributing students (students with a CV analysis), like every other aggregate:
+  // with only a few students a chip such as "docker: 1" points at an individual.
+  const topMissingSkillsInsufficientData = withLatest < MIN_N;
+  const topMissingSkills = topMissingSkillsInsufficientData ? [] : [...skillCounts.values()]
     .sort((a, b) => b.students - a.students || a.skill.toLowerCase().localeCompare(b.skill.toLowerCase()))
     .slice(0, 10);
   const cv = {
     averageBestMatch: best, excludedAiUnavailableResults: rows.reduce((n, r) => n + r._agg.excludedCvResults, 0),
-    topMissingSkills, studentsWithAnalysis: withLatest,
+    topMissingSkills, topMissingSkillsInsufficientData, studentsWithAnalysis: withLatest,
     insufficientData: best.n < MIN_N, notice: notice(best.n), minimum: MIN_N,
   };
 

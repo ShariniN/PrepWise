@@ -78,8 +78,10 @@ function createResumeHash(resumeText) {
 }
 
 
-// Extract technologies using Gemini API with structured JSON response
-const extractTechnologiesFromResume = async (resumeText) => {
+// Extract technologies using the AI chain with a structured JSON response.
+// Returns { technologies, unavailable }: unavailable is true when the AI failed or its answer could not be read.
+// `generate` can be injected (tests); it defaults to the shared model chain.
+export const extractTechnologiesFromResume = async (resumeText, { generate = (p) => generateWithFallback(p, { models: AI_MODELS }) } = {}) => {
   try {
     const prompt = `Analyze this resume and extract ONLY technical skills relevant to Computer Science/Software Engineering.
 
@@ -104,7 +106,7 @@ Confidence level must be 1-10.
 Only include technical skills relevant to software development.
 Return ONLY the JSON array, no other text.`;
 
-    const { text: content } = await generateWithFallback(prompt, { models: AI_MODELS });
+    const { text: content } = await generate(prompt);
     
     console.log("Technology extraction response:", content.substring(0, 200) + "...");
     
@@ -128,17 +130,18 @@ Return ONLY the JSON array, no other text.`;
           tech.confidenceLevel <= 10
         );
         console.log(`✅ Successfully extracted ${validTechnologies.length} technologies`);
-        return validTechnologies;
+        return { technologies: validTechnologies, unavailable: false };
       } catch (parseError) {
         console.error("JSON parsing error for technologies:", parseError.message);
       }
     }
-    
+
     console.warn("Could not parse technologies, returning fallback");
-    return getFallbackTechnologies();
+    return { technologies: getFallbackTechnologies(), unavailable: true };
   } catch (error) {
-    console.error("Technology extraction error:", error);
-    return getFallbackTechnologies();
+    console.error("Technology extraction error:", error.message);
+    // Flagged, so the Skills page can say extraction failed instead of "no technologies on your CV".
+    return { technologies: getFallbackTechnologies(), unavailable: true };
   }
 };
 
@@ -339,12 +342,32 @@ const analyzeResumeMatch = async (resumeText, jobDesc) => {
   };
 };
 
+// One result per job description. recommendationsUnavailable is kept so the client can say
+// "AI advice is unavailable right now" instead of showing empty advice tabs.
+export const buildJobResult = (analysisResult, jobDescForDisplay, extractedTechnologies) => ({
+  matchPercentage: analysisResult.matchPercentage,
+  jobDescription: jobDescForDisplay,
+  hasError: !!analysisResult.error,
+  isNonTechRole: analysisResult.isNonTechRole || false,
+  rawSimilarity: analysisResult.similarityScore,
+  timestamp: analysisResult.timestamp,
+  strengths: analysisResult.strengths || [],
+  contentWeaknesses: analysisResult.contentWeaknesses || [],
+  structureWeaknesses: analysisResult.structureWeaknesses || [],
+  contentRecommendations: analysisResult.contentRecommendations || [],
+  structureRecommendations: analysisResult.structureRecommendations || [],
+  recommendationsUnavailable: !!analysisResult.recommendationsUnavailable,
+  message: analysisResult.message || null,
+  scoreBreakdown: analysisResult.scoreBreakdown || null,
+  extractedTechnologies
+});
+
 // Enhanced CV analysis function
 async function performCVAnalysis(cvText, jobDescriptions) {
   const analysis = [];
   
-  // Extract technologies using Gemini API
-  const extractedTechnologies = await extractTechnologiesFromResume(cvText);
+  // Technologies for the skills self-assessment; unavailable = the AI could not extract them right now
+  const { technologies: extractedTechnologies, unavailable: technologiesUnavailable } = await extractTechnologiesFromResume(cvText);
   
   for (let i = 0; i < jobDescriptions.length; i++) {
     const rawJobDesc = jobDescriptions[i];
@@ -358,24 +381,7 @@ async function performCVAnalysis(cvText, jobDescriptions) {
       // Use real Gemini API analysis
       const analysisResult = await analyzeResumeMatch(cvText, jobDescForAnalysis);
       
-      const resultData = {
-        matchPercentage: analysisResult.matchPercentage,
-        jobDescription: jobDescForDisplay,
-        hasError: !!analysisResult.error,
-        isNonTechRole: analysisResult.isNonTechRole || false,
-        rawSimilarity: analysisResult.similarityScore,
-        timestamp: analysisResult.timestamp,
-        strengths: analysisResult.strengths || [],
-        contentWeaknesses: analysisResult.contentWeaknesses || [],
-        structureWeaknesses: analysisResult.structureWeaknesses || [],
-        contentRecommendations: analysisResult.contentRecommendations || [],
-        structureRecommendations: analysisResult.structureRecommendations || [],
-        message: analysisResult.message || null,
-        scoreBreakdown: analysisResult.scoreBreakdown || null,
-        extractedTechnologies: extractedTechnologies
-      };
-
-      analysis.push(resultData);
+      analysis.push(buildJobResult(analysisResult, jobDescForDisplay, extractedTechnologies));
       
     } catch (error) {
       console.error(`Analysis error for JD ${i + 1}:`, error.message);
@@ -390,7 +396,7 @@ async function performCVAnalysis(cvText, jobDescriptions) {
     }
   }
 
-  return { analysis, extractedTechnologies };
+  return { analysis, extractedTechnologies, technologiesUnavailable };
 }
 
 // Main controller function - analyzeResume
@@ -484,7 +490,7 @@ export const analyzeResume = async (req, res) => {
     console.log('🔍 Starting enhanced Gemini API analysis...');
     
     // Perform actual analysis using Gemini API
-    const { analysis: analysisResults, extractedTechnologies } = await performCVAnalysis(resumeText, jobDescriptions);
+    const { analysis: analysisResults, extractedTechnologies, technologiesUnavailable } = await performCVAnalysis(resumeText, jobDescriptions);
 
     console.log('✅ Enhanced Gemini analysis completed');
     console.log('Results summary:', analysisResults.map((r, i) => `Job ${i + 1}: ${r.matchPercentage}%`));
@@ -497,6 +503,7 @@ export const analyzeResume = async (req, res) => {
       resumeHash,
       resumeText: useProfileCV ? 'Profile CV content' : `Uploaded: ${resumeFileName}`,
       extractedTechnologies,
+      technologiesUnavailable,
       analysis: analysisResults,
       metadata: {
         useProfileCV,
@@ -504,6 +511,7 @@ export const analyzeResume = async (req, res) => {
         analysisDate: new Date().toISOString(),
         jobDescriptionCount: jobDescriptions.length,
         technologiesFound: extractedTechnologies.length,
+        technologiesUnavailable,
         apiUsed: 'Gemini 2.5 Flash Enhanced',
         realAnalysis: true,
         enhancedParsing: true
@@ -577,7 +585,7 @@ export const analyzeWithProfileCV = async (req, res) => {
       });
     }
     
-    const { analysis: analysisResults } = await performCVAnalysis(cvText, jobDescriptions);
+    const { analysis: analysisResults, technologiesUnavailable } = await performCVAnalysis(cvText, jobDescriptions);
     
     const newAnalysis = new CVAnalysis({
       userId: req.user.id,
@@ -600,7 +608,8 @@ export const analyzeWithProfileCV = async (req, res) => {
         analysisId: newAnalysis._id,
         results: analysisResults,
         cached: false,
-        usedProfileCV: true
+        usedProfileCV: true,
+        technologiesUnavailable
       }
     });
     
@@ -1249,7 +1258,6 @@ export const toggleSaveStatus = async (req, res) => {
 
 // Export utility functions for external use
 export {
-  extractTechnologiesFromResume,
   getStructuredRecommendations,
   analyzeResumeMatch,
   createResumeHash,

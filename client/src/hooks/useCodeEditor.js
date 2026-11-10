@@ -46,7 +46,9 @@ export const useCodeEditor = (supportedLanguages, addDebugLog) => {
       });
 
       if (response.status === 503) {
-        setUnavailable(true);
+        // Keep the server's plain-words reason (e.g. the daily limit) for the notice; true when there is none.
+        const body = await response.json().catch(() => ({}));
+        setUnavailable(body.error || body.message || true);
         setVerdict('unavailable');
         setCodeOutput('');
         addDebugLog('Code execution unavailable', 'error');

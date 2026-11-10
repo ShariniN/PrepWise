@@ -284,3 +284,62 @@ test('role in the JWT is ignored; the database role decides', async () => {
   const res = await request(app).get('/api/institution/people').set('Cookie', forged);
   assert.equal(res.status, 403);
 });
+
+// QA-02: a pending invitation can be cancelled. The invited user becomes 'deactivated', the token stops
+// working and the student seat is freed. Reactivating later sends a fresh invitation.
+test('cancelling a pending invitation (deactivate an invited user) frees the seat and kills the token', async () => {
+  for (let i = 0; i < 1; i++) w.addUser({ email: `full${i}@a.edu`, role: 'student', institutionId: IDS.instA });
+  const pending = w.addUser({ email: 'inv@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited', password: undefined, inviteTokenHash: 'h-123', inviteExpiresAt: new Date(Date.now() + 86400000) });
+  const usageBefore = await request(app).get('/api/institution/usage').set(as(adminA));
+  assert.equal(usageBefore.body.remaining, 0);
+  const res = await request(app).patch(`/api/institution/people/${pending._id}/deactivate`).set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.equal(pending.status, 'deactivated');
+  assert.equal(pending.inviteTokenHash, '');
+  assert.equal(pending.inviteExpiresAt, null);
+  assert.equal(res.body.user.inviteExpiresAt, null);
+  const usageAfter = await request(app).get('/api/institution/usage').set(as(adminA));
+  assert.equal(usageAfter.body.remaining, 1);
+  assert.equal(usageAfter.body.invitedStudents, 0);
+  const entry = w.audit.find((a) => a.action === 'user.deactivate');
+  assert.deepEqual(entry.meta, { inviteCancelled: true });
+});
+
+test('an invited user without a password passes model validation when deactivated', async () => {
+  const { default: userModel } = await import('../models/userModel.js');
+  const doc = new userModel({ name: 'Inv', email: 'inv2@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited' });
+  await doc.validate();
+  doc.status = 'deactivated';
+  await doc.validate(); // used to throw "Password is required" -> HTTP 500
+  doc.status = 'active';
+  await assert.rejects(doc.validate(), /Password is required/);
+});
+
+// QA-09: at the limit, each row is still labelled by its real problem; only valid new student rows are blocked_limit.
+test('CSV import at the limit validates every row first and labels each by its real reason', async () => {
+  w.institutions[IDS.instA].allowedEmailDomains = ['a.edu'];
+  for (let i = 0; i < 2; i++) w.addUser({ email: `seat${i}@a.edu`, role: 'student', institutionId: IDS.instA });
+  const csv = [
+    'email,name,role,group',
+    'stu@a.edu,Existing,student,',        // 2 existing user
+    'fresh@a.edu,Fresh,student,',         // 3 valid but no seat
+    'fresh@a.edu,Again,student,',         // 4 duplicate in file
+    'not-an-email,Bad,student,',          // 5 invalid email
+    'someone@gmail.com,Gmail,student,',   // 6 wrong domain
+    'odd@a.edu,Odd,wizard,',              // 7 invalid role
+    `long@a.edu,Long,student,${'g'.repeat(61)}`, // 8 group too long
+    'teach@a.edu,Teach,lecturer,',        // 9 staff still added
+  ].join('\n');
+  const res = await request(app).post('/api/institution/people/import').set(as(adminA)).set('Content-Type', 'text/csv').send(csv);
+  assert.equal(res.status, 200, res.text);
+  const by = Object.fromEntries(res.body.results.map((r) => [r.line, r.status]));
+  assert.deepEqual(by, { 2: 'skipped', 3: 'blocked_limit', 4: 'skipped', 5: 'error', 6: 'error', 7: 'error', 8: 'error', 9: 'invited' });
+  const reason = Object.fromEntries(res.body.results.map((r) => [r.line, r.reason]));
+  assert.match(reason[2], /already exists/);
+  assert.match(reason[4], /Duplicate/);
+  assert.match(reason[5], /valid email/);
+  assert.match(reason[6], /approved domains/);
+  assert.match(reason[3], /limit/);
+  assert.deepEqual(res.body.summary, { total: 8, skipped: 2, blocked_limit: 1, error: 4, invited: 1 });
+  assert.equal(res.body.limitReached, true);
+});

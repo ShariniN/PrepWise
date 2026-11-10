@@ -6,13 +6,15 @@ import {
   run as runOnce, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError,
 } from './execution/index.js';
 import { normalizeLanguage } from './execution/languages.js';
+import { friendlyUnavailable, unavailableReason } from './execution/errors.js';
 import { studentTestResults, storedPerTest } from './questionSerializers.js';
 
 export const CODE_TYPES = ['coding', 'debug'];
 const bad = (status, message, extra = {}) => ({ status, body: { success: false, message, ...extra } });
 const normText = (s) => String(s ?? '').trim().replace(/\r\n?/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n');
 
-export const unavailable = () => bad(503, 'Code execution is currently unavailable. Nothing was scored.', { verdict: 'unavailable' });
+// The message says why (in plain words) and that nothing was scored; `reason` lets the client react (quota, network, ...).
+export const unavailable = (error) => bad(503, `${friendlyUnavailable(error)} Nothing was scored.`, { verdict: 'unavailable', reason: unavailableReason(error) });
 
 // Returns { lang } or { error: result }.
 export const pickLanguage = (q, language) => {
@@ -29,7 +31,7 @@ export const checkSource = (source) => {
 };
 
 const handleRunError = (error) => {
-  if (error instanceof ExecutionUnavailableError) return unavailable();
+  if (error instanceof ExecutionUnavailableError) return unavailable(error);
   if (error instanceof UnsupportedLanguageError) return bad(400, error.message);
   throw error;
 };

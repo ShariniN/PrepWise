@@ -100,7 +100,8 @@ test('profile update ignores role and plan fields from the client', async () => 
     .send({ name: 'New Name', phoneNumber: '0771234567', accountType: 'Admin', accountPlan: 'premium', isAccountVerified: true });
 
   assert.equal(res.status, 200);
-  assert.deepEqual(Object.keys(captured).sort(), ['lastActive', 'name', 'phoneNumber']);
+  assert.deepEqual(Object.keys(captured), ['$set']); // only $set (no $unset when a phone is sent)
+  assert.deepEqual(Object.keys(captured.$set).sort(), ['lastActive', 'name', 'phoneNumber']);
 });
 
 test('code execution reports unavailable instead of returning fake output', async () => {

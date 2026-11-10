@@ -15,6 +15,12 @@ CORS now allows `PATCH`.
 - `userType: "fresher"` is still returned by login and is-auth for everyone.
 - New fields on login and is-auth: `role`, `institutionId` (is-auth also `status`).
 - Profile endpoints (`/api/user/*`) work for all roles. They still accept only `name` and `phoneNumber` on update.
+  `PUT /api/user/profile`: `name` required (1-100 chars); `phoneNumber` optional: absent = unchanged, `""`/`null` = cleared, otherwise
+  10-15 digits (spaces, dashes, dots and brackets are removed), else `400` "Phone number must be 10 to 15 digits (numbers only)".
+  A badly formatted phone stored before this rule is dropped (or reduced to digits) on the account's next save, so it cannot break other saves.
+  `PUT /api/user/change-password`: the new password follows the same rule as accept-invite (6+ chars, an uppercase letter, a digit, a special character), else `400`.
+  CV uploads (`PUT /api/user/upload-cv`, `POST /api/analyze/analyze-resume`, `POST /api/interviews/process-cv`): anything that is not a real PDF
+  (wrong type, or a renamed text file) gets `400` "Only PDF files are accepted. Please upload your CV as a PDF." (`message`, and `error` too).
 - `POST /api/auth/register` no longer exists (404). The signup page must be replaced by the accept-invite page.
 
 ## Invitation links
@@ -90,6 +96,8 @@ Columns: `email` (required), `name`, `role` (default `student`), `group` (option
 
 ### PATCH /api/institution/people/:id/deactivate
 200: `{ success, user: Person }`. `400` own account (`SELF`). `409` already deactivated, or the only active administrator (`LAST_ADMIN`). `404` unknown or other institution.
+Also cancels a pending invitation: an `invited` person becomes `deactivated`, the invite link stops working and the student seat is freed
+(audit `user.deactivate` with `meta: { inviteCancelled: true }`). Reactivating them later sends a fresh invitation.
 
 ### PATCH /api/institution/people/:id/reactivate
 200: `{ success, user: Person, inviteLink?, emailSent? }`. Counts against the limit for students: `409 STUDENT_LIMIT_REACHED`. `409 NOT_DEACTIVATED`.
@@ -137,7 +145,16 @@ In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, As
 ## Other behaviour the client may see
 
 - AI limit: when a university reaches its monthly AI call cap (default 20000, `Institution.monthlyAiCallCap`), the interview answer endpoint still succeeds but its `feedback.source` is `"fallback"` (basic scoring). Other AI endpoints (CV analysis, question generation) catch errors in their own way and may report a generic failure; only an uncaught cap error reaches the global handler as `429 { code: "AI_MONTHLY_CAP" }`.
+- CV analysis (`POST /api/analyze/analyze-resume`, `/analyze-profile-cv`): each job result has `recommendationsUnavailable: true` when the AI
+  could not write the advice (the advice arrays are then empty; show "AI advice is unavailable right now", not "no items"). The response has
+  `technologiesUnavailable: true` (also in `metadata`, or in `data` for the profile route) when the technologies for the skills
+  self-assessment could not be extracted; `extractedTechnologies` is then `[]` and means "unknown", not "none".
 - `feedback.source` on interview answers is `"ai"` or `"fallback"` (`"tests"` and `"human"` are reserved for later phases). Dashboards must exclude `"fallback"`. Older stored responses have no `source`.
+- The student's own interview results (`PUT /api/interviews/:id/complete`, `GET /api/interviews/:id/feedback`) also leave fallback-scored
+  answers out of `score` and `categoryPercentages`, and add `excludedFallbackAnswers`, `scoredAnswers` and `scoreIsPartial`
+  (true when some answers were left out). When no answer has a real score, `score` is `null` and no AI call is made for the overall feedback.
+- `POST /api/interviews/create` and `/create-with-profile-cv` return `usedFallbackQuestions` (top level and on `interview`; also stored on the
+  interview): `true` when the AI could not generate tailored questions and the generic practice set was used.
 - Interviews, CV analyses and skills assessments now store `institutionId` (set at creation).
 
 ## Audit actions written
