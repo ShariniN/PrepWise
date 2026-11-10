@@ -13,7 +13,8 @@ const ManagePeople = () => {
   const [people, setPeople] = useState(null);
   const [peopleError, setPeopleError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ search: '', role: '', status: '' });
+  const [filters, setFilters] = useState({ search: '', role: '', status: '', group: '' });
+  const [groups, setGroups] = useState([]);
   const [debounced, setDebounced] = useState(filters);
   const [tick, setTick] = useState(0);
 
@@ -33,6 +34,7 @@ const ManagePeople = () => {
         if (debounced.search.trim()) params.search = debounced.search.trim();
         if (debounced.role) params.role = debounced.role;
         if (debounced.status) params.status = debounced.status;
+        if (debounced.group) params.group = debounced.group;
         const { data } = await api.get('/api/institution/people', { params });
         if (cancelled) return;
         setPeople(data.people);
@@ -47,6 +49,18 @@ const ManagePeople = () => {
     })();
     return () => { cancelled = true; };
   }, [debounced, tick]);
+
+  // Every group in use, for the filter and the suggestions (from an unfiltered list, so filtering never hides a group).
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/api/institution/people')
+      .then(({ data }) => {
+        if (cancelled) return;
+        setGroups([...new Set((data.people || []).map((p) => (p.group || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [tick]);
 
   // Usage also has its own endpoint; use it to refresh the header after changes
   // and as a fallback if the people request failed.
@@ -63,13 +77,14 @@ const ManagePeople = () => {
       title="Manage your university"
       subtitle={<Link to="/admin-overview" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Adoption and renewal overview</Link>}
     >
+      <datalist id="people-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
       <div className="space-y-6">
         <UsageHeader usage={usage} error={usage ? '' : usageError} />
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           <InviteForm onDone={refresh} />
           <ImportCsv onDone={refresh} />
         </div>
-        <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} onChanged={refresh} />
+        <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} groups={groups} onChanged={refresh} />
       </div>
     </AppShell>
   );

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import api, { errorMessage } from '../../api/client';
 import { ROLE_LABELS } from '../../utils/roles';
-import { Badge, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../ui';
+import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../ui';
 import ConfirmDialog from './ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';
 
@@ -11,7 +11,50 @@ const STATUS_TONE = { active: 'success', invited: 'primary', deactivated: 'neutr
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString() : '-');
 const linkBtn = 'text-sm font-medium text-primary-700 hover:underline disabled:opacity-50';
 
-const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged }) => {
+// Inline group editor: PATCH /api/institution/people/:id/group ("" clears the group).
+const GroupCell = ({ person, onChanged }) => {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(person.group || '');
+  const [saving, setSaving] = useState(false);
+  const who = person.name || person.email;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/api/institution/people/${person.id}/group`, { group: value.trim() });
+      toast.success(value.trim() ? `Group set to ${value.trim()}` : 'Group cleared');
+      setEditing(false);
+      onChanged();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not change the group'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex flex-col items-start gap-0.5">
+        <span className={person.group ? 'whitespace-nowrap' : 'text-ink-muted'}>{person.group || 'No group'}</span>
+        <button type="button" className={linkBtn} onClick={() => { setValue(person.group || ''); setEditing(true); }}
+          aria-label={`Edit group of ${who}`}>
+          Edit group
+        </button>
+      </div>
+    );
+  }
+  return (
+    <form className="flex min-w-[14rem] flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); save(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') setEditing(false); }}>
+      <Input aria-label={`New group for ${who}`} list="people-groups" maxLength={60} autoFocus value={value}
+        onChange={(e) => setValue(e.target.value)} className="!w-40 !py-1.5" placeholder="e.g. CS 2026" />
+      <Button type="submit" size="sm" loading={saving}>Save</Button>
+      <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+    </form>
+  );
+};
+
+const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [], onChanged }) => {
   const [pending, setPending] = useState(null); // { kind, person, role? }
   const [busy, setBusy] = useState(false);
   const [links, setLinks] = useState({}); // personId -> inviteLink (non-production)
@@ -67,8 +110,8 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged })
   return (
     <Card as="section" aria-labelledby="people-h">
       <h3 id="people-h" className="mb-4 font-display text-lg font-semibold text-ink">People</h3>
-      <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_11rem]">
-        <div>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_11rem_11rem_11rem]">
+        <div className="sm:col-span-3 lg:col-span-1">
           <label htmlFor="f-search" className="sr-only">Search by name or email</label>
           <Input id="f-search" type="search" placeholder="Search name or email" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
         </div>
@@ -88,6 +131,14 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged })
             <option value="deactivated">Deactivated</option>
           </Select>
         </div>
+        <div>
+          <label htmlFor="f-group" className="sr-only">Filter by group</label>
+          <Select id="f-group" value={filters.group} onChange={(e) => setFilters({ ...filters, group: e.target.value })}>
+            <option value="">All groups</option>
+            {groups.map((g) => <option key={g} value={g}>{g}</option>)}
+            {filters.group && !groups.includes(filters.group) && <option value={filters.group}>{filters.group}</option>}
+          </Select>
+        </div>
       </div>
 
       {error && <p role="alert" className="mb-3 rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">{error}</p>}
@@ -105,13 +156,14 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged })
         <Table className="!shadow-none" >
           <caption className="sr-only">People in your university</caption>
           <THead>
-            <Tr><Th>Name</Th><Th>Email</Th><Th>Role</Th><Th>Status</Th><Th>Last active</Th><Th>Actions</Th></Tr>
+            <Tr><Th>Name</Th><Th>Email</Th><Th>Group</Th><Th>Role</Th><Th>Status</Th><Th>Last active</Th><Th>Actions</Th></Tr>
           </THead>
           <TBody>
             {people.map((p) => (
               <Tr key={p.id} className="align-top">
                 <Td className="whitespace-nowrap font-medium">{p.name}</Td>
-                <Td>{p.email}</Td>
+                <Td className="whitespace-nowrap">{p.email}</Td>
+                <Td><GroupCell key={`${p.id}-${p.group}`} person={p} onChanged={onChanged} /></Td>
                 <Td className="whitespace-nowrap">{ROLE_LABELS[p.role] || p.role}</Td>
                 <Td>
                   <Badge tone={STATUS_TONE[p.status] || 'neutral'}>{p.status}</Badge>

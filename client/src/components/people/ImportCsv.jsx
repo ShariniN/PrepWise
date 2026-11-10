@@ -4,7 +4,7 @@ import api, { errorMessage } from '../../api/client';
 import { Badge, Button, Card, Field, Table, THead, TBody, Tr, Th, Td, Textarea } from '../ui';
 import CopyLinkButton from './CopyLinkButton';
 
-const TEMPLATE = 'email,name,role\nstudent1@example.edu,Student One,student\nlecturer1@example.edu,Lecturer One,lecturer\n';
+const TEMPLATE = 'email,name,role,group\nstudent1@example.edu,Student One,student,CS 2026\nlecturer1@example.edu,Lecturer One,lecturer,\n';
 
 const STATUS_TONE = { invited: 'success', skipped: 'neutral', blocked_limit: 'danger', error: 'warning' };
 
@@ -60,7 +60,7 @@ const ImportCsv = ({ onDone }) => {
         <h3 id="csv-h" className="font-display text-lg font-semibold text-ink">Import CSV</h3>
         <Button size="sm" variant="ghost" onClick={downloadTemplate}>Download template</Button>
       </div>
-      <p className="mt-1 text-sm text-ink-2">Columns: email (required), name, role (default student). The header row is required.</p>
+      <p className="mt-1 text-sm text-ink-2">Columns: email (required), name, role (default student), group (optional, e.g. CS 2026). The header row is required.</p>
       <form onSubmit={submit} className="mt-4 space-y-4">
         <Field label="CSV file">
           {(p) => (
