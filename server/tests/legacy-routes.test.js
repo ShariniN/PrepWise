@@ -8,9 +8,9 @@ import fs from 'node:fs';
 import axios from 'axios';
 import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
-import CVAnalysis from '../models/CVAnalysisModel.js';
-import SkillsAssessment from '../models/SkillAssessorModel.js';
-import InterviewModel from '../models/InterviewModel.js';
+import CVAnalysis from '../models/CvAnalysis.js';
+import SkillsAssessment from '../models/SkillsAssessment.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import app from '../app.js';
 

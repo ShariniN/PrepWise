@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import axios from 'axios';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
-import InterviewModel from '../models/InterviewModel.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import * as exec from '../services/execution/index.js';
 import { VmProvider } from './support/vmChecker.js';

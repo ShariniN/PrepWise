@@ -3,8 +3,8 @@
 // Nothing here selects source code, CV text or interview resume text.
 import mongoose from 'mongoose';
 import Attempt from '../models/Attempt.js';
-import Interview from '../models/InterviewModel.js';
-import CVAnalysis from '../models/CVAnalysisModel.js';
+import Interview from '../models/Interview.js';
+import CVAnalysis from '../models/CvAnalysis.js';
 
 const oid = (v) => new mongoose.Types.ObjectId(String(v));
 const MAX_ROWS = 100000;

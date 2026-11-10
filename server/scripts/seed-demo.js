@@ -42,8 +42,8 @@ export const main = async () => {
   }
   await connect();
   const [{ default: Institution }, { default: userModel }, { default: Interview }, { default: CVAnalysis }, { default: SkillsAssessment }, { default: Attempt }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'), import('../models/InterviewModel.js'),
-    import('../models/CVAnalysisModel.js'), import('../models/SkillAssessorModel.js'), import('../models/Attempt.js'),
+    import('../models/Institution.js'), import('../models/User.js'), import('../models/Interview.js'),
+    import('../models/CvAnalysis.js'), import('../models/SkillsAssessment.js'), import('../models/Attempt.js'),
   ]);
 
   const reset = process.argv.includes('--reset');

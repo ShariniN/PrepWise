@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
-import userModel from '../models/userModel.js';
-import InterviewModel from '../models/InterviewModel.js';
-import CVAnalysis from '../models/CVAnalysisModel.js';
-import SkillsAssessment from '../models/SkillAssessorModel.js';
+import userModel from '../models/User.js';
+import InterviewModel from '../models/Interview.js';
+import CVAnalysis from '../models/CvAnalysis.js';
+import SkillsAssessment from '../models/SkillsAssessment.js';
 import ConsentRecord from '../models/ConsentRecord.js';
 
 // Collections written by features that have since been removed (courses/enrolment). Older databases may still

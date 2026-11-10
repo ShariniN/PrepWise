@@ -1,7 +1,7 @@
 import pdfParse from "pdf-parse";
 import crypto from 'crypto';
-import CVAnalysis from "../models/CVAnalysisModel.js";
-import userModel from '../models/userModel.js';
+import CVAnalysis from "../models/CvAnalysis.js";
+import userModel from '../models/User.js';
 import { GEMINI_MODEL, CV_MODELS, AI_MODELS } from '../config/ai.js';
 import { generateWithFallback } from '../services/geminiClient.js';
 import { scoreResume } from '../services/cvScoring.js';

@@ -1,4 +1,4 @@
-import userModel from "../models/userModel.js";
+import userModel from "../models/User.js";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto';
 import pdf from 'pdf-parse';

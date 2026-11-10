@@ -1,4 +1,3 @@
-// models/SkillsAssessmentModel.js - Skills Assessment Model
 import mongoose from 'mongoose';
 
 const skillsAssessmentSchema = new mongoose.Schema({

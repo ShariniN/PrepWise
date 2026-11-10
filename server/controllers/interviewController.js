@@ -1,5 +1,5 @@
-import InterviewModel from '../models/InterviewModel.js';
-import userModel from '../models/userModel.js';
+import InterviewModel from '../models/Interview.js';
+import userModel from '../models/User.js';
 import pdfUpload, { NOT_PDF_MESSAGE } from '../middleware/pdfUpload.js';
 import pdfParse from 'pdf-parse';
 import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from './services/aiService.js';

@@ -1,4 +1,4 @@
-import userModel from '../models/userModel.js';
+import userModel from '../models/User.js';
 import Institution from '../models/Institution.js';
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

@@ -1,4 +1,3 @@
-// models/CVAnalysisModel.js - Updated with minimal changes for user CV reference
 import mongoose from 'mongoose';
 
 const cvAnalysisSchema = new mongoose.Schema({

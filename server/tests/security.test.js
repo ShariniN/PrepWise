@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 import app from '../app.js';
-import userModel from '../models/userModel.js';
+import userModel from '../models/User.js';
 import transporter from '../config/nodemailer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));

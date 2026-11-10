@@ -8,8 +8,8 @@ const main = async () => {
   const { values } = parseArgs({ options: { limit: { type: 'string', default: '1000' } } });
   await connect();
   const [{ default: Institution }, { default: userModel }, { default: InterviewModel }, { default: CVAnalysis }, { default: SkillsAssessment }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'), import('../models/InterviewModel.js'),
-    import('../models/CVAnalysisModel.js'), import('../models/SkillAssessorModel.js'),
+    import('../models/Institution.js'), import('../models/User.js'), import('../models/Interview.js'),
+    import('../models/CvAnalysis.js'), import('../models/SkillsAssessment.js'),
   ]);
 
   let inst = await Institution.findOne({ slug: 'default' });

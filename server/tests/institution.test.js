@@ -306,7 +306,7 @@ test('cancelling a pending invitation (deactivate an invited user) frees the sea
 });
 
 test('an invited user without a password passes model validation when deactivated', async () => {
-  const { default: userModel } = await import('../models/userModel.js');
+  const { default: userModel } = await import('../models/User.js');
   const doc = new userModel({ name: 'Inv', email: 'inv2@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited' });
   await doc.validate();
   doc.status = 'deactivated';

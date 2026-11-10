@@ -35,7 +35,7 @@ const main = async () => {
   const args = parseCreateArgs(process.argv.slice(2));
   await connect();
   const [{ default: Institution }, { default: userModel }, { audit }, tokens, { sendInviteEmail }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'), import('../services/audit.js'),
+    import('../models/Institution.js'), import('../models/User.js'), import('../services/audit.js'),
     import('../services/inviteTokens.js'), import('../services/peopleService.js'),
   ]);
 
