@@ -64,7 +64,7 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', 
 
 export const sendInviteEmail = async (institution, user, link) => {
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.SENDER_EMAIL,
       to: user.email,
       subject: `You have been invited to PrepWise by ${institution.name}`,
@@ -73,7 +73,8 @@ export const sendInviteEmail = async (institution, user, link) => {
 <p><a href="${link}">Accept your invitation and set a password</a></p>
 <p>This link is valid for 7 days. If you did not expect this email, you can ignore it.</p>`,
     });
-    return true;
+    // false when the email was suppressed outside production (see config/nodemailer.js)
+    return !info?.suppressed;
   } catch (error) {
     console.error('Invite email failed:', error.message);
     return false;
