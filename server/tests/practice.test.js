@@ -245,3 +245,26 @@ test('edit events: size caps, validation, and institution/user scoping', async (
   assert.equal(db.batches.at(-1).events[0].text.length, 2000);
   assert.equal(db.batches.length, 2);
 });
+
+// QA-13: the student is told why the sandbox is unavailable (a friendly version of the real reason).
+test('sandbox outage: the reason reaches the student in plain words', async () => {
+  provider.down = 'quota';
+  const sub = await api(stuA).post(`/questions/${qA._id}/submit`, { language: 'javascript', source: DOUBLE });
+  assert.equal(sub.status, 503);
+  assert.equal(sub.body.reason, 'quota');
+  assert.match(sub.body.message, /Code execution limit for today has been reached/);
+  assert.match(sub.body.message, /Nothing was scored/);
+  provider.down = 'network';
+  const run = await api(stuA).post(`/questions/${qA._id}/run`, { language: 'javascript', source: DOUBLE });
+  assert.equal(run.body.reason, 'network');
+  assert.match(run.body.message, /could not be reached/);
+  assert.doesNotMatch(run.body.message, /down for test/, 'internal details are not passed through');
+});
+
+test('sandbox outage on /api/code/execute also gives the friendly reason', async () => {
+  provider.down = 'quota';
+  const res = await request(app).post('/api/code/execute').set(as(stuA)).send({ language: 'javascript', script: 'console.log(1)' });
+  assert.equal(res.status, 503);
+  assert.equal(res.body.reason, 'quota');
+  assert.match(res.body.error, /limit for today/);
+});

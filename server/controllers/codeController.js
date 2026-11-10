@@ -1,5 +1,6 @@
 // Free-form "run my code" for the interview page and the old editor. Same single execution service as everything else.
 import { run, status, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError } from '../services/execution/index.js';
+import { friendlyUnavailable, unavailableReason } from '../services/execution/errors.js';
 
 // Response keeps the shape the client already reads: success, output, error, executionTime (seconds), memory (KB), statusCode.
 // New field `verdict` is additive.
@@ -25,7 +26,7 @@ export const executeCode = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof ExecutionUnavailableError) {
-      return res.status(503).json({ success: false, verdict: 'unavailable', error: 'Code execution is currently unavailable. Your work has not been scored.' });
+      return res.status(503).json({ success: false, verdict: 'unavailable', reason: unavailableReason(error), error: `${friendlyUnavailable(error)} Your work has not been scored.` });
     }
     if (error instanceof UnsupportedLanguageError) {
       return res.status(400).json({ success: false, error: `${error.message}. Supported languages: JavaScript, Python, Java, C++, C, C#, PHP, Go` });

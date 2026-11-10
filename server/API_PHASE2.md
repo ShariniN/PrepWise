@@ -10,8 +10,10 @@ Common statuses: `401` not signed in, `403` wrong role, `404` not found / not yo
 ## Concepts
 
 - **Execution unavailable.** If the sandbox cannot run code, run/submit/validate return `503` with
-  `{ success:false, verdict:"unavailable", message }`. Nothing is scored or stored. The client should show
-  "Code execution is unavailable right now" and let the student keep editing.
+  `{ success:false, verdict:"unavailable", reason, message }`. Nothing is scored or stored. `reason` is `quota`, `network`, `auth`,
+  `not_configured`, `bad_response` or `unavailable`; `message` says it in plain words, e.g. "Code execution limit for today has been
+  reached. Try again tomorrow. Nothing was scored." The client shows `message` once and lets the student keep editing.
+  (`POST /api/code/execute` has the same `reason` and puts the text in `error`.)
 - **Verdicts:** `accepted`, `wrong_answer`, `time_limit`, `memory_limit`, `compile_error`, `runtime_error`, `unavailable`
   (never inside a 200; only on 503). Overall verdict for a submission is `accepted` when every test passes, otherwise the most
   serious failure (`compile_error`, `runtime_error`, `time_limit`, `memory_limit`, then `wrong_answer`).

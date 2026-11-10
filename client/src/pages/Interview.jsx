@@ -974,7 +974,7 @@ const MockInterviewSystem = () => {
                   />
                 </div>
 
-                {codeEditor.unavailable && <UnavailableNotice />}
+                {codeEditor.unavailable && <UnavailableNotice message={codeEditor.unavailable} />}
                 {codeEditor.verdict && !codeEditor.unavailable && <VerdictBadge verdict={codeEditor.verdict} />}
 
                 {codeEditor.codeOutput && (

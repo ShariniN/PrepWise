@@ -155,7 +155,7 @@ const QuestionEditor = () => {
       )}
 
       {!isNew && <PublishGate question={question} dirty={dirty} busy={busy} onStatus={changeStatus} onValidate={validate} canValidate={!disabled} />}
-      {unavailable && <UnavailableNotice message={unavailable.message || 'The sandbox could not run your code, so validation was not recorded.'} />}
+      {unavailable && <UnavailableNotice title="Validation could not run" message={unavailable.message || 'The code runner is unavailable, so validation was not recorded. Try again in a few minutes.'} />}
       {validation && <Panel><ValidationResults result={validation} /></Panel>}
 
       <Panel>

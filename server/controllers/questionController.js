@@ -6,6 +6,7 @@ import { audit } from '../services/audit.js';
 import { gradeTests } from '../services/grading.js';
 import { ExecutionUnavailableError, UnsupportedLanguageError, MAX_SOURCE_CHARS } from '../services/execution/index.js';
 import { normalizeLanguage } from '../services/execution/languages.js';
+import { friendlyUnavailable, unavailableReason } from '../services/execution/errors.js';
 import { draftQuestions } from '../services/questionDrafting.js';
 import { QUESTION_TYPES, QUESTION_STATUSES, DIFFICULTIES, AUTO_CODE_TYPES } from '../models/Question.js';
 import { contentHash, staffQuestion, staffListItem, staffTest } from '../services/questionSerializers.js';
@@ -271,7 +272,7 @@ export const validateQuestion = async (req, res) => {
         : 'The wrong solution passes every test, so the tests are too weak.'),
     });
   } catch (error) {
-    if (error instanceof ExecutionUnavailableError) return fail(res, 503, 'Code execution is currently unavailable. Nothing was validated.', { verdict: 'unavailable' });
+    if (error instanceof ExecutionUnavailableError) return fail(res, 503, `${friendlyUnavailable(error)} Nothing was validated.`, { verdict: 'unavailable', reason: unavailableReason(error) });
     if (error instanceof UnsupportedLanguageError) return fail(res, 400, error.message);
     throw error;
   }
