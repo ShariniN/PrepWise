@@ -8,7 +8,7 @@ import { VmProvider } from './support/vmChecker.js';
 import * as exec from '../services/execution/index.js';
 import { gradeTests } from '../services/grading.js';
 import { loadSeedFiles, upsertSeeds, toQuestionDoc } from '../services/seedQuestions.js';
-import questionRepo from '../repositories/questionRepo.js';
+import questionRepo from '../modules/practice/practice.repo.js';
 
 const seeds = loadSeedFiles();
 const coding = seeds.filter((s) => s.type === 'coding');

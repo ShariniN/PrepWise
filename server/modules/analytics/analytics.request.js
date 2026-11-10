@@ -1,4 +1,4 @@
-// Small request helpers shared by the analytics, lecturer and grading controllers.
+// Small request helpers shared by the analytics and lecturer controllers.
 export const isId = (v) => /^[a-f\d]{24}$/i.test(String(v));
 export const fail = (res, status, message, extra = {}) => res.status(status).json({ success: false, message, ...extra });
 

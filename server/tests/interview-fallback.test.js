@@ -44,7 +44,7 @@ test('calculateFinalResults without fallback answers is unchanged and not partia
 let w, student, interview, aiCalls, aiDown, saved;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
+  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   interview = {
@@ -63,12 +63,12 @@ beforeEach(() => {
     aiCalls += 1;
     // "Down" = the model answers with something unusable. (Throwing here would make aiService fall back to the
     // Gemini SDK, which would try the network.)
-    if (aiDown) return { data: { response: 'Sorry, I cannot help with that right now.' } };
-    return { data: { response: JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' }) } };
+    if (aiDown) return { data: { generated_text: 'Sorry, I cannot help with that right now.' } };
+    return { data: { generated_text: JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' }) } };
   });
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; });
+afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
 
 const as = () => ({ Cookie: w.cookie(student) });
 
@@ -105,7 +105,7 @@ test('interview creation reports when the generic fallback questions were used',
 });
 
 test('interview creation with AI questions says usedFallbackQuestions: false', async () => {
-  mock.method(axios, 'post', async () => ({ data: { response: JSON.stringify([
+  mock.method(axios, 'post', async () => ({ data: { generated_text: JSON.stringify([
     { questionId: 'q1', type: 'behavioral', question: 'Tell me about your Node.js project', category: 'x', difficulty: 'easy' },
   ]) } }));
   const res = await request(app).post('/api/interviews/create').set(as())

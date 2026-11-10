@@ -1,8 +1,7 @@
-// In-memory stand-ins for analyticsRepo, gradingRepo and the AI usage store. Like the real repositories they
+// In-memory stand-ins for analyticsRepo and the AI usage store. Like the real repositories they
 // filter by institutionId, so a controller that forgets to scope a query leaks data and a test fails.
 import { mock } from 'node:test';
 import analyticsRepo from '../../modules/analytics/analytics.repo.js';
-import gradingRepo from '../../modules/grading/grading.repo.js';
 import { usageRepo } from '../../services/aiUsage.js';
 import { installQuestionWorld } from './questionWorld.js';
 import { newId } from '../helpers.js';
@@ -33,26 +32,6 @@ export const installAnalyticsWorld = (world) => {
   });
 
   mock.method(usageRepo, 'getCalls', async (inst) => db.aiCalls[String(inst)] || 0);
-
-  // grading repo, mirroring the Mongo filters
-  mock.method(gradingRepo, 'list', async (inst, { status = 'pending', userIds = null, questionId = null } = {}) => db.attempts
-    .filter((a) => same(a.institutionId, inst) && a.runKind === 'submit'
-      && (status === 'reviewed' ? a.review?.final?.source === 'human' : a.needsReview === true)
-      && (!userIds || inIds(userIds, a.userId)) && (!questionId || same(a.questionId, questionId))).map(clone));
-  mock.method(gradingRepo, 'find', async (inst, id) => clone(db.attempts.find((a) => same(a._id, id) && same(a.institutionId, inst) && a.runKind === 'submit'
-    && (a.needsReview === true || a.review?.final?.source === 'human'))) || null);
-  mock.method(gradingRepo, 'saveSuggestion', async (inst, id, s) => {
-    const a = db.attempts.find((x) => same(x._id, id) && same(x.institutionId, inst) && x.needsReview === true);
-    if (!a) return null;
-    a.review = { ...(a.review || {}), aiSuggestion: clone(s) };
-    return clone(a);
-  });
-  mock.method(gradingRepo, 'confirm', async (inst, id, final, score) => {
-    const a = db.attempts.find((x) => same(x._id, id) && same(x.institutionId, inst) && x.needsReview === true);
-    if (!a) return null;
-    Object.assign(a, { review: { ...(a.review || {}), final: clone(final) }, score, scoreSource: 'human', verdict: 'reviewed', needsReview: false });
-    return clone(a);
-  });
 
   // seeding helper: one attempt row
   db.addAttempt = (fields) => {

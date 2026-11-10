@@ -87,18 +87,3 @@ export const gradeVisibleFirst = async ({ language, source, tests, limits }) => 
   const perTest = tests.map((t) => (t.visible ? queues.v.shift() : queues.h.shift()));
   return { perTest, verdict: overallVerdict(perTest), score: scoreOf(perTest, tests), notRun: visibleOk ? 0 : hidden.length };
 };
-
-/**
- * Runs tests one at a time, in order, and stops at the first one that does not pass. For checks that only need to
- * know whether some test fails (the lecturer's wrong solution). `perTest` holds only the tests that actually ran.
- */
-export const gradeUntilFirstFailure = async ({ language, source, tests, limits }) => {
-  const perTest = [];
-  for (const t of tests) {
-    const [r] = await runMany([{ language, source, stdin: t.input, limits }]);
-    const p = judge(t, r);
-    perTest.push(p);
-    if (!p.passed) break;
-  }
-  return { perTest, failed: perTest.some((p) => !p.passed), notRun: tests.length - perTest.length };
-};

@@ -10,7 +10,7 @@ const clone = (o) => (o == null ? o : structuredClone(Object.fromEntries(Object.
 const inIds = (ids, v) => ids.some((i) => same(i, v));
 
 export const installLecturerWorld = (world) => {
-  const db = { interviews: [], cvs: [], skills: [], attempts: [] };
+  const db = { interviews: [], cvs: [], attempts: [] };
   world.ldb = db;
   const isStudent = (u, inst) => same(u.institutionId, inst) && u.role === 'student' && u.status === 'active';
 
@@ -23,8 +23,6 @@ export const installLecturerWorld = (world) => {
   mock.method(lecturerRepo, 'findInterview', async (inst, uid, id) =>
     clone(db.interviews.find((i) => same(i._id, id) && same(i.institutionId, inst) && same(i.userId, uid))) || null);
   mock.method(lecturerRepo, 'cvAnalysesFor', async (inst, ids) => db.cvs.filter((c) => same(c.institutionId, inst) && inIds(ids, c.userId)).map(clone));
-  mock.method(lecturerRepo, 'latestSkillAssessment', async (inst, uid) =>
-    clone(db.skills.filter((s) => same(s.institutionId, inst) && same(s.userId, uid)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]) || null);
   mock.method(lecturerRepo, 'attemptsFor', async (inst, ids) =>
     db.attempts.filter((a) => same(a.institutionId, inst) && inIds(ids, a.userId) && ['run', 'submit'].includes(a.runKind) && !a.assessmentSessionId).map(clone));
 

@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import request from 'supertest';
-import { makeWorld, IDS, newId } from './helpers.js';
-import { installAnalyticsWorld } from './support/analyticsWorld.js';
+import { makeWorld, IDS } from './helpers.js';
+import { installQuestionWorld } from './support/questionWorld.js';
 import app from '../app.js';
 
 let w, admin, lecturer, student;
@@ -53,6 +53,10 @@ export const REMOVED = [
   ['get', '/api/swot/ratings/abc'], ['delete', `/api/swot/delete/${id}`],
   ['post', '/api/interviews/execute'], ['get', '/api/interviews/user/history'],
   ['post', `/api/interviews/${id}/answer`], ['post', `/api/interviews/${id}/skip`],
+  // lean refactor: skills self-assessment, lecturer question authoring, grading, edit-event tracking
+  ['get', '/api/swot/assessments'], ['post', '/api/questions'], ['post', '/api/questions/x/validate'],
+  ['post', '/api/questions/draft'], ['get', '/api/user/skills-assessments'], ['delete', `/api/user/assessment/${id}`],
+  ['post', '/api/swot/save-ratings'], ['get', '/api/grading/queue']
 ];
 
 test('every removed endpoint returns a JSON 404 for every role', async () => {
@@ -65,13 +69,22 @@ test('every removed endpoint returns a JSON 404 for every role', async () => {
   }
 });
 
-test('the grading queue no longer takes a course filter, and practice has no assessment lock', async () => {
-  installAnalyticsWorld(w);
-  const res = await request(app).get('/api/grading/queue').query({ courseId: newId() }).set('Cookie', w.cookie(lecturer));
-  assert.equal(res.status, 200, 'courseId is ignored');
+test('practice has no edit-event tracking and no assessment lock', async () => {
+  const res = await request(app).post('/api/practice/attempts/x/events').set('Cookie', w.cookie(student)).send({ events: [] });
+  assert.equal(res.status, 404);
+  const res2 = await request(app).post('/api/practice/x/events').set('Cookie', w.cookie(student)).send({});
+  assert.equal(res2.status, 404);
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const src = fs.readFileSync(path.join(here, '..', 'routes', 'practiceRoutes.js'), 'utf8');
-  assert.doesNotMatch(src, /blockLocked|ASSESSMENT_IN_PROGRESS/);
+  const src = fs.readFileSync(path.join(here, '..', 'modules', 'practice', 'practice.routes.js'), 'utf8');
+  assert.doesNotMatch(src, /blockLocked|ASSESSMENT_IN_PROGRESS|events/);
+});
+
+test('practice submit refuses short answers', async () => {
+  const db = installQuestionWorld(w);
+  const sq = db.addQuestion({ institutionId: IDS.instA, type: 'short', title: 'Why?' });
+  const res = await request(app).post(`/api/practice/questions/${sq._id}/submit`).set('Cookie', w.cookie(student)).send({ answer: 'Because.' });
+  assert.equal(res.status, 400);
+  assert.equal(db.attempts.length, 0);
 });
 
 test('no source file imports a removed model, repository or service', () => {
@@ -82,7 +95,7 @@ test('no source file imports a removed model, repository or service', () => {
     const p = path.join(dir, e.name);
     return e.isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : [];
   });
-  const removed = /models\/(Course|Cohort|Enrollment|Assessment|AssessmentSession|IntegrityEvent|ReviewCase|SimilarityPair)\.js|courseRepo|courseAccess|assessmentRepo|services\/(integrity|similarity|assessments)\/|careersController|purge-evidence/;
+  const removed = /models\/(Course|Cohort|Enrollment|Assessment|AssessmentSession|IntegrityEvent|ReviewCase|SimilarityPair|Rubric|SkillsAssessment|EditEventBatch)\.js|repositories\/questionRepo|questionController|questionRoutes|questionDrafting|modules\/(skills|grading)\/|courseRepo|courseAccess|assessmentRepo|services\/(integrity|similarity|assessments)\/|careersController|purge-evidence/;
   const offenders = walk(serverDir).filter((f) => !f.endsWith('removed-routes.test.js') && removed.test(fs.readFileSync(f, 'utf8')));
   assert.deepEqual(offenders, []);
 });

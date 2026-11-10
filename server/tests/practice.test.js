@@ -5,6 +5,8 @@ import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import { installQuestionWorld } from './support/questionWorld.js';
 import { VmProvider } from './support/vmChecker.js';
+import practiceRepo from '../modules/practice/practice.repo.js';
+import Question from '../models/Question.js';
 import * as exec from '../services/execution/index.js';
 import app from '../app.js';
 
@@ -199,14 +201,6 @@ test('trace questions are marked server-side and the answer is never sent', asyn
   assert.equal((await api(stuA).post(`/questions/${tq._id}/submit`, { answer: ' 1 2 3 \n' })).body.verdict, 'accepted');
 });
 
-test('short answers are stored for review, not scored', async () => {
-  const sq = db.addQuestion({ institutionId: IDS.instA, type: 'short', title: 'Why?' });
-  const res = await api(stuA).post(`/questions/${sq._id}/submit`, { answer: 'Because.' });
-  assert.equal(res.body.verdict, 'pending_review');
-  assert.equal(db.attempts.at(-1).needsReview, true);
-  assert.equal(db.attempts.at(-1).score, null);
-});
-
 test('draft + autosave: one draft per student per question, private to the student and university', async () => {
   const start = await api(stuA).post(`/questions/${qA._id}/attempts`, {});
   assert.equal(start.status, 200);
@@ -226,24 +220,34 @@ test('draft + autosave: one draft per student per question, private to the stude
   assert.equal((await api(stuA).put(`/attempts/${id}/autosave`, { language: 'javascript', source: 'x'.repeat(70000) })).status, 400);
 });
 
-test('edit events: size caps, validation, and institution/user scoping', async () => {
-  const id = (await api(stuA).post(`/questions/${qA._id}/attempts`, {})).body.draft.attemptId;
-  const ev = (n) => Array.from({ length: n }, (_, i) => ({ t: i, type: 'insert', len: 1, pos: i, text: 'a' }));
-  const ok = await api(stuA).post(`/attempts/${id}/events`, { events: ev(10), seq: 1 });
-  assert.equal(ok.status, 201);
-  assert.equal(db.batches.length, 1);
-  assert.equal(String(db.batches[0].institutionId), IDS.instA);
-  assert.equal((await api(stuA).post(`/attempts/${id}/events`, { events: ev(501) })).status, 413);
-  const fat = Array.from({ length: 100 }, (_, i) => ({ t: i, type: 'paste', len: 1, text: 'z'.repeat(2000) }));
-  assert.equal((await api(stuA).post(`/attempts/${id}/events`, { events: fat })).status, 413);
-  assert.equal((await api(stuA).post(`/attempts/${id}/events`, { events: [{ t: 1, type: 'explode' }] })).status, 400);
-  assert.equal((await api(stuA).post(`/attempts/${id}/events`, { events: [] })).status, 400);
-  assert.equal((await api(stuA2).post(`/attempts/${id}/events`, { events: ev(1) })).status, 404);
-  assert.equal((await api(stuB).post(`/attempts/${id}/events`, { events: ev(1) })).status, 404);
-  const long = await api(stuA).post(`/attempts/${id}/events`, { events: [{ t: 1, type: 'paste', len: 5, text: 'q'.repeat(5000) }] });
-  assert.equal(long.status, 201);
-  assert.equal(db.batches.at(-1).events[0].text.length, 2000);
-  assert.equal(db.batches.length, 2);
+// The real repo function runs against a stand-in for Question.aggregate that applies the $match it is given.
+const matchesFilter = (doc, filter) => Object.entries(filter).every(([key, cond]) => {
+  const have = doc[key];
+  if (cond && typeof cond === 'object' && !Array.isArray(cond)) {
+    if (cond.$in) return cond.$in.some((v) => String(v ?? '') === String(have ?? ''));
+    if (cond.$nin) return !cond.$nin.some((v) => String(v) === String(have));
+  }
+  return Array.isArray(have) ? have.includes(cond) : have === cond;
+});
+
+test('findCodingQuestion skips excluded ids and wrong language', async () => {
+  const seedQ = (title, extra = {}) => db.addQuestion({ institutionId: null, source: 'seed', type: 'coding', difficulty: 'easy', title, ...extra });
+  const js = seedQ('JS easy');
+  const py = seedQ('Py easy', { languages: ['python'] });
+  seedQ('JS hard', { difficulty: 'hard' });
+  seedQ('Draft', { status: 'draft' });
+  seedQ('Mcq', { type: 'mcq' });
+  db.addQuestion({ institutionId: IDS.instA, source: 'lecturer', title: 'Lecturer made' });
+  mock.method(Question, 'aggregate', async (pipeline) => db.questions.filter((d) => matchesFilter(d, pipeline[0].$match)).slice(0, 1));
+  const find = (extra) => practiceRepo.findCodingQuestion({ institutionId: IDS.instA, difficulty: 'easy', language: 'javascript', excludeIds: [], ...extra });
+
+  assert.equal(String((await find({ language: 'python' }))._id), String(py._id), 'wrong language is skipped');
+  assert.equal(await find({ language: 'java' }), null, 'no question supports the language');
+  const first = await find({ excludeIds: [js._id] });
+  assert.notEqual(first && String(first._id), String(js._id), 'excluded ids are skipped');
+  const all = db.questions.filter((d) => d.difficulty === 'easy' && d.type === 'coding' && d.source === 'seed' && d.languages.includes('javascript')).map((d) => d._id);
+  assert.equal(await find({ excludeIds: all }), null, 'nothing left');
+  assert.equal(await find({ difficulty: 'medium' }), null, 'no question at that difficulty');
 });
 
 // QA-13: the student is told why the sandbox is unavailable (a friendly version of the real reason).

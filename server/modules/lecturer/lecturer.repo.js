@@ -6,7 +6,6 @@
 import userModel from '../../models/User.js';
 import Interview from '../../models/Interview.js';
 import CVAnalysis from '../../models/CvAnalysis.js';
-import SkillsAssessment from '../../models/SkillsAssessment.js';
 import Attempt from '../../models/Attempt.js';
 
 const MAX_ROWS = 100000;
@@ -53,15 +52,11 @@ const lecturerRepo = {
     return CVAnalysis.find({ institutionId, userId: { $in: userIds } }).select(CV_FIELDS).limit(MAX_ROWS).lean();
   },
 
-  latestSkillAssessment: (institutionId, userId) =>
-    SkillsAssessment.findOne({ institutionId, userId }).sort({ createdAt: -1 })
-      .select('userId createdAt updatedAt skills.name skills.category skills.proficiencyLevel').lean(),
-
   // Run and submit attempts (no source code, no answers). Legacy assessment-mode rows are left out.
   attemptsFor: (institutionId, userIds) => {
     if (!userIds.length) return Promise.resolve([]);
     return Attempt.find({ institutionId, userId: { $in: userIds }, runKind: { $in: ['run', 'submit'] }, assessmentSessionId: null })
-      .select('userId questionId runKind verdict score scoreSource createdAt needsReview review.aiSuggestion.at review.final.at')
+      .select('userId questionId runKind verdict score scoreSource createdAt')
       .limit(MAX_ROWS).lean();
   },
 };

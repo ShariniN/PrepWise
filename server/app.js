@@ -7,18 +7,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import authRouter from './modules/auth/auth.routes.js';
-import skillAssessor from './modules/skills/skills.routes.js';
 import userRouter from './modules/users/users.routes.js';
 import analysisRouter from './modules/cvAnalysis/cvAnalysis.routes.js';
 import interviewRouter from './modules/interviews/interviews.routes.js';
-import codeRouter from './routes/codeRoutes.js';
+import codeRouter from './modules/code/code.routes.js';
 import institutionRouter from './modules/people/people.routes.js';
 import meRouter from './modules/compliance/me.routes.js';
 import complianceRouter from './modules/compliance/compliance.routes.js';
-import practiceRouter from './routes/practiceRoutes.js';
-import questionRouter from './routes/questionRoutes.js';
+import practiceRouter from './modules/practice/practice.routes.js';
 import analyticsRouter from './modules/analytics/analytics.routes.js';
-import gradingRouter from './modules/grading/grading.routes.js';
 import lecturerRouter from './modules/lecturer/lecturer.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -53,16 +50,13 @@ app.use(cors({
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/analyze', analysisRouter);
-app.use('/api/swot', skillAssessor);
 app.use('/api/interviews', interviewRouter);
 app.use('/api/code', codeRouter);
 app.use('/api/institution', institutionRouter);
 app.use('/api/me', meRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/practice', practiceRouter);
-app.use('/api/questions', questionRouter);
 app.use('/api/analytics', analyticsRouter);
-app.use('/api/grading', gradingRouter);
 app.use('/api/lecturer', lecturerRouter);
 
 // Unknown API paths must return JSON 404, never the web page

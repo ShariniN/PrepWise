@@ -1,6 +1,6 @@
 // Free-form "run my code" for the interview page and the old editor. Same single execution service as everything else.
-import { run, status, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError } from '../services/execution/index.js';
-import { friendlyUnavailable, unavailableReason } from '../services/execution/errors.js';
+import { run, status, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError } from '../../services/execution/index.js';
+import { friendlyUnavailable, unavailableReason } from '../../services/execution/errors.js';
 
 // Response keeps the shape the client already reads: success, output, error, executionTime (seconds), memory (KB), statusCode.
 // New field `verdict` is additive.

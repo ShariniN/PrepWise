@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-export const QUESTION_TYPES = ['coding', 'debug', 'trace', 'mcq', 'short', 'behavioural'];
-export const QUESTION_STATUSES = ['draft', 'in_review', 'published', 'retired'];
+export const QUESTION_TYPES = ['coding', 'debug', 'trace', 'mcq'];
+export const QUESTION_STATUSES = ['draft', 'published', 'retired'];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
 export const AUTO_CODE_TYPES = ['coding', 'debug']; // marked by running tests in the sandbox
 
@@ -12,22 +12,9 @@ const codeSchema = new Schema({
   source: { type: String, maxlength: 65536 },
 }, { _id: false });
 
-const validationSchema = new Schema({
-  passed: { type: Boolean, default: false },
-  contentHash: { type: String },       // hash of everything that matters (statement, tests, solutions, limits)
-  version: { type: Number },           // question version the validation ran against
-  referencePassed: { type: Boolean },
-  wrongSolutionChecked: { type: Boolean, default: false },
-  wrongSolutionFailed: { type: Boolean },
-  testsRun: { type: Number },
-  at: { type: Date },
-  byUserId: { type: Schema.Types.ObjectId, ref: 'User' },
-}, { _id: false });
-
 const questionSchema = new Schema({
   // null institutionId = the global seed bank: readable by every tenant, editable by nobody
   institutionId: { type: Schema.Types.ObjectId, ref: 'Institution', default: null, index: true },
-  authorId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   slug: { type: String, trim: true, maxlength: 120 },
   title: { type: String, required: true, trim: true, maxlength: 200 },
   statement: { type: String, default: '', maxlength: 20000 },
@@ -40,10 +27,9 @@ const questionSchema = new Schema({
   memoryLimitKb: { type: Number, default: 256000, min: 16000, max: 512000 },
   estimatedMinutes: { type: Number, min: 1, max: 240 },
   learningOutcome: { type: String, trim: true, maxlength: 500, default: '' },
-  source: { type: String, enum: ['lecturer', 'ai_drafted', 'seed'], default: 'lecturer' },
+  source: { type: String, enum: ['seed'] },
   status: { type: String, enum: QUESTION_STATUSES, default: 'draft' },
   version: { type: Number, default: 1, min: 1 },
-  publishedHash: { type: String },
   // Staff-only fields. Student serializers whitelist fields, but keep these out of default selects too.
   referenceSolution: { type: codeSchema, select: false },
   altReferenceSolutions: { type: [codeSchema], select: false },
@@ -53,10 +39,6 @@ const questionSchema = new Schema({
   multi: { type: Boolean, default: false },             // mcq: more than one correct option
   traceAnswer: { type: String, select: false, maxlength: 2000 }, // trace: expected output
   explanation: { type: String, select: false, maxlength: 4000 }, // shown only after an answer is submitted
-  validation: { type: validationSchema, select: false },
-  duplicatedFrom: { type: Schema.Types.ObjectId, default: null },
-  // Free-text label lecturers use to group interchangeable questions in the bank.
-  variantGroup: { type: String, trim: true, maxlength: 80, default: null },
 }, { timestamps: true, collection: 'questions' });
 
 questionSchema.index({ institutionId: 1, status: 1, type: 1 });

@@ -1,7 +1,7 @@
 import express from 'express';
 import expressRateLimit from 'express-rate-limit';
-import userAuth from '../middleware/userAuth.js';
-import { executeCode, executionHealth } from '../controllers/codeController.js';
+import userAuth from '../../middleware/userAuth.js';
+import { executeCode, executionHealth } from './code.controller.js';
 
 const codeRouter = express.Router();
 

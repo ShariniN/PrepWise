@@ -10,7 +10,6 @@ import request from 'supertest';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { makeWorld, IDS, newId } from './helpers.js';
 import CVAnalysis from '../models/CvAnalysis.js';
-import SkillsAssessment from '../models/SkillsAssessment.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import app from '../app.js';
@@ -54,13 +53,13 @@ const chain = (getDocs) => {
   return q;
 };
 
-let w, student, cvStore, skillStore, ivStore;
+let w, student, cvStore, ivStore;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
+  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ name: 'Stu', email: 's@a.edu', institutionId: IDS.instA });
-  cvStore = []; skillStore = []; ivStore = [];
+  cvStore = []; ivStore = [];
 
   mock.method(CVAnalysis, 'find', (q) => chain(() => cvStore.filter((d) => matches(d, q))));
   mock.method(CVAnalysis, 'findOne', async (q) => cvStore.find((d) => matches(d, q)) || null);
@@ -71,20 +70,6 @@ beforeEach(() => {
   });
   mock.method(CVAnalysis.prototype, 'save', async function save() { if (!cvStore.includes(this)) cvStore.push(this); return this; });
 
-  mock.method(SkillsAssessment, 'find', (q) => chain(() => skillStore.filter((d) => matches(d, q))));
-  mock.method(SkillsAssessment, 'findOne', async (q) => skillStore.find((d) => matches(d, q)) || null);
-  mock.method(SkillsAssessment, 'create', async (data) => { const d = new SkillsAssessment(data); skillStore.push(d); return d; });
-  mock.method(SkillsAssessment, 'findByIdAndUpdate', async (id, data) => {
-    const d = skillStore.find((x) => same(x._id, id));
-    d.set(data);
-    return d;
-  });
-  mock.method(SkillsAssessment, 'findOneAndDelete', async (q) => {
-    const d = skillStore.find((x) => matches(x, q));
-    skillStore = skillStore.filter((x) => x !== d);
-    return d || null;
-  });
-
   mock.method(InterviewModel, 'findOne', async (q) => ivStore.find((d) => matches(d, q)) || null);
   mock.method(InterviewModel, 'find', (q) => chain(() => ivStore.filter((d) => matches(d, q))));
   mock.method(InterviewModel, 'countDocuments', async (q) => ivStore.filter((d) => matches(d, q)).length);
@@ -94,7 +79,7 @@ beforeEach(() => {
   mock.method(usageRepo, 'getCap', async () => 100);
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; });
+afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
 
 const as = () => ({ Cookie: w.cookie(student) });
 const get = (url) => request(app).get(url).set(as());
@@ -183,47 +168,6 @@ test('POST /api/analyze/analyze-resume with the profile CV: CS role, non-CS role
   snap('analyze ai unavailable', await post('/api/analyze/analyze-resume', { jobDescriptions: JSON.stringify(jds.slice(0, 1)), useProfileCV: 'true' }));
 });
 
-// ---------------------------------------------------------------- skills self-assessment
-
-const TECHS = [
-  { name: ' Node.js ', category: 'Web', confidenceLevel: 8 },
-  { name: 'Python', proficiencyLevel: 5.55, yearsOfExperience: 2, isCore: true },
-  { name: 'Git', confidenceLevel: 6 },
-];
-
-test('POST /api/swot/save-ratings validates, creates, updates and reports DB failures', async () => {
-  snap('skills no hash', await post('/api/swot/save-ratings', { technologies: TECHS }));
-  snap('skills no techs', await post('/api/swot/save-ratings', { resumeHash: 'h', technologies: [] }));
-  snap('skills bad techs', await post('/api/swot/save-ratings', { resumeHash: 'h', technologies: [{ confidenceLevel: 3 }, { name: 'X' }, { name: 'Y', confidenceLevel: 11 }] }));
-  snap('skills create', await post('/api/swot/save-ratings', { resumeHash: 'h', technologies: TECHS }));
-  assert.equal(skillStore.length, 1);
-  snap('skills update', await post('/api/swot/save-ratings', { resumeHash: 'h', technologies: TECHS.slice(0, 1), shouldSave: false, summary: { extra: 1 } }));
-  assert.equal(skillStore.length, 1);
-  mock.method(SkillsAssessment, 'create', async () => { throw new Error('db down'); });
-  const res = await post('/api/swot/save-ratings', { resumeHash: 'other', technologies: TECHS });
-  assert.equal(res.status, 500);
-  assert.equal(res.body.success, false);
-  assert.equal(res.body.message, 'Failed to save technology ratings');
-});
-
-test('GET /api/user/skills-assessments lists the caller\'s assessments', async () => {
-  snap('skills list empty', await get('/api/user/skills-assessments'));
-  skillStore.push(new SkillsAssessment({
-    userId: student._id, resumeHash: 'h', assessmentType: 'Technical Skills', isSaved: true, overallScore: 64,
-    skills: [{ name: 'Node.js', category: 'Web', proficiencyLevel: 8 }, { name: 'Git', proficiencyLevel: 4 }, { name: 'SQL', category: 'DB', proficiencyLevel: 7 }],
-  }));
-  skillStore.push(new SkillsAssessment({ userId: newId(), resumeHash: 'h', skills: [{ name: 'X', proficiencyLevel: 2 }] }));
-  snap('skills list', await get('/api/user/skills-assessments'));
-});
-
-test('DELETE /api/user/assessment/:id', async () => {
-  snap('skills delete bad id', await del('/api/user/assessment/xyz'));
-  snap('skills delete not found', await del(`/api/user/assessment/${newId()}`));
-  const d = new SkillsAssessment({ userId: student._id, resumeHash: 'h', isSaved: true, skills: [{ name: 'X', proficiencyLevel: 2 }] });
-  skillStore.push(d);
-  snap('skills delete ok', await del(`/api/user/assessment/${d._id}`));
-});
-
 // ---------------------------------------------------------------- interviews
 
 const AI_QUESTIONS = [
@@ -232,7 +176,7 @@ const AI_QUESTIONS = [
   { questionId: 'q3', type: 'coding', question: 'Reverse a string', language: 'python', cvReference: 'Python course' },
   { questionId: 'q4', type: 'system-design', question: 'Design a URL shortener', jdAlignment: 'backend' },
 ];
-const aiReturns = (payload) => mock.method(axios, 'post', async () => ({ data: { response: typeof payload === 'string' ? payload : JSON.stringify(payload) } }));
+const aiReturns = (payload) => mock.method(axios, 'post', async () => ({ data: { generated_text: typeof payload === 'string' ? payload : JSON.stringify(payload) } }));
 
 test('POST /api/interviews/create: validation, AI questions and the fallback set', async () => {
   snap('iv create missing', await post('/api/interviews/create', { jobDescription: 'JD' }));
