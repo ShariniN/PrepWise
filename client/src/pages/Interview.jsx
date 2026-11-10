@@ -386,12 +386,23 @@ const MockInterviewSystem = () => {
     }
   }, [interview, codeEditor, cv, stopCoaching, resetSamples]);
 
-  // Back to the setup screen with the same job description, to try for tailored questions again.
+  // Back to the setup screen to try for tailored questions again. Unlike resetInterview, the job description,
+  // the CV text and the CV source are kept, so the student only has to press Start again.
   const retryTailoredQuestions = useCallback(() => {
-    const jobDescription = interviewData.jobDescription;
-    resetInterview();
-    setInterviewData(prev => ({ ...prev, jobDescription }));
-  }, [interviewData.jobDescription, resetInterview]);
+    setCurrentStep('setup');
+    setTextAnswer('');
+    setShowCodeEditor(false);
+    setFeedback(null);
+    setFallbackNoticeDismissed(false);
+    setTimer(0);
+    setError('');
+    stopCoaching();
+    resetSamples();
+    interview.reset();
+    codeEditor.setCode('');
+    codeEditor.setCodeOutput('');
+    codeEditor.setCodeInput('');
+  }, [interview, codeEditor, stopCoaching, resetSamples]);
 
   // Event handlers
   const handleJobDescriptionChange = useCallback((e) => {
