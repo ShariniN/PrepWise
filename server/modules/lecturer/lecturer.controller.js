@@ -1,13 +1,13 @@
 // Lecturer dashboard: how the caller's own university's students do in mock interviews, CV analysis and practice.
 // Always scoped to req.user.institutionId and to active students. Every view of one student's data is audited.
 // Responses are built from whitelists: CV text, passwords, OTPs, invite tokens and hidden tests never leave.
-import { institutionOf } from '../middleware/tenancy.js';
-import { audit } from '../services/audit.js';
-import { cleanGroup, PeopleError } from '../modules/people/people.service.js';
-import { fail, isId, intParam } from '../analytics/access.js';
-import { toCsv } from '../analytics/aggregate.js';
-import lecturerRepo from './repo.js';
-import * as m from './metrics.js';
+import { institutionOf } from '../../middleware/tenancy.js';
+import { audit } from '../../services/audit.js';
+import { cleanGroup, PeopleError } from '../people/people.service.js';
+import { fail, isId, intParam } from '../analytics/analytics.request.js';
+import { toCsv } from '../analytics/analytics.aggregate.js';
+import lecturerRepo from './lecturer.repo.js';
+import * as m from './lecturer.metrics.js';
 
 const sid = (v) => String(v);
 const iso = (d) => (d ? new Date(d).toISOString() : null);

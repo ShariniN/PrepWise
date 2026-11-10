@@ -1,8 +1,8 @@
 // In-memory stand-ins for analyticsRepo, gradingRepo and the AI usage store. Like the real repositories they
 // filter by institutionId, so a controller that forgets to scope a query leaks data and a test fails.
 import { mock } from 'node:test';
-import analyticsRepo from '../../analytics/repo.js';
-import gradingRepo from '../../grading/repo.js';
+import analyticsRepo from '../../modules/analytics/analytics.repo.js';
+import gradingRepo from '../../modules/grading/grading.repo.js';
 import { usageRepo } from '../../services/aiUsage.js';
 import { installQuestionWorld } from './questionWorld.js';
 import { newId } from '../helpers.js';

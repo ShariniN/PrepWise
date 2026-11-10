@@ -3,11 +3,11 @@
 //
 // Projections never select CV text (Interview.resumeText, CVAnalysis.resumeText, User.currentCV), secrets
 // (password, OTPs, invite tokens), hidden interview tests or audio URLs. The controller whitelists fields again.
-import userModel from '../models/User.js';
-import Interview from '../models/Interview.js';
-import CVAnalysis from '../models/CvAnalysis.js';
-import SkillsAssessment from '../models/SkillsAssessment.js';
-import Attempt from '../models/Attempt.js';
+import userModel from '../../models/User.js';
+import Interview from '../../models/Interview.js';
+import CVAnalysis from '../../models/CvAnalysis.js';
+import SkillsAssessment from '../../models/SkillsAssessment.js';
+import Attempt from '../../models/Attempt.js';
 
 const MAX_ROWS = 100000;
 const STUDENT_FIELDS = 'name email group role status lastActive createdAt';

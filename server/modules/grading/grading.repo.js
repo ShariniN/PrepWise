@@ -1,5 +1,5 @@
 // Mongo access for the grading queue. Every function filters by institutionId.
-import Attempt from '../models/Attempt.js';
+import Attempt from '../../models/Attempt.js';
 
 const LIST_FIELDS = 'userId questionId createdAt needsReview review.aiSuggestion.at review.aiSuggestion.total review.final.total review.final.at score';
 

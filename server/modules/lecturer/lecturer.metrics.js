@@ -10,7 +10,7 @@
 // - A CV result counts only when its scoreBreakdown.aiAvailable !== false.
 // - Averages across students are means of per-student values, so a student with many interviews does not dominate.
 //   A value is shown only when at least MIN_N students have it; otherwise it is null with a notice.
-import { partitionAttempts, MIN_N, DAY_MS, round, mean } from '../analytics/aggregate.js';
+import { partitionAttempts, MIN_N, DAY_MS, round, mean } from '../analytics/analytics.aggregate.js';
 
 export { MIN_N };
 const sid = (v) => String(v);

@@ -5,7 +5,7 @@ import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
 import { installAnalyticsWorld } from './support/analyticsWorld.js';
 import aiService from '../services/aiService.js';
-import * as agg from '../analytics/aggregate.js';
+import * as agg from '../modules/analytics/analytics.aggregate.js';
 import app from '../app.js';
 
 let w, db, adminA, lecA1, lecA2, lecB, stu, stuOther, qShort, item;

@@ -1,7 +1,7 @@
 import express from 'express';
-import userAuth from '../middleware/userAuth.js';
-import requireRole from '../middleware/requireRole.js';
-import * as grading from '../grading/controller.js';
+import userAuth from '../../middleware/userAuth.js';
+import requireRole from '../../middleware/requireRole.js';
+import * as grading from './grading.controller.js';
 
 const gradingRouter = express.Router();
 

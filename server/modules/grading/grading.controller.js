@@ -1,12 +1,12 @@
 // Grading queue for short and behavioural answers. The AI only ever SUGGESTS rubric points (source 'ai').
 // A final score exists only after a lecturer confirms or overrides it (source 'human', confirmedBy set).
-import peopleRepo from '../modules/people/people.repo.js';
-import questionRepo from '../repositories/questionRepo.js';
-import { institutionOf } from '../middleware/tenancy.js';
-import { audit } from '../services/audit.js';
-import aiService from '../services/aiService.js';
-import { fail, isId } from '../analytics/access.js';
-import gradingRepo from './repo.js';
+import peopleRepo from '../people/people.repo.js';
+import questionRepo from '../../repositories/questionRepo.js';
+import { institutionOf } from '../../middleware/tenancy.js';
+import { audit } from '../../services/audit.js';
+import aiService from '../../services/aiService.js';
+import { fail, isId } from '../analytics/analytics.request.js';
+import gradingRepo from './grading.repo.js';
 
 const MAX_BULK = 50;
 const r2 = (n) => Math.round(n * 100) / 100;

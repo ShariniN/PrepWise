@@ -17,9 +17,9 @@ import meRouter from './modules/compliance/me.routes.js';
 import complianceRouter from './modules/compliance/compliance.routes.js';
 import practiceRouter from './routes/practiceRoutes.js';
 import questionRouter from './routes/questionRoutes.js';
-import analyticsRouter from './routes/AnalyticsRoutes.js';
-import gradingRouter from './routes/GradingRoutes.js';
-import lecturerRouter from './routes/LecturerRoutes.js';
+import analyticsRouter from './modules/analytics/analytics.routes.js';
+import gradingRouter from './modules/grading/grading.routes.js';
+import lecturerRouter from './modules/lecturer/lecturer.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();

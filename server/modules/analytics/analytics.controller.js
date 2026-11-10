@@ -1,11 +1,11 @@
 // University admin view: adoption and renewal evidence. Counts only, unless includeStudents=1 (which is audited).
-import peopleRepo from '../modules/people/people.repo.js';
-import { institutionOf } from '../middleware/tenancy.js';
-import { audit } from '../services/audit.js';
-import { usageRepo, currentMonth, DEFAULT_MONTHLY_CAP } from '../services/aiUsage.js';
-import analyticsRepo from './repo.js';
-import { fail } from './access.js';
-import * as agg from './aggregate.js';
+import peopleRepo from '../people/people.repo.js';
+import { institutionOf } from '../../middleware/tenancy.js';
+import { audit } from '../../services/audit.js';
+import { usageRepo, currentMonth, DEFAULT_MONTHLY_CAP } from '../../services/aiUsage.js';
+import analyticsRepo from './analytics.repo.js';
+import { fail } from './analytics.request.js';
+import * as agg from './analytics.aggregate.js';
 
 const days = (n) => new Date(Date.now() - n * agg.DAY_MS);
 

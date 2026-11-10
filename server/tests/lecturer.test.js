@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
 import { installLecturerWorld } from './support/lecturerWorld.js';
-import * as m from '../lecturer/metrics.js';
+import * as m from '../modules/lecturer/lecturer.metrics.js';
 import app from '../app.js';
 
 let w, db, lecA, adminA, lecB, studentsA, stuB;
