@@ -16,6 +16,16 @@ import usePracticeDraft from '../hooks/usePracticeDraft';
 import useEditEvents from '../hooks/useEditEvents';
 import { isCodeType } from '../utils/practice';
 
+// True when the statement already contains this test's input and output (e.g. in its own "Example" section),
+// so the page does not show the same example twice.
+const normEx = (s) => String(s ?? '').replace(/\r\n?/g, '\n').split('\n').map((l) => l.trim()).filter(Boolean).join('\n');
+const exampleInStatement = (statement, t) => {
+  const text = normEx(statement);
+  const input = normEx(t.input);
+  const output = normEx(t.expectedOutput);
+  return !!input && !!output && text.includes(input) && text.includes(output);
+};
+
 const PracticeQuestion = () => {
   const { id } = useParams();
   const [question, setQuestion] = useState(null);
@@ -133,6 +143,8 @@ const PracticeQuestion = () => {
   if (!question || !initialised) return shell(<div role="status" aria-label="Loading question"><Skeleton className="h-96 w-full" rounded="rounded-3xl" /></div>);
 
   const saveLabel = { saving: 'Saving...', saved: 'Draft saved', error: 'Draft not saved' }[draft.saveState];
+  // Visible tests that the statement does not already show as its own example (seed statements include one).
+  const extraExamples = (question.visibleTests || []).filter((t) => !exampleInStatement(question.statement, t));
   return shell(
     <div className="grid gap-5 lg:grid-cols-2">
       <Card as="section" className="space-y-4 self-start">
@@ -146,8 +158,10 @@ const PracticeQuestion = () => {
         <Markdown text={question.statement} />
         {code && (question.visibleTests || []).length > 0 && (
           <div className="space-y-3">
-            <h2 className="font-display text-base font-semibold text-ink">Examples</h2>
-            {question.visibleTests.map((t, i) => (
+            {extraExamples.length > 0 && (
+              <h2 className="font-display text-base font-semibold text-ink">{extraExamples.length < question.visibleTests.length ? 'More examples' : 'Examples'}</h2>
+            )}
+            {extraExamples.map((t, i) => (
               <div key={t.id || i} className="grid gap-2 text-xs sm:grid-cols-2">
                 <div><div className="mb-1 font-medium text-ink-muted">Input</div><pre className="whitespace-pre-wrap break-words rounded-xl border border-line bg-sand p-3 text-ink">{t.input || '(empty)'}</pre></div>
                 <div><div className="mb-1 font-medium text-ink-muted">Output</div><pre className="whitespace-pre-wrap break-words rounded-xl border border-line bg-sand p-3 text-ink">{t.expectedOutput}</pre></div>
