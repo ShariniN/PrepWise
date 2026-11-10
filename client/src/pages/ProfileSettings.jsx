@@ -7,6 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AppShell from "../components/AppShell";
 import PrivacyTab from "../components/PrivacyTab";
+import { PASSWORD_RULES, passwordProblems } from "../utils/roles";
+
+const PHONE_OK = (v) => /^[\d\s\-.()]+$/.test(String(v).trim()) && /^\d{10,15}$/.test(String(v).replace(/\D/g, ''));
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -706,11 +709,22 @@ const UserProfile = () => {
   };
 
   const updateProfile = async () => {
+    const name = (localUser.name || '').trim();
+    // Optional; an empty box clears it. Same rule as the server: 10 to 15 digits, separators ignored.
+    const phone = (localUser.phoneNumber || '').trim();
+    if (!name) {
+      toast.error('Please enter your name');
+      return;
+    }
+    if (phone && !PHONE_OK(phone)) {
+      toast.error('Phone number must be 10 to 15 digits (numbers only)');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await axios.put(backendUrl + '/api/user/profile', {
-        name: localUser.name,
-        phoneNumber: localUser.phoneNumber
+        name,
+        phoneNumber: phone
       });
 
       if (data.success) {
@@ -734,8 +748,9 @@ const UserProfile = () => {
       return;
     }
     
-    if (passwords.newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+    const problems = passwordProblems(passwords.newPassword);
+    if (problems.length) {
+      toast.error('New password needs: ' + problems.join(', ').toLowerCase());
       return;
     }
 
@@ -867,13 +882,19 @@ const UserProfile = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink-2 mb-1">Phone Number</label>
+            <label htmlFor="ps-phone" className="block text-sm font-medium text-ink-2 mb-1">Phone Number (optional)</label>
             <input
-              type="text"
+              id="ps-phone"
+              type="tel"
+              inputMode="tel"
               value={localUser.phoneNumber || ''}
               onChange={(e) => setLocalUser(prev => ({ ...prev, phoneNumber: e.target.value }))}
+              aria-describedby="ps-phone-hint"
               className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
+            <p id="ps-phone-hint" className={`mt-1 text-xs ${localUser.phoneNumber && !PHONE_OK(localUser.phoneNumber) ? 'text-danger-700' : 'text-ink-muted'}`}>
+              10 to 15 digits. Leave empty to remove it.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-ink-2 mb-1">Email</label>
@@ -938,8 +959,16 @@ const UserProfile = () => {
               type={showPassword ? 'text' : 'password'}
               value={passwords.newPassword}
               onChange={(e) => setPasswords(prev => ({ ...prev, newPassword: e.target.value }))}
+              aria-describedby="ps-pw-rules"
               className="w-full p-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
+            <ul id="ps-pw-rules" className="mt-2 text-xs space-y-0.5">
+              {PASSWORD_RULES.map((r) => (
+                <li key={r.label} className={r.test(passwords.newPassword) ? 'text-success-700' : 'text-ink-muted'}>
+                  {r.test(passwords.newPassword) ? '✓' : '-'} {r.label}
+                </li>
+              ))}
+            </ul>
           </div>
           <div>
             <label className="block text-sm font-medium text-ink-2 mb-1">Confirm New Password</label>
