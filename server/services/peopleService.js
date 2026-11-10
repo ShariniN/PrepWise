@@ -211,9 +211,18 @@ export const deactivateUser = async ({ institution, actor, id }) => {
   if (String(user._id) === String(actor.id)) throw new PeopleError(400, 'You cannot deactivate your own account', 'SELF');
   if (user.status === 'deactivated') throw new PeopleError(409, 'This person is already deactivated', 'ALREADY');
   await guardLastAdmin(institution, user);
+  // Deactivating someone who never accepted cancels the invitation: the link stops working and the seat is freed.
+  const inviteCancelled = user.status === 'invited';
   user.status = 'deactivated';
+  if (inviteCancelled) {
+    user.inviteTokenHash = '';
+    user.inviteExpiresAt = null;
+  }
   await user.save();
-  await audit({ actor: actor.id, action: 'user.deactivate', target: user._id, institutionId: institution._id });
+  await audit({
+    actor: actor.id, action: 'user.deactivate', target: user._id, institutionId: institution._id,
+    ...(inviteCancelled ? { meta: { inviteCancelled: true } } : {}),
+  });
   return { user: publicUser(user) };
 };
 

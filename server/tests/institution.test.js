@@ -284,3 +284,33 @@ test('role in the JWT is ignored; the database role decides', async () => {
   const res = await request(app).get('/api/institution/people').set('Cookie', forged);
   assert.equal(res.status, 403);
 });
+
+// QA-02: a pending invitation can be cancelled. The invited user becomes 'deactivated', the token stops
+// working and the student seat is freed. Reactivating later sends a fresh invitation.
+test('cancelling a pending invitation (deactivate an invited user) frees the seat and kills the token', async () => {
+  for (let i = 0; i < 1; i++) w.addUser({ email: `full${i}@a.edu`, role: 'student', institutionId: IDS.instA });
+  const pending = w.addUser({ email: 'inv@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited', password: undefined, inviteTokenHash: 'h-123', inviteExpiresAt: new Date(Date.now() + 86400000) });
+  const usageBefore = await request(app).get('/api/institution/usage').set(as(adminA));
+  assert.equal(usageBefore.body.remaining, 0);
+  const res = await request(app).patch(`/api/institution/people/${pending._id}/deactivate`).set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.equal(pending.status, 'deactivated');
+  assert.equal(pending.inviteTokenHash, '');
+  assert.equal(pending.inviteExpiresAt, null);
+  assert.equal(res.body.user.inviteExpiresAt, null);
+  const usageAfter = await request(app).get('/api/institution/usage').set(as(adminA));
+  assert.equal(usageAfter.body.remaining, 1);
+  assert.equal(usageAfter.body.invitedStudents, 0);
+  const entry = w.audit.find((a) => a.action === 'user.deactivate');
+  assert.deepEqual(entry.meta, { inviteCancelled: true });
+});
+
+test('an invited user without a password passes model validation when deactivated', async () => {
+  const { default: userModel } = await import('../models/userModel.js');
+  const doc = new userModel({ name: 'Inv', email: 'inv2@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited' });
+  await doc.validate();
+  doc.status = 'deactivated';
+  await doc.validate(); // used to throw "Password is required" -> HTTP 500
+  doc.status = 'active';
+  await assert.rejects(doc.validate(), /Password is required/);
+});

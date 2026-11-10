@@ -90,6 +90,8 @@ Columns: `email` (required), `name`, `role` (default `student`), `group` (option
 
 ### PATCH /api/institution/people/:id/deactivate
 200: `{ success, user: Person }`. `400` own account (`SELF`). `409` already deactivated, or the only active administrator (`LAST_ADMIN`). `404` unknown or other institution.
+Also cancels a pending invitation: an `invited` person becomes `deactivated`, the invite link stops working and the student seat is freed
+(audit `user.deactivate` with `meta: { inviteCancelled: true }`). Reactivating them later sends a fresh invitation.
 
 ### PATCH /api/institution/people/:id/reactivate
 200: `{ success, user: Person, inviteLink?, emailSent? }`. Counts against the limit for students: `409 STUDENT_LIMIT_REACHED`. `409 NOT_DEACTIVATED`.

@@ -18,8 +18,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    // Invited users have no password until they accept the invitation
-    required: [function () { return this.status !== 'invited'; }, 'Password is required'],
+    // Only active accounts need one: invited users have no password until they accept the invitation,
+    // and a cancelled invitation (invited -> deactivated) never had one.
+    required: [function () { return this.status === 'active'; }, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
   phoneNumber: {
