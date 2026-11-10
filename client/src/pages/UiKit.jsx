@@ -66,18 +66,18 @@ const UiKit = () => {
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Email" hint="We never share it." required>{(p) => <Input {...p} type="email" placeholder="you@uni.edu" icon={<Search size={16} />} />}</Field>
             <Field label="With error" error="This field is required">{(p) => <Input {...p} defaultValue="oops" />}</Field>
-            <Field label="Course">{(p) => <Select {...p}><option>Software Engineering</option><option>Data Structures</option></Select>}</Field>
+            <Field label="Group">{(p) => <Select {...p}><option>Group 1</option><option>Group 2</option></Select>}</Field>
             <Field label="Disabled">{(p) => <Input {...p} disabled defaultValue="Read only" />}</Field>
             <Field label="Notes" className="md:col-span-2">{(p) => <Textarea {...p} placeholder="Write something..." />}</Field>
           </div>
         </Block>
 
         <Block title="Tabs">
-          <Tabs ariaLabel="Demo" tabs={[{ id: 'a', label: 'Students', icon: <Users size={16} /> }, { id: 'b', label: 'Lecturers' }, { id: 'c', label: 'Career units' }]} value={tab} onChange={setTab} />
+          <Tabs ariaLabel="Demo" tabs={[{ id: 'a', label: 'Students', icon: <Users size={16} /> }, { id: 'b', label: 'Lecturers' }, { id: 'c', label: 'University admins' }]} value={tab} onChange={setTab} />
           <div className="mt-5">
             <TabPanel id="a" value={tab}><Card tone="primary">Students panel. Arrow keys move between tabs.</Card></TabPanel>
             <TabPanel id="b" value={tab}><Card tone="sand">Lecturers panel.</Card></TabPanel>
-            <TabPanel id="c" value={tab}><Card>Career units panel.</Card></TabPanel>
+            <TabPanel id="c" value={tab}><Card>University admins panel.</Card></TabPanel>
           </div>
         </Block>
 
@@ -98,10 +98,10 @@ const UiKit = () => {
 
         <Block title="Table">
           <Table zebra maxHeight="14rem">
-            <THead><Tr><Th>Student</Th><Th>Course</Th><Th>Score</Th><Th>Status</Th></Tr></THead>
+            <THead><Tr><Th>Student</Th><Th>Group</Th><Th>Score</Th><Th>Status</Th></Tr></THead>
             <TBody>
               {['Ada', 'Grace', 'Alan', 'Linus', 'Margaret', 'Dennis'].map((n, i) => (
-                <Tr key={n}><Td className="font-medium">{n}</Td><Td>CS10{i}</Td><Td>{60 + i * 6}%</Td><Td><StatusPill status={i % 2 ? 'pending' : 'passed'} /></Td></Tr>
+                <Tr key={n}><Td className="font-medium">{n}</Td><Td>Group {(i % 2) + 1}</Td><Td>{60 + i * 6}%</Td><Td><StatusPill status={i % 2 ? 'pending' : 'passed'} /></Td></Tr>
               ))}
             </TBody>
           </Table>
@@ -109,7 +109,7 @@ const UiKit = () => {
 
         <Block title="EmptyState, Skeleton">
           <div className="grid gap-5 md:grid-cols-2">
-            <EmptyState title="Nothing here yet" description="Create your first assessment to see it listed." action={<Button size="sm" icon={<Plus size={14} />}>Create</Button>} />
+            <EmptyState title="Nothing here yet" description="Create your first practice question to see it listed." action={<Button size="sm" icon={<Plus size={14} />}>Create</Button>} />
             <div className="space-y-3"><Skeleton className="h-6 w-1/2" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-5/6" /><Skeleton className="h-24 w-full" rounded="rounded-3xl" /></div>
           </div>
         </Block>
@@ -129,13 +129,13 @@ const UiKit = () => {
           <Reveal stagger={120} className="grid gap-4 md:grid-cols-3">
             <Card>One</Card><Card>Two</Card><Card>Three</Card>
           </Reveal>
-          <Marquee className="mt-6" items={['Hidden tests', 'Cohort heatmaps', 'Human review', 'CV feedback', 'Interview practice', 'Privacy by design']} />
+          <Marquee className="mt-6" items={['Hidden tests', 'Lecturer dashboard', 'Camera coaching', 'CV feedback', 'Interview practice', 'Privacy by design']} />
         </Block>
 
         <Section variant="ink" eyebrow="Ink band" title="Dark contrast band" lead="Use for one statement section per page." />
 
         <Block title="ScrollNarrative">
-          <ScrollNarrative lines={['Practice builds confidence.', 'Assessment builds evidence.', 'Insight builds readiness.']} />
+          <ScrollNarrative lines={['Practice builds confidence.', 'Feedback builds evidence.', 'Insight builds readiness.']} />
         </Block>
       </div>
     </div>

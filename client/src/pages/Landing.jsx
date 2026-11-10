@@ -15,38 +15,37 @@ const NAV = [
   { href: '#product', label: 'Product' },
   { href: '#lecturers', label: 'For lecturers' },
   { href: '#students', label: 'For students' },
-  { href: '#integrity', label: 'Integrity' },
+  { href: '#privacy', label: 'Privacy' },
   { href: '#faq', label: 'FAQ' },
 ];
 
 const JOURNEY = [
-  { id: 'practising', title: 'Practising', text: 'Real problems, a real editor, hidden tests that tick in as the code gets better.' },
-  { id: 'stuck', title: 'Stuck', text: 'The same test keeps failing. Hints are there when you ask, and your lecturer sees the pattern.' },
-  { id: 'ready', title: 'Ready', text: 'Practice, assessments and mock interviews add up to evidence you can stand behind.' },
+  { id: 'practising', title: 'Practising', text: 'Real problems, a real editor, visible examples to start and hidden tests on submit.' },
+  { id: 'stuck', title: 'Stuck', text: 'The same submission keeps coming back as a wrong answer. Check the examples, run your code again, and submit when you are ready.' },
+  { id: 'ready', title: 'Ready', text: 'Coding practice, mock interviews and CV analysis add up to evidence you can stand behind.' },
 ];
 
 const USE_CASES = [
-  { id: 'students', label: 'Students', title: 'Practise like it counts, without the pressure.', text: 'A private place to code against hidden tests, rehearse interviews and get CV feedback matched to the role you want.' },
-  { id: 'lecturers', label: 'Lecturers', title: 'See where the cohort is, while you can still help.', text: 'Cohort heatmaps show which topics are solid and which are not. Set assessments, grade with rubrics and review integrity cases.' },
-  { id: 'careers', label: 'Career units', title: 'Know who is ready, and who needs a nudge.', text: 'Readiness overviews by programme help you target workshops and employer introductions where they matter.' },
-  { id: 'heads', label: 'Department heads', title: 'One overview across programmes and staff.', text: 'Manage people and invitations, and see assessment and readiness activity across the institution.' },
+  { id: 'students', label: 'Students', title: 'Practise like it counts, without the pressure.', text: 'One place to code against hidden tests, rehearse interviews, rate your skills and get CV feedback matched to the role you want.' },
+  { id: 'lecturers', label: 'Lecturers', title: 'See who needs help, while there is still time.', text: 'Mock interview and CV match averages across your students, a list of who needs attention, and a profile for each student. Filter by group and export to CSV.' },
+  { id: 'admins', label: 'University admins', title: 'Manage your university\'s people in one place.', text: 'Invite students and staff by email or CSV import, organise students into groups, and keep registered students within your licence limit.' },
 ];
 
 const FEATURES = [
-  { icon: Code2, title: 'A real code editor, hidden tests', text: 'Monaco editor with sandboxed execution. Tests you cannot see stop hard-coded answers.' },
-  { icon: MessagesSquare, title: 'Interview practice', text: 'Behavioural, technical and coding questions answered by text, voice or code, with feedback and a report.' },
-  { icon: Grid3x3, title: 'Cohort heatmaps', text: 'Per-topic views of the whole class so teaching time goes where it is needed.' },
-  { icon: ShieldCheck, title: 'Integrity log, human review', text: 'Signals such as pasted code or leaving the window are logged with context. A person decides what they mean.' },
-  { icon: FileText, title: 'CV feedback', text: 'Upload a CV and a job description for strengths, gaps and concrete suggestions.' },
+  { icon: Code2, title: 'A real code editor, hidden tests', text: 'Monaco editor with sandboxed execution. Visible examples to start, hidden tests on submit, and a clear verdict such as accepted or wrong answer.' },
+  { icon: MessagesSquare, title: 'Interview practice', text: 'Behavioural, technical and coding questions answered by voice, text or code, with AI feedback and a report.' },
+  { icon: Grid3x3, title: 'Lecturer dashboard', text: 'Interview and CV averages once at least five students have data, who needs attention, and a profile per student. Filter by group, export to CSV.' },
+  { icon: ShieldCheck, title: 'Camera coaching, on your device', text: 'Optional feedback on eye contact, face visibility and head movement, measured in the browser, alongside speaking pace and filler words. Only the numbers are kept.' },
+  { icon: FileText, title: 'CV match, explained', text: 'Compare a CV with a job description: an AI score plus a keyword check, matched and missing skills, and written advice. Then rate your confidence in the skills found.' },
   { icon: Lock, title: 'Privacy by design', text: 'Fake data in demos, role-based access, and no real student CVs without a data processing agreement.' },
 ];
 
 const FAQ = [
   { id: 'data', title: 'Where is our data stored?', content: 'Data location is agreed with each institution during the pilot. We will not accept real student data until a data processing agreement is in place; until then the product runs on demo data only.' },
-  { id: 'ai', title: 'How is AI used?', content: 'AI generates interview questions and drafts feedback on CVs and answers, using a third-party model provider (Google Gemini by default). Scores that count towards a grade come from tests and rubrics your staff control, and lecturers can override feedback.' },
-  { id: 'proctor', title: 'Is this proctoring software?', content: 'No. There is no camera or microphone monitoring in this version. The integrity log records signals like pasted code and window focus changes, shows them with context, and leaves the judgement to a human reviewer.' },
+  { id: 'ai', title: 'How is AI used?', content: 'AI generates interview questions and drafts feedback on CVs and answers, using a third-party model provider (Google Gemini by default). CV match scores also include a keyword check, so you can see which skills matched and which are missing. Coding practice answers are checked by running hidden tests, not by AI.' },
+  { id: 'proctor', title: 'Is this proctoring software?', content: 'No. PrepWise is for practice: it does not proctor exams or check work for plagiarism. Camera coaching in mock interviews is optional and runs in the browser. Only numbers such as eye contact and speaking pace are kept; no video or images are stored or uploaded. Spoken answers are sent for transcription so they can get feedback.' },
   { id: 'lms', title: 'Does it integrate with our LMS?', content: 'Not yet. LMS integration is planned. Today people are invited by email and sign in with an account created by your university.' },
-  { id: 'pricing', title: 'How is it priced?', content: 'Per student per year, with a pilot available so you can try it with one course or cohort first. Talk to us for details.' },
+  { id: 'pricing', title: 'How is it priced?', content: 'Per student per year, with a pilot available so you can try it with one group of students first. Talk to us for details.' },
   { id: 'pilot', title: 'How does a pilot work?', content: 'We set up your institution, invite a small group of lecturers and students, and agree what success looks like. You tell us what is missing and we build around your teaching.' },
 ];
 
@@ -110,13 +109,13 @@ const Landing = () => {
                   </h1>
                 </Reveal>
                 <Reveal delay={160}>
-                  <p className="mt-6 max-w-xl text-lg text-ink-2">PrepWise gives computing students a place to practise, gives lecturers evidence of who is ready, and keeps integrity fair with humans in the loop.</p>
+                  <p className="mt-6 max-w-xl text-lg text-ink-2">PrepWise gives computing students a place to practise interviews, coding and CVs, and gives lecturers a clear view of who is ready and who needs help.</p>
                 </Reveal>
                 <Reveal delay={240} className="mt-8 flex flex-col gap-3 sm:flex-row">
                   <Button as={Link} to="/login" size="lg" iconRight={<ArrowRight size={18} aria-hidden="true" />}>Sign in with your university</Button>
                   <Button as="a" href={PILOT_HREF} size="lg" variant="secondary" icon={<Mail size={18} aria-hidden="true" />}>Request a pilot</Button>
                 </Reveal>
-                <Reveal delay={320}><p className="mt-8 text-sm text-ink-muted">Built for university career units and computing departments.</p></Reveal>
+                <Reveal delay={320}><p className="mt-8 text-sm text-ink-muted">Built for universities: students, lecturers and admins.</p></Reveal>
               </div>
               <Reveal delay={200}><HeroVisual /></Reveal>
             </div>
@@ -130,7 +129,7 @@ const Landing = () => {
             <ScrollNarrative
               lines={[
                 <>Students <mark className="rounded-xl bg-primary-100 px-2 text-primary-800">practise</mark> on real problems.</>,
-                <>Lecturers <mark className="rounded-xl bg-sun-200 px-2 text-ink">assess</mark> with evidence, not guesses.</>,
+                <>Lecturers <mark className="rounded-xl bg-sun-200 px-2 text-ink">support</mark> students with evidence, not guesses.</>,
                 <>Everyone can finally <mark className="rounded-xl bg-success-100 px-2 text-success-700">understand</mark> who is ready.</>,
               ]}
             />
@@ -165,7 +164,7 @@ const Landing = () => {
 
         {/* Use cases */}
         <div id="lecturers" className="container-page scroll-mt-24">
-          <Section variant="card" eyebrow="For lecturers and beyond" title="One platform, four vantage points.">
+          <Section variant="card" eyebrow="For lecturers and beyond" title="One platform, three vantage points.">
             <Tabs idBase="uc" ariaLabel="Use cases" tabs={USE_CASES.map(({ id, label }) => ({ id, label }))} value={useCase} onChange={setUseCase} />
             <div className="mt-8 grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
               <div key={useCase} className="animate-pop-in">
@@ -181,7 +180,7 @@ const Landing = () => {
 
         {/* Features */}
         <div className="container-page">
-          <Section variant="plain" eyebrow="What is inside" title="Everything a computing cohort needs to get job-ready." className="px-2 py-8 sm:px-6">
+          <Section variant="plain" eyebrow="What is inside" title="Everything computing students need to get job-ready." className="px-2 py-8 sm:px-6">
             <Reveal stagger={80} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((f) => (
                 <div key={f.title} className="card card-lift h-full p-6">
@@ -194,15 +193,15 @@ const Landing = () => {
           </Section>
         </div>
 
-        {/* Fair by design */}
-        <div id="integrity" className="container-page scroll-mt-24">
-          <Section variant="ink" eyebrow="Fair by design" title="A flag is a reason to look, not a verdict.">
+        {/* Private by design */}
+        <div id="privacy" className="container-page scroll-mt-24">
+          <Section variant="ink" eyebrow="Private by design" title="Coaching, not surveillance.">
             <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-primary-600/40 blur-3xl" aria-hidden="true" />
             <Reveal stagger={100} className="relative grid gap-4 md:grid-cols-3">
               {[
-                [Eye, 'Signals, with context', 'Pasted code or leaving the window is logged with the surrounding activity so a reviewer can replay what happened.'],
-                [UserCheck, 'A human decides', 'Nothing is decided automatically. Students can respond to a case before anyone reaches a conclusion.'],
-                [VideoOff, 'No camera in v1', 'There is no webcam or microphone monitoring. We would rather be honest about what we measure than pretend to more.'],
+                [Eye, 'Camera coaching is optional', 'Students choose whether to turn the camera on. Eye contact, face visibility and head movement are measured in the browser.'],
+                [VideoOff, 'Only numbers are kept', 'No video or images are stored or uploaded. The interview report shows figures such as eye contact and speaking pace.'],
+                [UserCheck, 'Practice, not proctoring', 'PrepWise does not proctor exams or check work for plagiarism. Group averages appear only when at least five students have data.'],
               ].map(([icon, t, d]) => { const I = icon; return (
                 <div key={t} className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
                   <span className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-sun-400 text-ink-deep"><I size={20} aria-hidden="true" /></span>
@@ -220,7 +219,7 @@ const Landing = () => {
             <div>
               <p className="eyebrow mb-3">Pricing</p>
               <h2 className="font-display text-3xl font-semibold leading-tight text-ink text-balance sm:text-5xl">Per student, per year. Start with a pilot.</h2>
-              <p className="mt-4 max-w-xl text-lg text-ink-2">Try PrepWise with one course or cohort first. If it helps, scale to the programme. We will agree the details with you.</p>
+              <p className="mt-4 max-w-xl text-lg text-ink-2">Try PrepWise with one group of students first. If it helps, add more students. We will agree the details with you.</p>
             </div>
             <div className="flex flex-col gap-3 lg:items-end">
               <Button as="a" href={PILOT_HREF} size="lg" icon={<Mail size={18} aria-hidden="true" />}>Request a pilot</Button>
