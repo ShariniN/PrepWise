@@ -240,14 +240,16 @@ const SWOTAnalysis = (props) => {
         <p className="text-ink-2 text-lg">
           Adjust your confidence level for each technology from 1 (beginner) to 10 (expert)
         </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
-          <div className="bg-primary-50 border border-primary-100 rounded-full px-4 py-2">
-            <span className="text-primary-800 font-semibold">{technologies.length} technologies found</span>
+        {technologies.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <div className="bg-primary-50 border border-primary-100 rounded-full px-4 py-2">
+              <span className="text-primary-800 font-semibold">{technologies.length} {technologies.length === 1 ? 'technology' : 'technologies'}</span>
+            </div>
+            <div className="bg-success-100 rounded-full px-4 py-2">
+              <span className="text-success-700 font-medium">All start at intermediate level (5/10)</span>
+            </div>
           </div>
-          <div className="bg-success-100 rounded-full px-4 py-2">
-            <span className="text-success-700 font-medium">All start at intermediate level (5/10)</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {error && (
