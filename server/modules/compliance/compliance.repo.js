@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import userModel from '../models/User.js';
-import InterviewModel from '../models/Interview.js';
-import CVAnalysis from '../models/CvAnalysis.js';
-import SkillsAssessment from '../models/SkillsAssessment.js';
-import ConsentRecord from '../models/ConsentRecord.js';
+import userModel from '../../models/User.js';
+import InterviewModel from '../../models/Interview.js';
+import CVAnalysis from '../../models/CvAnalysis.js';
+import SkillsAssessment from '../../models/SkillsAssessment.js';
+import ConsentRecord from '../../models/ConsentRecord.js';
 
 // Collections written by features that have since been removed (courses/enrolment). Older databases may still
 // hold rows keyed by userId, so account deletion clears them through the raw driver.

@@ -11,7 +11,7 @@ const main = async () => {
 
   await connect();
   const [{ default: Institution }, { importUsers }] = await Promise.all([
-    import('../models/Institution.js'), import('../services/peopleService.js'),
+    import('../models/Institution.js'), import('../modules/people/people.service.js'),
   ]);
   const institution = await Institution.findOne({ slug: values.institution.toLowerCase() });
   if (!institution) throw new Error(`No institution with slug "${values.institution}"`);

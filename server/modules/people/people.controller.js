@@ -1,9 +1,9 @@
-import peopleRepo from '../repositories/peopleRepo.js';
-import { institutionOf } from '../middleware/tenancy.js';
+import peopleRepo from './people.repo.js';
+import { institutionOf } from '../../middleware/tenancy.js';
 import {
   PeopleError, ROLES, publicUser, getUsage, inviteUser, importUsers,
   deactivateUser, reactivateUser, resendInvite, changeRole, setGroup, cleanGroup,
-} from '../services/peopleService.js';
+} from './people.service.js';
 
 const STATUSES = ['invited', 'active', 'deactivated'];
 

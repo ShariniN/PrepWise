@@ -1,6 +1,6 @@
 // Grading queue for short and behavioural answers. The AI only ever SUGGESTS rubric points (source 'ai').
 // A final score exists only after a lecturer confirms or overrides it (source 'human', confirmedBy set).
-import peopleRepo from '../repositories/peopleRepo.js';
+import peopleRepo from '../modules/people/people.repo.js';
 import questionRepo from '../repositories/questionRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';

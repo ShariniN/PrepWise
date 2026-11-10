@@ -1,5 +1,5 @@
-import userModel from '../models/User.js';
-import Institution from '../models/Institution.js';
+import userModel from '../../models/User.js';
+import Institution from '../../models/Institution.js';
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PUBLIC_FIELDS = 'name email role status group isAccountVerified lastActive createdAt inviteExpiresAt';

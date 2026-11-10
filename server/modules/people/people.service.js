@@ -1,10 +1,10 @@
-import transporter from '../config/nodemailer.js';
-import peopleRepo from '../repositories/peopleRepo.js';
-import { audit } from './audit.js';
-import { createInviteToken, buildInviteLink, exposeInviteLinks } from './inviteTokens.js';
-import { parseUsersCsv } from './csv.js';
+import transporter from '../../config/nodemailer.js';
+import peopleRepo from './people.repo.js';
+import { audit } from '../../services/audit.js';
+import { createInviteToken, buildInviteLink, exposeInviteLinks } from '../../services/inviteTokens.js';
+import { parseUsersCsv } from './people.csv.js';
 
-import { ROLES } from '../config/roles.js';
+import { ROLES } from '../../config/roles.js';
 
 export { ROLES };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;

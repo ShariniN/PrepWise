@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import complianceRepo from '../repositories/complianceRepo.js';
-import peopleRepo from '../repositories/peopleRepo.js';
-import { CONSENT_TYPES } from '../models/ConsentRecord.js';
-import { audit } from '../services/audit.js';
+import complianceRepo from './compliance.repo.js';
+import peopleRepo from '../people/people.repo.js';
+import { CONSENT_TYPES } from '../../models/ConsentRecord.js';
+import { audit } from '../../services/audit.js';
 
 const profileOf = (u) => ({
   id: String(u._id),

@@ -36,7 +36,7 @@ const main = async () => {
   await connect();
   const [{ default: Institution }, { default: userModel }, { audit }, tokens, { sendInviteEmail }] = await Promise.all([
     import('../models/Institution.js'), import('../models/User.js'), import('../services/audit.js'),
-    import('../services/inviteTokens.js'), import('../services/peopleService.js'),
+    import('../services/inviteTokens.js'), import('../modules/people/people.service.js'),
   ]);
 
   if (await Institution.findOne({ slug: args.slug })) throw new Error(`An institution with slug "${args.slug}" already exists`);

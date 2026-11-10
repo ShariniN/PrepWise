@@ -1,5 +1,5 @@
 import express from 'express';
-import { subprocessors } from '../controllers/complianceController.js';
+import { subprocessors } from './compliance.controller.js';
 
 const complianceRouter = express.Router();
 

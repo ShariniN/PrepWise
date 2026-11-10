@@ -1,5 +1,5 @@
 // University admin view: adoption and renewal evidence. Counts only, unless includeStudents=1 (which is audited).
-import peopleRepo from '../repositories/peopleRepo.js';
+import peopleRepo from '../modules/people/people.repo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';
 import { usageRepo, currentMonth, DEFAULT_MONTHLY_CAP } from '../services/aiUsage.js';

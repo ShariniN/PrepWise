@@ -15,8 +15,8 @@ import jwt from 'jsonwebtoken';
 mongoose.set('bufferCommands', false); // an unstubbed model call fails at once instead of hanging
 
 const { default: userModel } = await import('../models/User.js');
-const { default: peopleRepo } = await import('../repositories/peopleRepo.js');
-const { default: complianceRepo } = await import('../repositories/complianceRepo.js');
+const { default: peopleRepo } = await import('../modules/people/people.repo.js');
+const { default: complianceRepo } = await import('../modules/compliance/compliance.repo.js');
 const { auditRepo } = await import('../services/audit.js');
 const { default: transporter } = await import('../config/nodemailer.js');
 
