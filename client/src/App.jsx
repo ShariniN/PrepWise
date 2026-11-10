@@ -24,6 +24,8 @@ import UnknownRoute from './components/UnknownRoute'
 import { ROLES, STAFF_ROLES, QUESTION_ROLES, GRADING_ROLES } from './utils/roles'
 import GradingQueue from './pages/GradingQueue'
 import AdminOverview from './pages/AdminOverview'
+import StudentProfile from './pages/StudentProfile'
+import StudentInterview from './pages/StudentInterview'
 
 // Dev-only component gallery; the import is dropped from production builds.
 const UiKit = import.meta.env.DEV ? lazy(() => import('./pages/UiKit')) : null;
@@ -52,6 +54,8 @@ const App = () => {
 
         {/* Staff and admin routes */}
         <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
+        <Route path='/staff/students/:id' element={<ProtectedRoute allow={STAFF_ROLES}><StudentProfile/></ProtectedRoute>}/>
+        <Route path='/staff/students/:id/interviews/:interviewId' element={<ProtectedRoute allow={STAFF_ROLES}><StudentInterview/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
         <Route path='/grading' element={<ProtectedRoute allow={GRADING_ROLES}><GradingQueue/></ProtectedRoute>}/>
         <Route path='/admin-overview' element={<ProtectedRoute allow={[ROLES.ADMIN]}><AdminOverview/></ProtectedRoute>}/>

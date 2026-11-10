@@ -45,6 +45,7 @@ export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
                   <span>{fmt(it.value, suffix)}{it.detail ? ` (${it.detail})` : ''}</span>
                 </div>
                 <svg role="img" aria-label={`${it.label}: ${fmt(it.value, suffix)}`} width="100%" height="10" className="block">
+                  <title>{`${it.label}: ${fmt(it.value, suffix)}${it.detail ? ` (${it.detail})` : ''}`}</title>
                   <rect x="0" y="2" width="100%" height="8" rx="4" fill="var(--viz-grid)" />
                   {pct > 0 && <rect x="0" y="2" width={`${pct}%`} height="8" rx="4" fill="var(--viz-series-1)" />}
                 </svg>
