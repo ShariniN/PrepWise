@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import ScoreBreakdown from '../components/ScoreBreakdown';
 import { CheckCircle, XCircle, AlertTriangle, Lightbulb, FileText, Layout, Target, BarChart3, ArrowLeft, Star, TrendingUp, Settings, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
 import AppShell from "../components/AppShell";
 import { useNavigate } from "react-router-dom";
@@ -710,16 +711,20 @@ const StructuredRecommendations = ({ result, index }) => {
         <h3 className="text-xl font-bold text-ink">Job Description {index + 1}</h3>
         <span
           className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm ${
-            result.matchPercentage >= 80
+            result.scoreBreakdown && result.scoreBreakdown.aiAvailable === false
+              ? "bg-sand text-ink-2 border border-line"
+              : result.matchPercentage >= 80
               ? "bg-success-100 text-success-700 border border-success-100"
               : result.matchPercentage >= 60
               ? "bg-sun-100 text-sun-700 border border-sun-300"
               : "bg-danger-100 text-danger-700 border border-danger-100"
           }`}
         >
-          Match Score: {result.matchPercentage}%
+          {result.scoreBreakdown && result.scoreBreakdown.aiAvailable === false ? 'No score (AI unavailable)' : `Match Score: ${result.matchPercentage}%`}
         </span>
       </div>
+
+      <ScoreBreakdown breakdown={result.scoreBreakdown} />
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-8 bg-sand p-2 rounded-2xl shadow-inner">
@@ -1501,7 +1506,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                         <CircularProgress
                           key={idx}
                           percentage={res.matchPercentage || 0}
-                          label={`Job Description ${idx + 1}`}
+                          label={res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false ? `Job Description ${idx + 1} (AI unavailable)` : `Job Description ${idx + 1}`}
                           colorIndex={idx}
                         />
                       ))}

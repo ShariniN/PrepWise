@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { GEMINI_MODEL } from '../config/ai.js';
 import TechnologyRating from "../models/SkillAssessorModel.js";
 import CVAnalysis from "../models/CVAnalysisModel.js";
 import { extractTechnologies } from "./CVAnalysisAPI.js";
@@ -62,7 +63,7 @@ Categories should be one of:
 Be thorough and include all technical skills mentioned.`;
 
     const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
+      model: GEMINI_MODEL,
       messages: [
         {
           role: "system",

@@ -11,14 +11,13 @@ const urlPath = '/' + String(rawPath).replace(/^[A-Za-z]:[\\/]Program Files[\\/]
 const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
 const width = +opt('width', 1440), height = +opt('height', 900), base = opt('base', 'http://localhost:5180'), role = opt('role', ''), wait = +opt('wait', 900), scroll = +opt('scroll', 0);
 const full = args.includes('--full');
-const log = fs.readFileSync(path.join(here, 'demo-credentials.log'), 'utf8');
-const pw = (start) => log.split('\n').find((l) => l.includes(start)).trim().split(/\s+/).pop();
+// Fixed demo logins seeded by `npm run dev:local` (local demo data only).
 const ROLES = {
-  admin: ['admin@email.com', pw('admin@email.com')],
-  lecturer: ['lecturer@email.com', pw('lecturer@email.com')],
-  careers: ['careers@email.com', pw('careers@email.com')],
-  student: ['student@email.com', pw('student@email.com')],
-  adminB: ['admin@demo-b.test', pw('admin@demo-b.test')],
+  admin: ['admin@email.com', 'admin@123'],
+  lecturer: ['lecturer@email.com', 'lecturer@123'],
+  careers: ['careers@email.com', 'careers@123'],
+  student: ['student@email.com', 'student@123'],
+  adminB: ['admin@demo-b.test', 'admin@123'],
 };
 const exe = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));
 const browser = await chromium.launch({ executablePath: exe, headless: true });

@@ -141,7 +141,8 @@ const transcribeWithAssemblyAI = async (audioPath) => {
       }
     }
   } catch (error) {
-    console.error('AssemblyAI transcription error:', error);
+    // Log the provider's own message (e.g. why a 4xx happened), not just the axios wrapper.
+    console.error('AssemblyAI transcription error:', error.response?.status, JSON.stringify(error.response?.data || error.message).slice(0, 500));
     throw error;
   }
 };

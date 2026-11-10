@@ -111,12 +111,10 @@ const MockInterviewSystem = () => {
     return () => clearInterval(interval);
   }, [currentStep]);
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      audio.cleanup();
-    };
-  }, [audio]);
+  // Release the microphone only when the page closes. Depending on the whole `audio` object
+  // (a new object every render) stopped the microphone on every re-render, so recordings were empty.
+  const { cleanup: cleanupAudio } = audio;
+  useEffect(() => cleanupAudio, [cleanupAudio]);
 
   // Question type helper
   const isCodingQuestion = useMemo(() => {

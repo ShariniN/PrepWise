@@ -61,6 +61,12 @@ const cvAnalysisSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    // How the match percentage was calculated: AI score, keyword score, matched/missing skills,
+    // and whether the AI was available. Shown to the student so the number can be checked.
+    scoreBreakdown: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
     strengths: {
       type: [String],
       default: []

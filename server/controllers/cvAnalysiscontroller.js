@@ -3,10 +3,12 @@ import crypto from 'crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import CVAnalysis from "../models/CVAnalysisModel.js";
 import userModel from '../models/userModel.js';
+import { GEMINI_MODEL } from '../config/ai.js';
+import { scoreResume } from '../services/cvScoring.js';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash"});
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 // Utility functions
 function convertMarkdownToHTML(text) {
@@ -78,196 +80,6 @@ function createResumeHash(resumeText) {
   return crypto.createHash('sha256').update(resumeText.trim()).digest('hex');
 }
 
-// CS Technical Skills for matching
-const CS_TECHNICAL_SKILLS = {
-  programming_languages: {
-    weight: 0.3,
-    keywords: ['python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'go', 'rust', 'swift', 'kotlin', 'scala', 'ruby', 'php', 'c', 'r', 'matlab']
-  },
-  web_technologies: {
-    weight: 0.25,
-    keywords: ['react', 'angular', 'vue', 'nodejs', 'express', 'django', 'flask', 'spring', 'html', 'css', 'bootstrap', 'tailwind', 'next.js', 'nuxt.js']
-  },
-  cs_fundamentals: {
-    weight: 0.2,
-    keywords: ['data structures', 'algorithms', 'algorithm', 'binary tree', 'graph', 'hash table', 'linked list', 'array', 'sorting', 'searching', 'recursion', 'dynamic programming', 'big o', 'complexity analysis']
-  },
-  dev_tools: {
-    weight: 0.15,
-    keywords: ['git', 'github', 'gitlab', 'docker', 'kubernetes', 'ci/cd', 'jenkins', 'testing', 'unit testing', 'integration testing', 'agile', 'scrum', 'api', 'rest', 'graphql']
-  },
-  databases: {
-    weight: 0.1,
-    keywords: ['mysql', 'postgresql', 'mongodb', 'redis', 'sqlite', 'firebase', 'sql', 'nosql', 'database design', 'orm']
-  }
-};
-
-const NON_CS_INDICATORS = [
-  'medical', 'doctor', 'physician', 'nurse', 'healthcare', 'hospital',
-  'law', 'lawyer', 'attorney', 'legal', 'court', 'litigation',
-  'teacher', 'educator', 'instructor', 'professor', 'school',
-  'retail', 'sales associate', 'cashier', 'store manager',
-  'chef', 'cook', 'kitchen', 'restaurant', 'food service',
-  'accountant', 'bookkeeper', 'financial analyst', 'audit'
-];
-
-// Calculate technical match score
-const calculateTechnicalMatch = (resumeText, jobDesc) => {
-  const resumeLower = resumeText.toLowerCase();
-  const jobDescLower = jobDesc.toLowerCase();
-  
-  let totalScore = 0;
-  let maxPossibleScore = 0;
-  
-  for (const [category, config] of Object.entries(CS_TECHNICAL_SKILLS)) {
-    const requiredSkills = config.keywords.filter(skill => 
-      jobDescLower.includes(skill.toLowerCase())
-    );
-    
-    if (requiredSkills.length === 0) continue;
-    
-    const candidateSkills = config.keywords.filter(skill => 
-      resumeLower.includes(skill.toLowerCase())
-    );
-    
-    const matchingSkills = requiredSkills.filter(skill => 
-      candidateSkills.includes(skill)
-    );
-    
-    const categoryScore = (matchingSkills.length / requiredSkills.length) * config.weight;
-    totalScore += categoryScore;
-    maxPossibleScore += config.weight;
-  }
-  
-  return maxPossibleScore > 0 ? (totalScore / maxPossibleScore) : 0;
-};
-
-// Enhanced score parsing function
-function parseScoreFromResponse(responseText) {
-  console.log("Raw Gemini response:", responseText);
-  
-  // Try to extract just the number from the response
-  const patterns = [
-    /^(\d*\.?\d+)$/,                    // Just a number: "0.56"
-    /score[:\s]*(\d*\.?\d+)/i,          // "Score: 0.56"
-    /(\d*\.?\d+)[^\d]*$/,               // Number at the end: "0.56 (good match)"
-    /^[^\d]*(\d*\.?\d+)/,               // Number at the start: "Result: 0.56"
-    /(\d*\.?\d+)/                       // First number found anywhere
-  ];
-
-  for (const pattern of patterns) {
-    const match = responseText.trim().match(pattern);
-    if (match) {
-      const score = parseFloat(match[1]);
-      console.log(`Extracted score using pattern ${pattern}: ${score}`);
-      if (!isNaN(score) && score >= 0 && score <= 1) {
-        return score;
-      }
-    }
-  }
-
-  console.warn("Could not extract valid score from response:", responseText);
-  return null;
-}
-
-// Get similarity score using Gemini API with enhanced parsing
-const getSimilarityScore = async (resumeText, jobDesc) => {
-  try {
-    // Pre-screening for non-CS roles
-    const jobDescLower = jobDesc.toLowerCase();
-    
-    const hasNonCSIndicators = NON_CS_INDICATORS.some(indicator => 
-      jobDescLower.includes(indicator.toLowerCase())
-    );
-
-    const hasCSIndicators = Object.values(CS_TECHNICAL_SKILLS)
-      .flatMap(category => category.keywords)
-      .some(keyword => jobDescLower.includes(keyword.toLowerCase()));
-
-    if (hasNonCSIndicators && !hasCSIndicators) {
-      console.log("Non-CS role detected, returning 0 similarity");
-      return 0;
-    }
-
-    // Get technical match score as baseline
-    const technicalMatchScore = calculateTechnicalMatch(resumeText, jobDesc);
-    
-    const maxLength = 4000;
-    const truncatedResume = resumeText.length > maxLength
-      ? resumeText.substring(0, maxLength) + "..."
-      : resumeText;
-    const truncatedJobDesc = jobDesc.length > maxLength
-      ? jobDesc.substring(0, maxLength) + "..."
-      : jobDesc;
-
-    const prompt = `You are an expert technical recruiter specializing in Computer Science and Software Engineering internships.
-
-CRITICAL: First verify this is a CS/Software Engineering internship role.
-
-CS/SOFTWARE ENGINEERING ROLES include:
-- Software Engineer/Developer Intern (Frontend, Backend, Full-Stack)
-- Computer Science Intern, Programming Intern
-- Web Developer Intern, Mobile Developer Intern
-- Data Engineer/Scientist Intern, ML/AI Engineer Intern
-- DevOps Engineer Intern, QA/Test Engineer Intern
-
-NON-CS ROLES (return 0.0):
-- Medical, Legal, Education, Retail, Food Service, Marketing, Sales, HR
-
-If NOT a CS/Software Engineering role, return exactly: 0.0
-
-For CS/SOFTWARE ENGINEERING roles, evaluate match quality:
-
-EVALUATION CRITERIA:
-1. Programming Languages Match (30%)
-2. CS Fundamentals (25%) 
-3. Relevant Projects (20%)
-4. Development Tools/Practices (15%)
-5. Educational Foundation (10%)
-
-SCORING GUIDE:
-- 0.0-0.2: Minimal CS background
-- 0.2-0.4: Some CS knowledge, missing key requirements
-- 0.4-0.6: Decent foundation, moderate gaps
-- 0.6-0.8: Strong candidate, minor improvements needed
-- 0.8-1.0: Excellent match, highly qualified
-
-Resume:
-${truncatedResume}
-
-Job Description:
-${truncatedJobDesc}
-
-Technical baseline score: ${technicalMatchScore.toFixed(2)}
-
-RESPONSE FORMAT REQUIREMENT:
-Return ONLY a single decimal number between 0.0 and 1.0, nothing else.
-Example: 0.67
-Do NOT include explanations, text, or additional formatting.`;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const scoreText = response.text().trim();
-    
-    // Use enhanced parsing function
-    const aiScore = parseScoreFromResponse(scoreText);
-
-    if (aiScore === null) {
-      console.warn("Invalid AI score, using technical match score. Response was:", scoreText);
-      return Math.max(0, Math.min(1, technicalMatchScore));
-    }
-
-    console.log(`✅ Successfully parsed AI score: ${aiScore}`);
-
-    // Blend AI score with technical match for consistency
-    const finalScore = (aiScore * 0.7) + (technicalMatchScore * 0.3);
-    return Math.max(0, Math.min(1, finalScore));
-
-  } catch (err) {
-    console.error("Error in getSimilarityScore:", err.message);
-    return calculateTechnicalMatch(resumeText, jobDesc);
-  }
-};
 
 // Extract technologies using Gemini API with structured JSON response
 const extractTechnologiesFromResume = async (resumeText) => {
@@ -337,11 +149,8 @@ Return ONLY the JSON array, no other text.`;
 
 // Fallback technologies
 function getFallbackTechnologies() {
-  return [
-    { name: 'JavaScript', category: 'Programming Languages', confidenceLevel: 5 },
-    { name: 'Python', category: 'Programming Languages', confidenceLevel: 5 },
-    { name: 'Git', category: 'Development Tools', confidenceLevel: 5 }
-  ];
+  // The AI could not read the CV: return nothing rather than invented technologies.
+  return [];
 }
 
 // Get structured recommendations using Gemini API with enhanced JSON parsing
@@ -461,89 +270,80 @@ Return ONLY the JSON object, no other text or formatting.`;
 };
 
 // Default recommendations fallback
+// When the AI is unavailable we return no advice at all, flagged as unavailable.
+// (This used to return canned advice that looked like a real analysis, e.g. "missing Python" for a Python CV.)
 const getDefaultCSRecommendations = () => ({
   isNonTechRole: false,
-  strengths: [
-    "Shows foundational computer science education",
-    "Demonstrates programming aptitude and problem-solving mindset",
-    "Has academic exposure to CS concepts"
-  ],
-  contentWeaknesses: [
-    "Missing core programming languages (Python, Java, JavaScript)",
-    "Lacks demonstrated CS fundamentals (data structures, algorithms)",
-    "No visible coding projects with GitHub repositories"
-  ],
-  structureWeaknesses: [
-    "Technical skills section not organized for CS recruiting",
-    "Missing essential technical links (GitHub, portfolio)",
-    "Resume format not optimized for software engineering roles"
-  ],
-  contentRecommendations: [
-    "Master fundamental programming languages",
-    "Build substantial coding projects with measurable impact",
-    "Study CS fundamentals and implement common algorithms"
-  ],
-  structureRecommendations: [
-    "Use CS-focused resume template with clear technical sections",
-    "Add technical links prominently (GitHub, LinkedIn, portfolio)",
-    "Format for technical ATS with CS keywords and clean layout"
-  ]
+  recommendationsUnavailable: true,
+  strengths: [],
+  contentWeaknesses: [],
+  structureWeaknesses: [],
+  contentRecommendations: [],
+  structureRecommendations: []
 });
 
-// Main analysis function using real Gemini API
+const generateText = async (prompt) => (await model.generateContent(prompt)).response.text().trim();
+
+// Main analysis: score (services/cvScoring.js) and written feedback run in parallel.
 const analyzeResumeMatch = async (resumeText, jobDesc) => {
-  try {
-    console.log("Starting CS internship analysis with Gemini API...");
+  const [score, structuredAnalysis] = await Promise.all([
+    scoreResume({ resumeText, jobDesc, generate: generateText }),
+    getStructuredRecommendations(resumeText, jobDesc).catch((err) => {
+      console.error("Structured analysis failed:", err.message);
+      return getDefaultCSRecommendations();
+    })
+  ]);
 
-    const [similarity, structuredAnalysis] = await Promise.all([
-      getSimilarityScore(resumeText, jobDesc).catch((err) => {
-        console.error("Similarity calculation failed:", err.message);
-        return calculateTechnicalMatch(resumeText, jobDesc);
-      }),
-      getStructuredRecommendations(resumeText, jobDesc).catch((err) => {
-        console.error("Structured analysis failed:", err.message);
-        return getDefaultCSRecommendations();
-      })
-    ]);
+  const scoreBreakdown = {
+    aiAvailable: score.aiAvailable,
+    aiScore: score.aiScore,
+    aiWeight: 0.7,
+    keywordScore: score.keywordScore,
+    keywordWeight: 0.3,
+    requiredSkills: score.requiredSkills,
+    matchedSkills: score.matchedSkills,
+    missingSkills: score.missingSkills,
+    aiError: score.aiError,
+    model: GEMINI_MODEL
+  };
 
-    console.log("Similarity score:", similarity.toFixed(3));
-    console.log("Analysis completed for CS role:", !structuredAnalysis.isNonTechRole);
-
-    if (structuredAnalysis.isNonTechRole) {
-      return {
-        similarityScore: 0,
-        matchPercentage: 0,
-        isNonTechRole: true,
-        message: structuredAnalysis.message,
-        timestamp: new Date().toISOString(),
-        warning: "Non-CS role detected"
-      };
-    }
-
-    const matchPercentage = Math.round(similarity * 100);
-
+  if (structuredAnalysis.isNonTechRole) {
     return {
-      similarityScore: Number(similarity.toFixed(3)),
-      matchPercentage: Math.max(0, Math.min(100, matchPercentage)),
-      isNonTechRole: false,
-      strengths: structuredAnalysis.strengths || [],
-      contentWeaknesses: structuredAnalysis.contentWeaknesses || [],
-      structureWeaknesses: structuredAnalysis.structureWeaknesses || [],
-      contentRecommendations: structuredAnalysis.contentRecommendations || [],
-      structureRecommendations: structuredAnalysis.structureRecommendations || [],
+      matchPercentage: 0,
+      isNonTechRole: true,
+      message: structuredAnalysis.message,
+      scoreBreakdown,
       timestamp: new Date().toISOString()
     };
-  } catch (err) {
-    console.error("Error in analyzeResumeMatch:", err.message);
+  }
+
+  if (!score.aiAvailable) {
+    console.error("CV match AI unavailable:", score.aiError);
     return {
-      similarityScore: 0,
       matchPercentage: 0,
       isNonTechRole: false,
       ...getDefaultCSRecommendations(),
-      timestamp: new Date().toISOString(),
-      error: err.message
+      scoreBreakdown,
+      error: "AI analysis is unavailable right now, so no match score was calculated. " +
+        `Keyword check only: ${score.matchedSkills.length} of ${score.requiredSkills.length} skills from the job description appear in the CV.`,
+      message: "AI analysis is unavailable right now, so no match score was calculated.",
+      timestamp: new Date().toISOString()
     };
   }
+
+  return {
+    similarityScore: score.matchPercentage / 100,
+    matchPercentage: score.matchPercentage,
+    isNonTechRole: false,
+    strengths: structuredAnalysis.strengths || [],
+    contentWeaknesses: structuredAnalysis.contentWeaknesses || [],
+    structureWeaknesses: structuredAnalysis.structureWeaknesses || [],
+    contentRecommendations: structuredAnalysis.contentRecommendations || [],
+    structureRecommendations: structuredAnalysis.structureRecommendations || [],
+    recommendationsUnavailable: !!structuredAnalysis.recommendationsUnavailable,
+    scoreBreakdown,
+    timestamp: new Date().toISOString()
+  };
 };
 
 // Enhanced CV analysis function
@@ -578,6 +378,7 @@ async function performCVAnalysis(cvText, jobDescriptions) {
         contentRecommendations: analysisResult.contentRecommendations || [],
         structureRecommendations: analysisResult.structureRecommendations || [],
         message: analysisResult.message || null,
+        scoreBreakdown: analysisResult.scoreBreakdown || null,
         extractedTechnologies: extractedTechnologies
       };
 
@@ -993,7 +794,7 @@ export const saveAnalysis = async (req, res) => {
       if (!analysis.analysisMetadata) {
         analysis.analysisMetadata = {};
       }
-      analysis.analysisMetadata.geminiModel = "gemini-2.5-flash";
+      analysis.analysisMetadata.geminiModel = GEMINI_MODEL;
       analysis.analysisMetadata.processingDate = new Date().toISOString();
       analysis.analysisMetadata.enhancedParsing = true;
       
@@ -1015,7 +816,7 @@ export const saveAnalysis = async (req, res) => {
         isSaved: shouldSave,
         usedProfileCV: false, // Default to false unless specified
         analysisMetadata: {
-          geminiModel: "gemini-2.5-flash",
+          geminiModel: GEMINI_MODEL,
           processingDate: new Date().toISOString(),
           enhancedParsing: true
         }
@@ -1029,6 +830,7 @@ export const saveAnalysis = async (req, res) => {
     const validatedResults = (analysis.results || []).map((result, index) => {
       return {
         matchPercentage: typeof result.matchPercentage === 'number' ? Math.max(0, Math.min(100, result.matchPercentage)) : 0,
+        scoreBreakdown: result.scoreBreakdown || null,
         isNonTechRole: typeof result.isNonTechRole === 'boolean' ? result.isNonTechRole : false,
         strengths: Array.isArray(result.strengths) ? result.strengths : [],
         contentWeaknesses: Array.isArray(result.contentWeaknesses) ? result.contentWeaknesses : [],
@@ -1454,8 +1256,6 @@ export const toggleSaveStatus = async (req, res) => {
 
 // Export utility functions for external use
 export {
-  calculateTechnicalMatch,
-  getSimilarityScore,
   extractTechnologiesFromResume,
   getStructuredRecommendations,
   analyzeResumeMatch,
@@ -1464,6 +1264,5 @@ export {
   stripHTMLToText,
   validateResumeContent,
   validateJobDescription,
-  parseScoreFromResponse,
   getFallbackTechnologies
 };

@@ -1,10 +1,11 @@
 // Enhanced CV Analysis API using Gemini 2.5 Flash directly
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from "crypto";
+import { GEMINI_MODEL } from '../config/ai.js';
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
 const validateInputs = (text1, text2) => {
   if (

@@ -51,6 +51,43 @@ export const useAudioRecording = (addDebugLog) => {
     }
   }, [addDebugLog]);
 
+  const transcribeAudio = useCallback(async (blob) => {
+    try {
+      setIsTranscribing(true);
+      setTranscriptionError('');
+      
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.webm');
+
+      const response = await fetch('/api/interviews/transcribe', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.text && result.text.trim()) {
+        setTranscription(result.text);
+        addDebugLog('Transcription successful');
+      } else if (result.success) {
+        throw new Error('No speech was detected. Check your microphone and try again, or type your answer below.');
+      } else {
+        throw new Error(result.error || 'Transcription failed');
+      }
+      
+    } catch (err) {
+      const error = `Transcription failed: ${err.message}`;
+      setTranscriptionError(error);
+      addDebugLog(error, 'error');
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [addDebugLog]);
+
   const startRecording = useCallback(async () => {
     try {
       addDebugLog('Starting recording...');
@@ -83,6 +120,7 @@ export const useAudioRecording = (addDebugLog) => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
         addDebugLog(`Recording stopped, size: ${blob.size} bytes`);
+        transcribeAudio(blob);
       };
 
       mediaRecorder.onerror = (event) => {
@@ -102,7 +140,7 @@ export const useAudioRecording = (addDebugLog) => {
       setAudioError(err.message);
       addDebugLog(`Start recording failed: ${err.message}`, 'error');
     }
-  }, [audioStream, initializeAudio, addDebugLog]);
+  }, [audioStream, initializeAudio, transcribeAudio, addDebugLog]);
 
   const stopRecording = useCallback(() => {
     try {
@@ -120,40 +158,6 @@ export const useAudioRecording = (addDebugLog) => {
     }
   }, [isRecording, addDebugLog]);
 
-  const transcribeAudio = useCallback(async (blob) => {
-    try {
-      setIsTranscribing(true);
-      setTranscriptionError('');
-      
-      const formData = new FormData();
-      formData.append('audio', blob, 'recording.webm');
-
-      const response = await fetch('/api/interviews/transcribe', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (result.success && result.text) {
-        setTranscription(result.text);
-        addDebugLog('Transcription successful');
-      } else {
-        throw new Error(result.error || 'Transcription failed');
-      }
-      
-    } catch (err) {
-      const error = `Transcription failed: ${err.message}`;
-      setTranscriptionError(error);
-      addDebugLog(error, 'error');
-    } finally {
-      setIsTranscribing(false);
-    }
-  }, [addDebugLog]);
 
   const playRecording = useCallback(async () => {
     if (!audioBlob || !audioPlaybackRef.current) return;

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_MODEL } from '../../config/ai.js';
 import axios from 'axios';
 import { consumeAi } from '../../services/aiUsage.js';
 
@@ -33,7 +34,7 @@ const checkRateLimit = async () => {
 
 const getModel = (config = {}) => {
   return genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash-lite",
+    model: GEMINI_MODEL,
     generationConfig: { 
       temperature: 0.2,
       maxOutputTokens: 4000,
