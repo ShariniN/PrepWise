@@ -5,7 +5,9 @@ import { institutionOf } from '../middleware/tenancy.js';
 import { MAX_SOURCE_CHARS } from '../services/execution/index.js';
 import { normalizeLanguage } from '../services/execution/languages.js';
 import { studentQuestion, studentListItem } from '../services/questionSerializers.js';
-import { runForQuestion, submitForQuestion, cleanEvents, EVENT_LIMITS, CODE_TYPES } from '../services/practiceCore.js';
+import {
+  runForQuestion, submitForQuestion, recordBrowserRun, cleanEvents, EVENT_LIMITS, CODE_TYPES,
+} from '../services/practiceCore.js';
 
 export { EVENT_LIMITS };
 export const isId = (v) => /^[a-f\d]{24}$/i.test(String(v));
@@ -43,6 +45,13 @@ export const runCode = async (req, res) => {
   const q = await loadPublished(req, res);
   if (!q) return;
   send(res, await runForQuestion(q, req.body, { institutionId: institutionOf(req), userId: req.user.id }));
+};
+
+// Activity record for a Run that happened in the student's browser. Unverified; never scored or counted as solved.
+export const browserRun = async (req, res) => {
+  const q = await loadPublished(req, res);
+  if (!q) return;
+  send(res, await recordBrowserRun(q, req.body, { institutionId: institutionOf(req), userId: req.user.id }));
 };
 
 export const submit = async (req, res) => {

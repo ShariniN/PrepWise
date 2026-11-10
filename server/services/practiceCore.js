@@ -85,6 +85,24 @@ export const runForQuestion = async (q, body, ctx) => {
   }
 };
 
+// The student pressed Run and the code ran in their own browser (Python / JavaScript). Nothing ran here, so nothing
+// is verified: the record only keeps practice activity visible (lecturer "last active", admin "active students").
+// Whatever the browser says about its result is ignored; the verdict is always BROWSER_RUN, never a score.
+export const BROWSER_RUN = 'browser_unverified';
+export const recordBrowserRun = async (q, body, ctx) => {
+  if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question is not a coding question');
+  const { language, source } = body || {};
+  const picked = pickLanguage(q, language);
+  if (picked.error) return picked.error;
+  const srcErr = checkSource(source);
+  if (srcErr) return srcErr;
+  await questionRepo.createAttempt({
+    userId: ctx.userId, institutionId: ctx.institutionId, questionId: q._id, questionVersion: q.version, runKind: 'run',
+    language: picked.lang, source, verdict: BROWSER_RUN, perTest: [], score: null, ...(ctx.attemptExtra || {}),
+  });
+  return { status: 201, body: { success: true, recorded: true, verified: false } };
+};
+
 // Result also carries `attempt` (the stored document) for callers that need it.
 export const submitForQuestion = async (q, body, ctx) => {
   const base = {

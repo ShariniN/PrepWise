@@ -222,6 +222,57 @@ test('interview answers: tests there have no visible/hidden split, so every test
   assert.equal(down.executionResults.serverVerified, false);
 });
 
+test('browser Run record: no runner call, stored as an unverified run, client claims ignored, never solved or scored', async () => {
+  const res = await request(app).post(`/api/practice/questions/${q._id}/browser-run`).set('Cookie', w.cookie(stu))
+    .send({ language: 'javascript', source: RIGHT, verdict: 'accepted', score: 100, passed: 2, tests: [{ passed: true }], perTest: [{ passed: true }] });
+  assert.equal(res.status, 201, res.text);
+  assert.deepEqual(res.body, { success: true, recorded: true, verified: false });
+  assert.equal(provider.calls, 0, 'nothing runs on the server');
+  const a = db.attempts.at(-1);
+  assert.equal(a.runKind, 'run');
+  assert.equal(a.verdict, 'browser_unverified');
+  assert.equal(a.score, null);
+  assert.deepEqual(a.perTest, []);
+  assert.equal(String(a.userId), String(stu._id));
+  // not solved: ?unseen=1 still lists the question, and lecturer metrics count no submission or solve,
+  // but the student does show as active
+  const list = await request(app).get('/api/practice/questions?unseen=1').set('Cookie', w.cookie(stu));
+  assert.ok(list.body.questions.some((x) => x.id === String(q._id)));
+  const { practiceSummary, studentRow } = await import('../lecturer/metrics.js');
+  const summary = practiceSummary(db.attempts);
+  assert.equal(summary.submissions, 0);
+  assert.equal(summary.solved, 0);
+  assert.equal(summary.averageScore, null);
+  const row = studentRow({ _id: stu._id, name: 'S' }, { interviews: [], cvAnalyses: [], attempts: db.attempts }, new Date());
+  assert.equal(row.practiceSolved, 0);
+  assert.ok(row.lastActive, 'a browser run still counts as activity');
+});
+
+test('browser Run record: validated like a run (student only, published coding question, allowed language, source size)', async () => {
+  const post = (id, body, u = stu) => request(app).post(`/api/practice/questions/${id}/browser-run`).set('Cookie', w.cookie(u)).send(body);
+  assert.equal((await post(q._id, { language: 'javascript', source: RIGHT }, lec)).status, 403);
+  assert.equal((await post(q._id, { language: 'python', source: 'print(1)' })).status, 400); // not in question.languages
+  assert.equal((await post(q._id, { language: 'javascript', source: '' })).status, 400);
+  assert.equal((await post(q._id, { language: 'javascript', source: 'x'.repeat(70000) })).status, 413);
+  const mcq = db.addQuestion({ institutionId: IDS.instA, type: 'mcq', title: 'M', options: ['a', 'b'], correct: [0] });
+  assert.equal((await post(mcq._id, { language: 'javascript', source: RIGHT })).status, 400);
+  const draft = db.addQuestion({ institutionId: IDS.instA, status: 'draft', title: 'D' });
+  assert.equal((await post(draft._id, { language: 'javascript', source: RIGHT })).status, 404);
+  assert.equal(db.attempts.length, 0);
+  assert.equal(provider.calls, 0);
+});
+
+test('visible tests tell the browser which comparison the server uses', async () => {
+  const cq = db.addQuestion({ institutionId: IDS.instA, title: 'Cmp' }, [
+    { input: '1', expectedOutput: '2', visible: true, comparison: 'tokens', institutionId: IDS.instA },
+    { input: '2', expectedOutput: '4', visible: true, institutionId: IDS.instA },
+    { input: '3', expectedOutput: '6', visible: false, comparison: 'exact', institutionId: IDS.instA },
+  ]);
+  const res = await request(app).get(`/api/practice/questions/${cq._id}`).set('Cookie', w.cookie(stu));
+  assert.deepEqual(res.body.question.visibleTests.map((t) => t.comparison), ['tokens', 'trim']);
+  assert.equal(res.body.question.hiddenTestCount, 1);
+});
+
 test('hidden test data never leaks through the not-run path', async () => {
   const secretQ = db.addQuestion({ institutionId: IDS.instA, title: 'Secret' }, [
     { input: '1', expectedOutput: '2', visible: true, institutionId: IDS.instA },
