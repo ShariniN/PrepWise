@@ -439,19 +439,10 @@ ${inputPrompt}`, { temperature: 0.1, maxOutputTokens: 1200 });
   return parseAIResponse(rawText);
 };
 
-// Export rate limit info for monitoring
-export const getRateLimitInfo = () => ({
-  requestCount,
-  maxRequests: MAX_REQUESTS_PER_MINUTE,
-  remaining: MAX_REQUESTS_PER_MINUTE - requestCount,
-  resetIn: 60000 - (Date.now() - lastResetTime)
-});
-
 export default { 
   generateInterviewQuestions, 
   generateAIFeedback, 
   generateOverallInterviewFeedback,
   generateQuestionDrafts,
-  suggestRubricScore,
-  getRateLimitInfo
+  suggestRubricScore
 };

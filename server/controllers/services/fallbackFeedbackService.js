@@ -216,5 +216,3 @@ const mapScoreToResponseType = (score) => {
   if (score >= 25) return 'mostly-irrelevant';
   return 'completely-off-topic';
 };
-
-export default { generateFallbackFeedback };

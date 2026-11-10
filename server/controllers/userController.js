@@ -18,26 +18,8 @@ const extractTextFromPDF = async (buffer) => {
   }
 };
 
-// Middleware to ensure user is a fresher
-const ensureFresher = (req, res, next) => {
-  if (req.user.userType !== 'fresher' && req.user.accountType !== 'Fresher') {
-    return res.status(403).json({
-      success: false,
-      message: "This endpoint is only available for fresher accounts"
-    });
-  }
-  next();
-};
-
 export const getUserProfile = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "This endpoint is only available for fresher accounts"
-      });
-    }
 
     const userId = req.user._id || req.user.id;
     
@@ -65,13 +47,6 @@ export const getUserProfile = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "This endpoint is only available for fresher accounts"
-      });
-    }
 
     const userId = req.user._id || req.user.id;
     // Only these fields can be changed by the user. Role and plan are never accepted from the client.
@@ -126,13 +101,6 @@ export const updateUserProfile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "This endpoint is only available for fresher accounts"
-      });
-    }
 
     const userId = req.user._id || req.user.id;
     const { currentPassword, newPassword } = req.body;
@@ -187,13 +155,6 @@ export const changePassword = async (req, res) => {
 
 export const uploadCV = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "CV upload is only available for fresher accounts"
-      });
-    }
 
     if (!req.file) {
       return res.status(400).json({ 
@@ -248,13 +209,6 @@ export const uploadCV = async (req, res) => {
 
 export const getCurrentCV = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "CV management is only available for fresher accounts"
-      });
-    }
 
     const user = await userModel.findById(req.user.id);
     if (!user) {
@@ -290,13 +244,6 @@ export const getCurrentCV = async (req, res) => {
 
 export const deleteCV = async (req, res) => {
   try {
-    // Ensure this is a fresher account
-    if (req.user.userType !== 'fresher') {
-      return res.status(403).json({
-        success: false,
-        message: "CV management is only available for fresher accounts"
-      });
-    }
 
     const user = await userModel.findById(req.user.id);
     if (!user) {

@@ -184,7 +184,7 @@ export const saveRatings = async (req, res) => {
   try {
     console.log('🔍 Saving technology ratings...');
     
-    const { resumeHash, technologies, summary, shouldSave = true } = req.body;
+    const { resumeHash, technologies, shouldSave = true } = req.body;
     const userId = req.user.id;
 
     console.log(`=== Saving Technology Ratings ===`);
@@ -256,131 +256,49 @@ export const saveRatings = async (req, res) => {
       });
     }
 
-    // Calculate summary statistics
     const calculatedSummary = calculateSummary(validatedSkills);
-    const finalSummary = summary ? { ...calculatedSummary, ...summary } : calculatedSummary;
 
-    try {
-      // Try enhanced model first
-      let savedAssessment;
-      let usingEnhancedModel = false;
+    // Any database failure is a 500 (a missing or vanished document included).
+    const existingAssessment = await SkillsAssessment.findOne({ userId, resumeHash });
+    const assessmentData = {
+      userId,
+      institutionId: req.user.institutionId,
+      resumeHash,
+      assessmentType: 'Technical Skills',
+      skills: validatedSkills,
+      overallScore: Math.round(calculatedSummary.averageConfidence * 10),
+      isSaved: shouldSave,
+      completedAt: new Date()
+    };
+    const savedAssessment = existingAssessment
+      ? await SkillsAssessment.findByIdAndUpdate(existingAssessment._id, assessmentData, { new: true, runValidators: true })
+      : await SkillsAssessment.create(assessmentData);
 
-      try {
-        // Find existing assessment or create new one (enhanced model)
-        let existingAssessment = await SkillsAssessment.findOne({
-          userId: userId,
-          resumeHash: resumeHash
-        });
-
-        const assessmentData = {
-          userId: userId,
-          institutionId: req.user.institutionId,
-          resumeHash: resumeHash,
-          assessmentType: 'Technical Skills',
-          skills: validatedSkills,
-          overallScore: Math.round(calculatedSummary.averageConfidence * 10),
-          isSaved: shouldSave,
-          completedAt: new Date()
-        };
-
-        if (existingAssessment) {
-          console.log(`Updating existing skills assessment: ${existingAssessment._id}`);
-          savedAssessment = await SkillsAssessment.findByIdAndUpdate(
-            existingAssessment._id,
-            assessmentData,
-            { new: true, runValidators: true }
-          );
-        } else {
-          console.log(`Creating new skills assessment`);
-          savedAssessment = await SkillsAssessment.create(assessmentData);
-        }
-
-        usingEnhancedModel = true;
-        console.log(`Successfully ${existingAssessment ? 'updated' : 'created'} skills assessment: ${savedAssessment._id}`);
-
-      } catch (enhancedError) {
-        console.log('Enhanced model not available, using fallback TechnologyRating model');
-        
-        // Fallback to original TechnologyRating model
-        let rating = await TechnologyRating.findOne({
-          userId: userId,
-          resumeHash: resumeHash
-        });
-
-        if (rating) {
-          // Update existing rating
-          rating.technologies = validatedSkills;
-          rating.summary = finalSummary;
-          rating.saved = shouldSave;
-          rating.updatedAt = new Date();
-          await rating.save();
-          savedAssessment = rating;
-          console.log(`Updated existing technology rating: ${rating._id}`);
-        } else {
-          // Create new rating
-          rating = new TechnologyRating({
-            userId: userId,
-            resumeHash,
-            technologies: validatedSkills,
-            summary: finalSummary,
-            saved: shouldSave
-          });
-          await rating.save();
-          savedAssessment = rating;
-          console.log(`Created new technology rating: ${rating._id}`);
-        }
-      }
-
-      // Prepare enhanced response
-      const responseData = {
-        success: true,
-        message: shouldSave 
-          ? `Skills assessment saved successfully`
-          : `Skills assessment draft updated successfully`,
-        data: {
-          id: savedAssessment._id,
-          resumeHash: savedAssessment.resumeHash,
-          saved: usingEnhancedModel ? savedAssessment.isSaved : savedAssessment.saved,
-          technologiesCount: usingEnhancedModel ? savedAssessment.skills?.length : savedAssessment.technologies?.length,
-          summary: calculatedSummary,
-          createdAt: savedAssessment.createdAt,
-          updatedAt: savedAssessment.updatedAt
+    res.json({
+      success: true,
+      message: shouldSave
+        ? `Skills assessment saved successfully`
+        : `Skills assessment draft updated successfully`,
+      data: {
+        id: savedAssessment._id,
+        resumeHash: savedAssessment.resumeHash,
+        saved: savedAssessment.isSaved,
+        technologiesCount: savedAssessment.skills?.length,
+        summary: calculatedSummary,
+        createdAt: savedAssessment.createdAt,
+        updatedAt: savedAssessment.updatedAt
+      },
+      stats: {
+        totalTechnologies: calculatedSummary.totalTechnologies,
+        averageConfidence: calculatedSummary.averageConfidence,
+        distribution: {
+          expert: calculatedSummary.expertCount,
+          proficient: calculatedSummary.proficientCount,
+          learning: calculatedSummary.learningCount
         },
-        stats: {
-          totalTechnologies: calculatedSummary.totalTechnologies,
-          averageConfidence: calculatedSummary.averageConfidence,
-          distribution: {
-            expert: calculatedSummary.expertCount,
-            proficient: calculatedSummary.proficientCount,
-            learning: calculatedSummary.learningCount
-          },
-          usingEnhancedModel
-        }
-      };
-
-      res.json(responseData);
-
-    } catch (dbError) {
-      console.error('Database error saving skills assessment:', dbError);
-      
-      if (dbError.code === 11000) {
-        return res.status(409).json({
-          success: false,
-          message: 'Skills assessment for this resume already exists',
-          error: 'DUPLICATE_ASSESSMENT'
-        });
+        usingEnhancedModel: true
       }
-
-      if (dbError.name === 'ValidationError') {
-        return res.status(400).json({
-          success: false,
-          message: 'Skills assessment validation failed',
-          errors: Object.values(dbError.errors).map(err => err.message)
-        });
-      }
-
-      throw dbError;
-    }
+    });
 
   } catch (error) {
     console.error('❌ Error saving technology ratings:', error);
@@ -453,196 +371,6 @@ export const deleteRatings = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete assessment',
-      error: error.message
-    });
-  }
-};
-
-// GET /api/swot/stats - Get user statistics - INTEGRATED VERSION
-export const getRatingsStats = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const stats = await SkillsAssessment.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) } },
-      {
-        $group: {
-          _id: null,
-          totalAssessments: { $sum: 1 },
-          savedAssessments: {
-            $sum: { $cond: [{ $eq: ['$isSaved', true] }, 1, 0] }
-          },
-          averageScore: { $avg: '$overallScore' },
-          totalSkills: { $sum: { $size: '$skills' } },
-          latestAssessment: { $max: '$updatedAt' }
-        }
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: stats[0] || {
-        totalAssessments: 0,
-        savedAssessments: 0,
-        averageScore: 0,
-        totalSkills: 0,
-        latestAssessment: null
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch statistics',
-      error: error.message
-    });
-  }
-};
-
-// GET /api/swot/ratings/:resumeHash or /api/swot/ratings/:id - Enhanced details supporting both patterns
-export const getRatingDetails = async (req, res) => {
-  try {
-    const { resumeHash, id } = req.params;
-    const userId = req.user.id;
-    const identifier = id || resumeHash; // Support both patterns
-
-    console.log(`=== Getting Assessment Details ===`);
-    console.log(`User: ${userId}`);
-    console.log(`Identifier: ${identifier}`);
-
-    let assessment = null;
-    let usingEnhancedModel = false;
-    let searchByHash = false;
-
-    // Determine if it's an ObjectId or resume hash
-    if (identifier && identifier.match(/^[0-9a-fA-F]{24}$/)) {
-      // It's an ObjectId - search by ID
-      console.log('Searching by ID');
-      
-      try {
-        // Try enhanced model first
-        assessment = await SkillsAssessment.findOne({
-          _id: identifier,
-          userId: userId,
-          assessmentType: 'Technical Skills'
-        }).select('-userId');
-        
-        if (assessment) {
-          usingEnhancedModel = true;
-        }
-      } catch (enhancedError) {
-        console.log('Enhanced model not available, trying fallback');
-      }
-
-      if (!assessment) {
-        // Fallback to TechnologyRating model
-        assessment = await TechnologyRating.findOne({
-          _id: identifier,
-          userId: userId
-        });
-      }
-
-    } else {
-      // It's a resume hash - search by hash
-      console.log('Searching by resume hash');
-      searchByHash = true;
-
-      try {
-        // Try enhanced model first
-        assessment = await SkillsAssessment.findOne({
-          userId: userId,
-          resumeHash: identifier,
-          assessmentType: 'Technical Skills'
-        }).select('-userId');
-        
-        if (assessment) {
-          usingEnhancedModel = true;
-        }
-      } catch (enhancedError) {
-        console.log('Enhanced model not available, trying fallback');
-      }
-
-      if (!assessment) {
-        // Fallback to TechnologyRating model
-        assessment = await TechnologyRating.findOne({
-          userId: userId,
-          resumeHash: identifier
-        });
-      }
-    }
-
-    if (!assessment) {
-      return res.status(404).json({
-        success: false,
-        message: searchByHash ? 'Rating not found for this resume' : 'Skills assessment not found',
-        identifier: identifier
-      });
-    }
-
-    let assessmentDetails = assessment.toObject();
-    
-    // Add detailed analysis for enhanced model
-    if (usingEnhancedModel && assessment.skills) {
-      assessmentDetails.analysis = {
-        strengthAreas: assessment.skills.filter(s => s.proficiencyLevel >= 8),
-        improvementAreas: assessment.skills.filter(s => s.proficiencyLevel < 6),
-        balancedAreas: assessment.skills.filter(s => s.proficiencyLevel >= 6 && s.proficiencyLevel < 8),
-        
-        categoryBreakdown: assessment.skills.reduce((acc, skill) => {
-          const category = skill.category || 'General';
-          if (!acc[category]) {
-            acc[category] = {
-              count: 0,
-              avgConfidence: 0,
-              skills: []
-            };
-          }
-          acc[category].count++;
-          acc[category].skills.push(skill);
-          return acc;
-        }, {}),
-        
-        recommendations: []
-      };
-
-      // Calculate average confidence per category
-      Object.keys(assessmentDetails.analysis.categoryBreakdown).forEach(category => {
-        const categoryData = assessmentDetails.analysis.categoryBreakdown[category];
-        categoryData.avgConfidence = Math.round(
-          (categoryData.skills.reduce((sum, skill) => sum + skill.proficiencyLevel, 0) / categoryData.count) * 10
-        ) / 10;
-      });
-
-      // Generate recommendations
-      if (assessmentDetails.analysis.improvementAreas.length > 0) {
-        assessmentDetails.analysis.recommendations.push(
-          `Focus on improving ${assessmentDetails.analysis.improvementAreas.length} skills with proficiency below 6/10`
-        );
-      }
-      
-      if (assessmentDetails.analysis.strengthAreas.length > 0) {
-        assessmentDetails.analysis.recommendations.push(
-          `Leverage your expertise in ${assessmentDetails.analysis.strengthAreas.map(s => s.name).slice(0, 3).join(', ')}`
-        );
-      }
-    }
-
-    res.json({
-      success: true,
-      data: assessmentDetails,
-      metadata: {
-        usingEnhancedModel,
-        searchByHash,
-        identifier
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error getting rating details:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get rating details',
       error: error.message
     });
   }

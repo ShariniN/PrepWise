@@ -70,32 +70,6 @@ export const summarizeDelivery = (responses = []) => {
   };
 };
 
-// CV Management
-export const getUserCV = async (req, res) => {
-  try {
-    const userId = req.user.userId || req.user.id || req.user._id;
-    const user = await userModel.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        hasText: user.hasCV,
-        textLength: user.currentCV?.text?.length || 0,
-        fileName: user.currentCV?.fileName || '',
-        fileSize: user.currentCV?.fileSize || 0,
-        uploadedAt: user.currentCV?.uploadedAt || null
-      }
-    });
-  } catch (error) {
-    console.error('Get user CV error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get user CV' });
-  }
-};
-
 // PDF only, by type and by content; a refused file is answered with a 400 by the middleware itself.
 const cvUpload = pdfUpload('cv', 5 * 1024 * 1024);
 
@@ -628,64 +602,6 @@ export const submitAnswer = async (req, res) => {
   } catch (error) {
     console.error('Submit answer error:', error);
     res.status(500).json({ success: false, error: 'Failed to process answer' });
-  }
-};
-
-export const skipQuestion = async (req, res) => {
-  try {
-    const { interviewId } = req.params;
-    const userId = req.user?.userId || req.user?.id || req.user?._id;
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId });
-
-    if (!interview) {
-      return res.status(404).json({ success: false, error: 'Interview not found' });
-    }
-
-    const currentQuestionIndex = interview.responses.length;
-    if (currentQuestionIndex >= interview.questions.length) {
-      return res.status(400).json({ success: false, error: 'No more questions to skip' });
-    }
-
-    const question = interview.questions[currentQuestionIndex];
-    
-    const skipResponse = {
-      questionId: question.questionId,
-      question: question.question,
-      questionType: question.type,
-      transcription: null,
-      textResponse: 'Question skipped',
-      code: null,
-      language: null,
-      responseTime: 0,
-      submittedAt: new Date(),
-      skipped: true,
-      feedback: null
-    };
-
-    interview.responses.push(skipResponse);
-    interview.currentQuestionIndex = interview.responses.length;
-    interview.updatedAt = new Date();
-
-    if (interview.status === 'created') {
-      interview.status = 'in_progress';
-      interview.startedAt = new Date();
-    }
-
-    await interview.save();
-
-    res.json({
-      success: true,
-      message: 'Question skipped',
-      progress: {
-        current: interview.responses.length,
-        total: interview.questions.length,
-        completed: interview.responses.length >= interview.questions.length
-      }
-    });
-  } catch (error) {
-    console.error('Skip question error:', error);
-    res.status(500).json({ success: false, error: 'Failed to skip question' });
   }
 };
 

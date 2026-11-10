@@ -15,10 +15,8 @@ import {
   getInterviewFeedback, 
   getUserInterviews, 
   getInterview, 
-  getUserCV,  
   createInterviewWithProfileCV,
   createInterview,
-  skipQuestion,
   processCV
 } from '../controllers/interviewController.js';
 
@@ -241,12 +239,10 @@ interviewRouter.use(userAuth);
 
 interviewRouter.post('/transcribe', uploadToDisk.single('audio'), transcribeAudio);
 
-// Old paths kept for the existing client; same single execution service as /api/code/execute
-interviewRouter.post('/execute', codeExecutionLimiter, executeCode);
+// Old path kept for older clients; same single execution service as /api/code/execute
 interviewRouter.post('/execute-code', codeExecutionLimiter, executeCode);
 
 // CV management routes
-interviewRouter.get('/cv', getUserCV);
 interviewRouter.post('/process-cv', processCV);
 
 // Interview creation routes
@@ -254,15 +250,12 @@ interviewRouter.post('/create', createInterview);
 interviewRouter.post('/create-with-profile-cv', createInterviewWithProfileCV);
 
 // User history routes
-interviewRouter.get('/user/history', getUserInterviews);
 interviewRouter.get('/history', getUserInterviews);
 
 // Interview management routes
 interviewRouter.get('/:interviewId', getInterview);
 interviewRouter.put('/:interviewId/start', startInterview);
-interviewRouter.post('/:interviewId/answer', uploadToDisk.single('audio'), submitAnswer);
 interviewRouter.post('/:interviewId/submit-answer', uploadToMemory.single('audio'), submitAnswer);
-interviewRouter.post('/:interviewId/skip', skipQuestion);
 interviewRouter.get('/:interviewId/next-question', getNextQuestion);
 interviewRouter.put('/:interviewId/complete', completeInterview);
 
@@ -284,13 +277,6 @@ interviewRouter.use((error, req, res, next) => {
     return res.status(400).json({
       success: false,
       error: 'Invalid file type. Please upload audio files only.'
-    });
-  }
-  
-  if (error.message === 'Unsupported code file format') {
-    return res.status(400).json({
-      success: false,
-      error: 'Unsupported code file format. Please upload valid code files.'
     });
   }
   

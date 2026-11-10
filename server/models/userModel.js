@@ -212,21 +212,6 @@ userSchema.methods.getCVText = function() {
   return this.currentCV && this.currentCV.text ? this.currentCV.text : '';
 };
 
-userSchema.methods.getCVHash = function() {
-  return this.currentCV && this.currentCV.hash ? this.currentCV.hash : '';
-};
-
-// Static methods for CV-related queries
-userSchema.statics.findByResumeHash = function(hash) {
-  return this.find({ 'currentCV.hash': hash });
-};
-
-userSchema.statics.getUsersWithCV = function() {
-  return this.find({ 
-    'currentCV.text': { $exists: true, $ne: '' } 
-  });
-};
-
 const userModel = mongoose.model('User', userSchema);
 
 export default userModel;

@@ -352,5 +352,3 @@ func solution(input string) string {
 func main() {
     fmt.Println(solution("test"))
 }`;
-
-export default { normalizeLanguageName, selectBestLanguage, generateStarterCode };

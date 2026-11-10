@@ -119,51 +119,6 @@ export const calculateFinalResults = (responses, totalDuration) => {
   };
 };
 
-// CV analysis helpers
-export const extractTechnologies = (resumeText) => {
-  const techKeywords = [
-    'JavaScript', 'Python', 'Java', 'C++', 'C#', 'React', 'Node.js', 'Express',
-    'MongoDB', 'MySQL', 'PostgreSQL', 'HTML', 'CSS', 'Git', 'Docker', 'AWS',
-    'Vue.js', 'Angular', 'TypeScript', 'PHP', 'Ruby', 'Django', 'Flask',
-    'Spring', 'Bootstrap', 'jQuery', 'REST', 'API', 'GraphQL', 'Redis'
-  ];
-  
-  return techKeywords.filter(tech => 
-    new RegExp(`\\b${tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(resumeText)
-  );
-};
-
-export const extractRequirements = (jobDescription) => {
-  const requirements = [];
-  const lines = jobDescription.split('\n');
-  
-  lines.forEach(line => {
-    if (/^[-•*]\s*|requirements?:|skills?:/i.test(line)) {
-      const cleaned = line.replace(/^[-•*]\s*|requirements?:|skills?:/i, '').trim();
-      if (cleaned.length > 5 && cleaned.length < 100) {
-        requirements.push(cleaned);
-      }
-    }
-  });
-  
-  return requirements.slice(0, 8);
-};
-
-export const extractProjects = (resumeText) => {
-  const projects = [];
-  const lines = resumeText.split('\n');
-  
-  lines.forEach(line => {
-    if (/project|built|developed|created|implemented/i.test(line) && 
-        !/(education|experience|skills)/i.test(line) &&
-        line.length > 20) {
-      projects.push(line.trim());
-    }
-  });
-  
-  return projects.slice(0, 5);
-};
-
 // Fallback questions
 export const getFallbackQuestions = () => [
   {
@@ -298,14 +253,3 @@ console.log(checkEvenOdd(4)); // Should return "even"`
     language: "javascript"
   }
 ];
-
-export default {
-  validateAndSanitizeInput,
-  validateLanguage,
-  normalizeQuestionType,
-  calculateFinalResults,
-  extractTechnologies,
-  extractRequirements,
-  extractProjects,
-  getFallbackQuestions
-};
