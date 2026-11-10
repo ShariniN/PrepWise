@@ -55,7 +55,7 @@ const AcceptInvite = () => {
         {!token || fatal ? (
           <div role="alert" className="text-center">
             <p className="text-danger-700 text-sm mb-4">
-              {fatal || 'This invitation link is missing its token.'} Ask your university to send a new invitation.
+              {fatal || 'This invitation link is missing its token. Ask your administrator to send a new one.'}
             </p>
             <Link to="/login" className="text-primary-700 text-sm font-medium hover:underline">Go to login</Link>
           </div>

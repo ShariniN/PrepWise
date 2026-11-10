@@ -7,6 +7,7 @@ import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../config/emailT
 import { hashToken } from "../services/inviteTokens.js";
 import { audit } from "../services/audit.js";
 import { isKnownRole } from "../config/roles.js";
+import { passwordOk, PASSWORD_MESSAGE } from "../services/accountRules.js";
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -29,21 +30,21 @@ const signToken = (user) =>
     { expiresIn: "7d" }
   );
 
-const PASSWORD_RULE = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+const INVITE_INVALID_MESSAGE = "This invitation is not valid. Ask your administrator to send a new one.";
 
 // Open registration no longer exists. People are invited by their university and activate the
 // account here with the single-use token from the invitation link.
 export const acceptInvite = async (req, res) => {
   const { token, password, name, phoneNumber } = req.body || {};
 
-  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token) || !password) {
-    return res.status(400).json({ success: false, code: "INVITE_INVALID", message: "A valid invitation token and a password are required" });
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ success: false, code: "INVITE_INVALID", message: INVITE_INVALID_MESSAGE });
   }
-  if (typeof password !== "string" || !PASSWORD_RULE.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message: "Password must be at least 6 characters long, include one uppercase letter, one number, and one special character",
-    });
+  if (!password) {
+    return res.status(400).json({ success: false, message: "Choose a password to finish setting up your account." });
+  }
+  if (!passwordOk(password)) {
+    return res.status(400).json({ success: false, message: PASSWORD_MESSAGE });
   }
   if (phoneNumber !== undefined && phoneNumber !== "" && !/^\d{10}$/.test(String(phoneNumber))) {
     return res.status(400).json({ success: false, message: "Phone number must be exactly 10 digits" });
@@ -56,7 +57,7 @@ export const acceptInvite = async (req, res) => {
     const user = await userModel.findOne({ inviteTokenHash: hashToken(token) });
 
     if (!user || user.status !== "invited") {
-      return res.status(400).json({ success: false, code: "INVITE_INVALID", message: "This invitation is not valid. Ask your administrator to send a new one." });
+      return res.status(400).json({ success: false, code: "INVITE_INVALID", message: INVITE_INVALID_MESSAGE });
     }
     if (!user.inviteExpiresAt || new Date(user.inviteExpiresAt).getTime() < Date.now()) {
       return res.status(400).json({ success: false, code: "INVITE_EXPIRED", message: "This invitation has expired. Ask your administrator to send a new one." });
