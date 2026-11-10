@@ -7,7 +7,7 @@ export const ViewToggle = ({ table, onChange }) => (
   </button>
 );
 
-const fmt = (v, suffix = '') => (v === null || v === undefined ? 'no data' : `${v}${suffix}`);
+const fmt = (v, suffix = '', empty = 'no data') => (v === null || v === undefined ? empty : `${v}${suffix}`);
 
 const Frame = ({ caption, table, setTable, children }) => (
   <div className="viz-root rounded-2xl border border-line p-4" style={{ background: 'var(--viz-surface)', color: 'var(--viz-ink)' }}>
@@ -20,7 +20,8 @@ const Frame = ({ caption, table, setTable, children }) => (
 );
 
 // Horizontal bars. items: [{ label, value, detail? }]; value on a 0-max scale (default 100).
-export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
+// `empty` is the text for a null value.
+export const BarList = ({ items, suffix = '%', max = 100, caption, empty = 'no data' }) => {
   const [table, setTable] = useState(false);
   return (
     <Frame caption={caption} table={table} setTable={setTable}>
@@ -30,7 +31,7 @@ export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
           <thead><tr><th scope="col" className="px-2 py-1.5 text-left font-semibold whitespace-nowrap">Item</th><th scope="col" className="px-2 py-1.5 text-right font-semibold">Value</th></tr></thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.label}><td className="border-t border-line px-2 py-1.5">{it.label}</td><td className="border-t border-line px-2 py-1.5 text-right tabular-nums">{fmt(it.value, suffix)}</td></tr>
+              <tr key={it.label}><td className="border-t border-line px-2 py-1.5">{it.label}</td><td className="border-t border-line px-2 py-1.5 text-right tabular-nums">{fmt(it.value, suffix, empty)}</td></tr>
             ))}
           </tbody>
         </table>
@@ -42,10 +43,10 @@ export const BarList = ({ items, suffix = '%', max = 100, caption }) => {
               <li key={it.label}>
                 <div className="flex justify-between gap-3 text-xs" style={{ color: 'var(--viz-ink-2)' }}>
                   <span>{it.label}</span>
-                  <span>{fmt(it.value, suffix)}{it.detail ? ` (${it.detail})` : ''}</span>
+                  <span>{fmt(it.value, suffix, empty)}{it.detail ? ` (${it.detail})` : ''}</span>
                 </div>
-                <svg role="img" aria-label={`${it.label}: ${fmt(it.value, suffix)}`} width="100%" height="10" className="block">
-                  <title>{`${it.label}: ${fmt(it.value, suffix)}${it.detail ? ` (${it.detail})` : ''}`}</title>
+                <svg role="img" aria-label={`${it.label}: ${fmt(it.value, suffix, empty)}`} width="100%" height="10" className="block">
+                  <title>{`${it.label}: ${fmt(it.value, suffix, empty)}${it.detail ? ` (${it.detail})` : ''}`}</title>
                   <rect x="0" y="2" width="100%" height="8" rx="4" fill="var(--viz-grid)" />
                   {pct > 0 && <rect x="0" y="2" width={`${pct}%`} height="8" rx="4" fill="var(--viz-series-1)" />}
                 </svg>

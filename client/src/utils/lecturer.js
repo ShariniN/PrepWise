@@ -11,7 +11,7 @@ export const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefine
 
 export const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-');
 
-export const daysAgo = (iso) => {
+const daysAgo = (iso) => {
   if (!iso) return null;
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / DAY_MS));
 };

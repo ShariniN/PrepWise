@@ -53,6 +53,7 @@ const OverviewPanel = ({ data }) => {
           <BarList
             caption="Average score by category (0 to 100)"
             suffix=""
+            empty="not enough data"
             items={CATEGORIES.map((c) => ({ label: c.label, value: interview[c.key].average, detail: catDetail(interview[c.key]) }))}
           />
           <FootNote>
