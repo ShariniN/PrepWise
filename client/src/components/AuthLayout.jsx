@@ -48,7 +48,7 @@ const AuthLayout = ({ title, subtitle, footer, children }) => (
           <Heatmap />
         </div>
       </div>
-      <p className="relative text-sm text-white/60">Practice, assessment and integrity review with humans in the loop.</p>
+      <p className="relative text-sm text-white/60">Mock interviews, CV feedback and coding practice, with lecturers in the loop.</p>
     </aside>
   </div>
 );
