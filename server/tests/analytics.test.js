@@ -37,19 +37,17 @@ test('students, lecturers and unauthenticated users never reach admin analytics'
   }
 });
 
-test('fallback-sourced and unconfirmed AI practice scores are excluded and counted', () => {
+test('fallback-sourced and AI practice scores are excluded and counted', () => {
   const rows = [
     { runKind: 'submit', score: 100, scoreSource: 'tests' },
     { runKind: 'submit', score: 100 },
     { runKind: 'submit', score: 90, scoreSource: 'fallback' },
     { runKind: 'submit', score: 80, scoreSource: 'ai' },
-    { runKind: 'submit', score: null, needsReview: true, review: { aiSuggestion: { total: 5 } } },
-    { runKind: 'submit', score: 40, scoreSource: 'human' },
     { runKind: 'run', score: null },
   ];
   const { eligible, excluded } = agg.partitionAttempts(rows);
-  assert.equal(excluded, 3);
-  assert.deepEqual(eligible.map((a) => a.score), [100, 100, 40]);
+  assert.equal(excluded, 2);
+  assert.deepEqual(eligible.map((a) => a.score), [100, 100]);
 });
 
 test('admin overview: active students vs limit, institution-wide improvement, AI usage; other universities never counted', async () => {

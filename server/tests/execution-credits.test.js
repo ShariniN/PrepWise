@@ -7,14 +7,13 @@ import { makeWorld, IDS } from './helpers.js';
 import { installQuestionWorld } from './support/questionWorld.js';
 import { VmProvider } from './support/vmChecker.js';
 import * as exec from '../services/execution/index.js';
-import { verifyCodeServerSide } from '../services/interviewExecution.js';
+import { verifyCodeServerSide } from '../modules/interviews/interviews.execution.js';
 import app from '../app.js';
 
 const READ = 'const n = parseInt(require("fs").readFileSync(0,"utf8").trim(), 10);\n';
 const RIGHT = `${READ}console.log(n * 2);`;
 const WRONG = `${READ}console.log(n * 2 + 1);`; // fails every test
 const HIDDEN_WRONG = `${READ}console.log(n < 5 ? n * 2 : 0);`; // passes the visible tests (1, 2), fails hidden 5 and 6
-const LAST_WRONG = `${READ}console.log(n === 6 ? 0 : n * 2);`; // fails only the last test
 const HIDDEN_SECRET = '777001';
 
 // A provider that runs `okCalls` programs and then reports the daily quota as exhausted.
@@ -39,17 +38,12 @@ beforeEach(() => {
   exec.setProvider(provider);
   stu = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   lec = w.addUser({ email: 'l@a.edu', role: 'lecturer', institutionId: IDS.instA });
-  q = db.addQuestion({ institutionId: IDS.instA, authorId: lec._id, title: 'Six tests' }, SIX.map((t) => ({ ...t, institutionId: IDS.instA })));
+  q = db.addQuestion({ institutionId: IDS.instA, title: 'Six tests' }, SIX.map((t) => ({ ...t, institutionId: IDS.instA })));
   mock.method(console, 'error', () => {});
 });
 afterEach(() => { mock.restoreAll(); exec.setProvider(null); });
 
 const submit = (source, u = stu) => request(app).post(`/api/practice/questions/${q._id}/submit`).set('Cookie', w.cookie(u)).send({ language: 'javascript', source });
-const draftQuestion = (extra = {}) => db.addQuestion({
-  institutionId: IDS.instA, authorId: lec._id, status: 'draft', title: 'Validate me',
-  referenceSolution: { language: 'javascript', source: RIGHT }, wrongSolution: { language: 'javascript', source: WRONG }, ...extra,
-}, SIX.map((t) => ({ ...t, institutionId: IDS.instA })));
-const validate = (id, body = {}) => request(app).post(`/api/questions/${id}/validate`).set('Cookie', w.cookie(lec)).send(body);
 
 test('submit that passes: every test runs once (6 credits, same as before)', async () => {
   const res = await submit(RIGHT);
@@ -144,65 +138,6 @@ test('runner unavailable before anything runs: 503 with the reason, nothing stor
   assert.equal(res.status, 503);
   assert.equal(res.body.reason, 'network');
   assert.equal(db.attempts.filter((a) => a.runKind === 'submit').length, 0);
-});
-
-test('validation: the reference runs every test, the wrong solution stops at its first failure (7 credits instead of 12)', async () => {
-  const d = draftQuestion();
-  const res = await validate(d._id);
-  assert.equal(res.status, 200, res.text);
-  assert.equal(provider.calls, 7);
-  assert.equal(res.body.passed, true);
-  assert.equal(res.body.referencePassed, true);
-  assert.equal(res.body.reference.length, 6);
-  assert.equal(res.body.wrongSolutionChecked, true);
-  assert.equal(res.body.wrongSolutionFailed, true);
-  assert.equal(res.body.wrong.length, 1, 'only the tests that ran are listed');
-  assert.equal(res.body.wrongTestsRun, 1);
-  assert.match(res.body.message, /failed test 1 of 6, so its remaining 5 tests were not run/);
-  const stored = db.questions.find((x) => x._id === d._id).validation;
-  assert.equal(stored.passed, true);
-  assert.equal(stored.testsRun, 6);
-});
-
-test('validation: a wrong solution that only fails the last test is run on every test (12 credits) and still caught', async () => {
-  const d = draftQuestion({ wrongSolution: { language: 'javascript', source: LAST_WRONG } });
-  const res = await validate(d._id);
-  assert.equal(provider.calls, 12);
-  assert.equal(res.body.passed, true);
-  assert.equal(res.body.wrong.length, 6);
-  assert.doesNotMatch(res.body.message, /not run/);
-});
-
-test('validation: a wrong solution that passes every test still blocks publishing', async () => {
-  const d = draftQuestion({ wrongSolution: { language: 'javascript', source: RIGHT } });
-  const res = await validate(d._id);
-  assert.equal(res.body.passed, false);
-  assert.equal(res.body.wrongSolutionFailed, false);
-  assert.match(res.body.message, /too weak/);
-  // the reference and the "wrong" solution are the same program, so the cache answers the second run
-  assert.equal(provider.calls, 6);
-});
-
-test('validation: when the reference fails, the wrong solution is not run at all (6 credits instead of 12)', async () => {
-  const d = draftQuestion({ referenceSolution: { language: 'javascript', source: HIDDEN_WRONG } });
-  const res = await validate(d._id);
-  assert.equal(provider.calls, 6);
-  assert.equal(res.body.passed, false);
-  assert.equal(res.body.referencePassed, false);
-  assert.equal(res.body.wrongSolutionChecked, false);
-  assert.equal(res.body.wrongSolutionFailed, null);
-  assert.equal(res.body.wrong, undefined);
-  assert.match(res.body.message, /reference solution fails some tests.*wrong solution was not run/);
-});
-
-test('validation out of credits halfway: 503 with the reason and nothing recorded', async () => {
-  provider = new QuotaAfter(6); // the reference runs, then the quota is gone before the wrong solution
-  exec.setProvider(provider);
-  const d = draftQuestion();
-  const res = await validate(d._id);
-  assert.equal(res.status, 503);
-  assert.equal(res.body.reason, 'quota');
-  assert.equal(db.questions.find((x) => x._id === d._id).validation, undefined);
 });
 
 test('interview answers: tests there have no visible/hidden split, so every test runs (N credits); no tests is 1 credit', async () => {

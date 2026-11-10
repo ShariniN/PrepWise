@@ -1,15 +1,14 @@
-// The Phase 2 run / submit / event-cleaning logic as plain functions that return { status, body }, used by the
-// practice API. `ctx.attemptExtra` (optional) is merged into every stored attempt.
-import questionRepo from '../repositories/questionRepo.js';
-import { gradeTests, gradeVisibleFirst } from './grading.js';
+// Run / submit logic as plain functions that return { status, body }, used by the practice API. `ctx.attemptExtra` (optional) is merged into every stored attempt.
+import questionRepo from './practice.repo.js';
+import { gradeTests, gradeVisibleFirst } from '../../services/grading.js';
 import {
   run as runOnce, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError,
-} from './execution/index.js';
-import { normalizeLanguage } from './execution/languages.js';
-import { friendlyUnavailable, unavailableReason } from './execution/errors.js';
-import { studentTestResults, storedPerTest } from './questionSerializers.js';
+} from '../../services/execution/index.js';
+import { normalizeLanguage } from '../../services/execution/languages.js';
+import { friendlyUnavailable, unavailableReason } from '../../services/execution/errors.js';
+import { studentTestResults, storedPerTest } from '../../services/questionSerializers.js';
 
-export const CODE_TYPES = ['coding', 'debug'];
+export const CODE_TYPES = ['coding'];
 const bad = (status, message, extra = {}) => ({ status, body: { success: false, message, ...extra } });
 const normText = (s) => String(s ?? '').trim().replace(/\r\n?/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n');
 
@@ -129,17 +128,10 @@ export const submitForQuestion = async (q, body, ctx) => {
     const ok = normText(body.answer) === normText(q.traceAnswer);
     return objective(await questionRepo.createAttempt({ ...base, verdict: ok ? 'accepted' : 'wrong_answer', score: ok ? 100 : 0, answer: body.answer }));
   }
-  if (q.type === 'short' || q.type === 'behavioural') {
-    if (typeof body.answer !== 'string' || !body.answer.trim() || body.answer.length > 8000) return bad(400, 'answer is required (max 8000 characters)');
-    const attempt = await questionRepo.createAttempt({ ...base, verdict: 'pending_review', score: null, answer: body.answer, needsReview: true });
-    return {
-      status: 200,
-      attempt,
-      body: { success: true, attemptId: String(attempt._id), verdict: 'pending_review', score: null, message: 'Saved. A lecturer will review this answer.' },
-    };
-  }
+  // Anything that is not coding, mcq or trace (for example an old short or behavioural question) cannot be answered here.
+  if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question type is not supported');
 
-  // coding / debug: server-side. Visible tests first; the hidden tests run only if every visible test passed
+  // coding: server-side. Visible tests first; the hidden tests run only if every visible test passed
   // (see gradeVisibleFirst). Skipped hidden tests are stored and shown as `not_run` and score as not passed.
   const picked = pickLanguage(q, body.language);
   if (picked.error) return picked.error;
@@ -166,25 +158,4 @@ export const submitForQuestion = async (q, body, ctx) => {
   } catch (error) {
     return handleRunError(error);
   }
-};
-
-// ---- edit events ----
-export const EVENT_LIMITS = { maxEventsPerBatch: 500, maxBytesPerBatch: 64 * 1024, maxBatchesPerAttempt: 1000, maxTextChars: 2000 };
-const EVENT_TYPES = ['insert', 'delete', 'paste', 'focus', 'blur'];
-
-// Returns { clean } or { error: result }.
-export const cleanEvents = (events) => {
-  if (!Array.isArray(events) || !events.length) return { error: bad(400, 'events must be a non-empty array') };
-  if (events.length > EVENT_LIMITS.maxEventsPerBatch) return { error: bad(413, `At most ${EVENT_LIMITS.maxEventsPerBatch} events per batch`) };
-  if (JSON.stringify(events).length > EVENT_LIMITS.maxBytesPerBatch) return { error: bad(413, 'Event batch is too large') };
-  const clean = [];
-  for (const e of events) {
-    if (!e || typeof e !== 'object' || !EVENT_TYPES.includes(e.type) || !Number.isFinite(e.t) || e.t < 0) return { error: bad(400, 'Each event needs a valid type and t (ms)') };
-    const len = Number.isFinite(e.len) ? Math.max(0, Math.min(Math.trunc(e.len), 1e6)) : 0;
-    const item = { t: Math.trunc(e.t), type: e.type, len };
-    if (Number.isFinite(e.pos) && e.pos >= 0) item.pos = Math.trunc(e.pos);
-    if (typeof e.text === 'string') item.text = e.text.slice(0, EVENT_LIMITS.maxTextChars);
-    clean.push(item);
-  }
-  return { clean };
 };

@@ -1,8 +1,8 @@
 // Pure aggregation functions over plain arrays. No database, no clock (callers pass `now`), so they are
 // easy to test with fakes. Every function returns plain JSON-safe objects.
 //
-// Score eligibility: only submitted attempts with a numeric score whose scoreSource is not 'ai' (unconfirmed
-// AI suggestion) or 'fallback' count. Tests-marked and human-confirmed scores count. `excluded` is always returned.
+// Score eligibility: only submitted attempts with a numeric score whose scoreSource is not 'ai' or 'fallback'
+// count. Tests-marked scores count. `excluded` is always returned.
 
 export const MIN_N = 5; // below this many students we return a notice, never averages or percentages
 export const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,10 +19,8 @@ export const insufficient = (n, extra = {}) => ({
   ...extra,
 });
 
-const isUnconfirmedAi = (a) => a.runKind === 'submit' && a.needsReview && a.review?.aiSuggestion && !a.review?.final;
 export const isScored = (a) => a.runKind === 'submit' && typeof a.score === 'number';
-export const isExcluded = (a) =>
-  (isScored(a) && (a.scoreSource === 'ai' || a.scoreSource === 'fallback')) || isUnconfirmedAi(a);
+export const isExcluded = (a) => isScored(a) && (a.scoreSource === 'ai' || a.scoreSource === 'fallback');
 
 // Splits attempts into those usable for analytics and a count of those left out.
 export const partitionAttempts = (attempts) => {

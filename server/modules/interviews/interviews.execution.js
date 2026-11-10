@@ -1,8 +1,8 @@
 // Mock-interview coding answers: the server runs the submitted code itself. Whatever the browser claims about
 // execution is ignored. If the sandbox is down the result says so; success is never fabricated.
-import { run, ExecutionUnavailableError, UnsupportedLanguageError } from './execution/index.js';
-import { friendlyUnavailable } from './execution/errors.js';
-import { gradeTests } from './grading.js';
+import { run, ExecutionUnavailableError, UnsupportedLanguageError } from '../../services/execution/index.js';
+import { friendlyUnavailable } from '../../services/execution/errors.js';
+import { gradeTests } from '../../services/grading.js';
 
 const NOT_VERIFIED = { success: false, serverVerified: false, unavailable: true, executedAt: new Date() };
 

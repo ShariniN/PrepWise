@@ -16,7 +16,7 @@ export const toQuestionDoc = (s) => {
     title: s.title, statement: s.statement, type: s.type, topic: s.topic || [], difficulty: s.difficulty,
     languages: s.languages || [], starterCode: s.starterCode || {}, timeLimitMs: s.timeLimitMs || 2000,
     estimatedMinutes: s.estimatedMinutes, learningOutcome: s.learningOutcome || '',
-    source: 'seed', status: 'published', authorId: null,
+    source: 'seed', status: 'published',
   };
   if (refs.length) { doc.referenceSolution = refs[0]; doc.altReferenceSolutions = refs.slice(1); }
   if (s.type === 'mcq') { doc.options = s.options; doc.correct = s.correct; doc.multi = !!s.multi; }
@@ -25,7 +25,7 @@ export const toQuestionDoc = (s) => {
   return doc;
 };
 
-// Idempotent: running it twice leaves one question per slug. `repo` is questionRepo (injected so tests need no database).
+// Idempotent: running it twice leaves one question per slug. `repo` is the practice repo (injected so tests need no database).
 // Test cases of a seed question are replaced to match the file, so edits to the JSON reach the database.
 export const upsertSeeds = async (repo, seeds) => {
   const result = { upserted: 0, tests: 0 };

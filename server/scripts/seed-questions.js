@@ -6,7 +6,7 @@ import { loadSeedFiles, upsertSeeds } from '../services/seedQuestions.js';
 export const main = async () => {
   const seeds = loadSeedFiles();
   await connect();
-  const { default: questionRepo } = await import('../repositories/questionRepo.js');
+  const { default: questionRepo } = await import('../modules/practice/practice.repo.js');
   const result = await upsertSeeds(questionRepo, seeds);
   console.log(`Seeded ${result.upserted} questions and ${result.tests} test cases (global bank, institutionId null).`);
 };

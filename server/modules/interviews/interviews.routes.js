@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import userAuth from '../../middleware/userAuth.js';
-import { executeCode } from '../../controllers/codeController.js';
+import { executeCode } from '../code/code.controller.js';
 import rateLimit from 'express-rate-limit';
 
 import { 

@@ -41,9 +41,9 @@ export const main = async () => {
     return;
   }
   await connect();
-  const [{ default: Institution }, { default: userModel }, { default: Interview }, { default: CVAnalysis }, { default: SkillsAssessment }, { default: Attempt }] = await Promise.all([
+  const [{ default: Institution }, { default: userModel }, { default: Interview }, { default: CVAnalysis }, { default: Attempt }] = await Promise.all([
     import('../models/Institution.js'), import('../models/User.js'), import('../models/Interview.js'),
-    import('../models/CvAnalysis.js'), import('../models/SkillsAssessment.js'), import('../models/Attempt.js'),
+    import('../models/CvAnalysis.js'), import('../models/Attempt.js'),
   ]);
 
   const reset = process.argv.includes('--reset');
@@ -56,7 +56,6 @@ export const main = async () => {
       await Promise.all([
         Interview.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
         CVAnalysis.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
-        SkillsAssessment.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
         Attempt.deleteMany({ institutionId: id }),
       ]);
       await userModel.deleteMany({ institutionId: id });

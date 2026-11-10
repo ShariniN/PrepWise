@@ -9,7 +9,7 @@ import CVAnalysis from '../../models/CvAnalysis.js';
 const oid = (v) => new mongoose.Types.ObjectId(String(v));
 const MAX_ROWS = 100000;
 
-const ATTEMPT_FIELDS = 'userId questionId runKind verdict score scoreSource perTest createdAt needsReview review.aiSuggestion.at review.final.at';
+const ATTEMPT_FIELDS = 'userId questionId runKind verdict score scoreSource perTest createdAt';
 
 const analyticsRepo = {
   // kinds defaults to every kind (draft, run, submit). `since` is a Date.

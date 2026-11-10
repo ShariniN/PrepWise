@@ -1,15 +1,12 @@
 // Student practice API. Only server-side sandbox results are ever stored or scored; any execution result in a
 // request body is ignored.
-import questionRepo from '../repositories/questionRepo.js';
-import { institutionOf } from '../middleware/tenancy.js';
-import { MAX_SOURCE_CHARS } from '../services/execution/index.js';
-import { normalizeLanguage } from '../services/execution/languages.js';
-import { studentQuestion, studentListItem } from '../services/questionSerializers.js';
-import {
-  runForQuestion, submitForQuestion, recordBrowserRun, cleanEvents, EVENT_LIMITS, CODE_TYPES,
-} from '../services/practiceCore.js';
+import questionRepo from './practice.repo.js';
+import { institutionOf } from '../../middleware/tenancy.js';
+import { MAX_SOURCE_CHARS } from '../../services/execution/index.js';
+import { normalizeLanguage } from '../../services/execution/languages.js';
+import { studentQuestion, studentListItem } from '../../services/questionSerializers.js';
+import { runForQuestion, submitForQuestion, recordBrowserRun, CODE_TYPES } from './practice.service.js';
 
-export { EVENT_LIMITS };
 export const isId = (v) => /^[a-f\d]{24}$/i.test(String(v));
 const fail = (res, status, message, extra = {}) => res.status(status).json({ success: false, message, ...extra });
 
@@ -60,7 +57,7 @@ export const submit = async (req, res) => {
   send(res, await submitForQuestion(q, req.body, { institutionId: institutionOf(req), userId: req.user.id }));
 };
 
-// ---- drafts, autosave, edit events ----
+// ---- drafts and autosave ----
 const draftView = (a) => ({ attemptId: String(a._id), questionId: String(a.questionId), language: a.language || null, source: a.source || '', updatedAt: a.updatedAt || null });
 
 export const startDraft = async (req, res) => {
@@ -94,21 +91,4 @@ export const autosave = async (req, res) => {
   if (!attempt || attempt.runKind !== 'draft') return fail(res, 404, 'Attempt not found');
   const updated = await questionRepo.updateAttempt(institutionId, req.user.id, req.params.id, { language: lang, source });
   res.json({ success: true, draft: draftView(updated) });
-};
-
-export const addEvents = async (req, res) => {
-  if (!isId(req.params.id)) return fail(res, 404, 'Attempt not found');
-  const { events, seq } = req.body || {};
-  const cleaned = cleanEvents(events);
-  if (cleaned.error) return send(res, cleaned.error);
-  const clean = cleaned.clean;
-
-  const institutionId = institutionOf(req);
-  const attempt = await questionRepo.findAttempt(institutionId, req.user.id, req.params.id);
-  if (!attempt) return fail(res, 404, 'Attempt not found');
-  if (await questionRepo.countEventBatches(institutionId, attempt._id) >= EVENT_LIMITS.maxBatchesPerAttempt) return fail(res, 429, 'Too many event batches for this attempt');
-  await questionRepo.addEventBatch({
-    attemptId: attempt._id, questionId: attempt.questionId, userId: req.user.id, institutionId, seq: Number.isInteger(seq) ? seq : 0, events: clean,
-  });
-  res.status(201).json({ success: true, stored: clean.length });
 };

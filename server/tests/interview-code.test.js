@@ -13,7 +13,7 @@ import app from '../app.js';
 let w, student, interview, provider, aiPrompts;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
+  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   provider = new VmProvider();
@@ -32,12 +32,12 @@ beforeEach(() => {
   aiPrompts = [];
   mock.method(axios, 'post', async (url, body) => {
     aiPrompts.push(JSON.stringify(body));
-    return { data: { response: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
+    return { data: { generated_text: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
   });
   mock.method(console, 'error', () => {});
   mock.method(console, 'log', () => {});
 });
-afterEach(() => { mock.restoreAll(); exec.setProvider(null); delete process.env.AI_PROVIDER; });
+afterEach(() => { mock.restoreAll(); exec.setProvider(null); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
 
 const answer = (body) => request(app).post('/api/interviews/i1/submit-answer').set('Cookie', w.cookie(student))
   .send({ responseText: 'My approach is below, explained in enough words.', answerMode: 'text', responseTime: 30, language: 'javascript', ...body });

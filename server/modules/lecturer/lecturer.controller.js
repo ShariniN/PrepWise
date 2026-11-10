@@ -135,28 +135,15 @@ const interviewListItem = (iv) => {
   };
 };
 
-const skillsView = (a) => {
-  if (!a) return null;
-  const skills = (a.skills || []).filter((s) => s && typeof s.name === 'string' && typeof s.proficiencyLevel === 'number')
-    .map((s) => ({ name: s.name, category: s.category || 'General', proficiencyLevel: s.proficiencyLevel }));
-  const sorted = [...skills].sort((x, y) => y.proficiencyLevel - x.proficiencyLevel || x.name.localeCompare(y.name));
-  return {
-    assessedAt: iso(a.createdAt), skillsRated: skills.length,
-    averageProficiency: skills.length ? Math.round((skills.reduce((n, s) => n + s.proficiencyLevel, 0) / skills.length) * 10) / 10 : null,
-    strongest: sorted.slice(0, 5), weakest: sorted.slice(-5).reverse(), skills: sorted,
-  };
-};
-
 export const student = async (req, res) => {
   const s = await loadStudent(req, res);
   if (!s) return;
   const { institutionId, student: u } = s;
   const id = sid(u._id);
-  const [interviews, cvs, attempts, skills] = await Promise.all([
+  const [interviews, cvs, attempts] = await Promise.all([
     lecturerRepo.interviewsFor(institutionId, [id]),
     lecturerRepo.cvAnalysesFor(institutionId, [id]),
     lecturerRepo.attemptsFor(institutionId, [id]),
-    lecturerRepo.latestSkillAssessment(institutionId, id),
   ]);
   const mine = (xs) => xs.filter((x) => sid(x.userId) === id); // defence in depth
   const ivs = mine(interviews); const cv = mine(cvs); const at = mine(attempts);
@@ -172,7 +159,6 @@ export const student = async (req, res) => {
       id: sid(a._id), date: iso(m.cvDate(a)), firstAnalysedAt: iso(a.createdAt), bestMatch: m.bestMatch(a).best,
       results: (a.results || []).map((r) => cvResultView(r, a)),
     })),
-    skills: skills && sid(skills.userId) === id ? skillsView(skills) : null,
     practice: m.practiceSummary(at),
     delivery: m.studentDelivery(ivs),
   });

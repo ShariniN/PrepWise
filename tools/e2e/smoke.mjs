@@ -1,6 +1,6 @@
 // Live API smoke test against a freshly seeded local stack (`npm run dev:local -- --fresh`). Fake demo data only.
 // Usage: node smoke.mjs            (API=http://localhost:4000 by default)
-//   SANDBOX=1  also call Practice run/submit and question validation (uses code-runner credits when JDoodle is set up)
+//   SANDBOX=1  also call Practice run/submit (uses code-runner credits when JDoodle is set up)
 //   SKIP_AI=1  skip the mock interview checks (they make 2-3 AI calls; with no AI key they use the fallback path)
 const BASE = process.env.API || 'http://localhost:4000';
 const SANDBOX = process.env.SANDBOX === '1';
@@ -125,6 +125,7 @@ check('CSV has one row per student of the group (+ header)', r.text.trim().split
 for (const [c, path] of [
   [lectA, '/api/courses/mine'], [lectA, '/api/assessments'], [lectA, '/api/integrity/cases'], [stuA, '/api/integrity/my/cases'],
   [lectA, '/api/analytics/lecturer/topic-heatmap'], [adminA, '/api/analytics/careers/readiness'], [stuA, '/api/user/freshers'],
+  [stuA, '/api/swot/assessments'], [lectA, '/api/questions'], [lectA, '/api/grading/queue'], [stuA, '/api/user/skills-assessments'],
 ]) {
   const x = await c.req('GET', path); check(`removed route ${path} is 404`, x.status === 404, String(x.status));
 }
@@ -145,22 +146,11 @@ if (SANDBOX) {
 r = await stuA.req('GET', '/api/practice/questions?type=mcq'); const mcq = (r.data.questions || [])[0];
 if (mcq) { const s = await stuA.req('POST', `/api/practice/questions/${mcq.id || mcq._id}/submit`, { selected: [0] }); check('mcq submit is graded on the server', s.status === 200 && typeof s.data.score === 'number', `${s.status} ${short(s.data)}`); }
 
-// ---------------------------------------------------------------- question bank (lecturer)
-r = await lectA.req('GET', '/api/questions'); check('lecturer question list', r.status === 200, short(r.data));
-r = await lectA.req('POST', '/api/questions', { title: `Sum two numbers ${stamp}`, statement: 'Read two ints, print sum.', type: 'coding', difficulty: 'easy', topic: ['basics'], languages: ['python'], referenceSolution: { language: 'python', source: 'a,b=map(int,input().split())\nprint(a+b)' } });
-check('lecturer creates a question', r.status === 201 || r.status === 200, `${r.status} ${short(r.data)}`);
-const newQid = (r.data.question || r.data.data)?.id;
-if (newQid) {
-  const t = await lectA.req('POST', `/api/questions/${newQid}/tests`, { input: '1 2', expectedOutput: '3', visible: true, weight: 1 }); check('add a test case', t.status === 201 || t.status === 200, `${t.status}`);
-  const pub = await lectA.req('PATCH', `/api/questions/${newQid}/status`, { status: 'published' }); check('publishing an unvalidated coding question is refused', pub.status === 409, `${pub.status}`);
-  if (SANDBOX) {
-    const v = await lectA.req('POST', `/api/questions/${newQid}/validate`, {});
-    check('validate runs the reference, or 503 with a reason', (v.status === 503 && !!v.data.reason) || (v.status === 200 && v.data.referencePassed === true), `${v.status} ${short(v.data)}`);
-  }
-}
-r = await stuA.req('GET', '/api/questions'); check('student blocked from the question API', r.status === 403);
-r = await adminB.req('GET', '/api/questions'); check('B question list excludes A-owned questions', !r.text.includes(`Sum two numbers ${stamp}`));
-r = await lectA.req('GET', '/api/grading/queue'); check('grading queue', r.status === 200, `${r.status}`);
+// ---------------------------------------------------------------- authoring and grading are gone
+r = await lectA.req('POST', '/api/questions', { title: `Sum two numbers ${stamp}`, type: 'coding' }); check('lecturer question authoring is 404', r.status === 404, String(r.status));
+r = await lectA.req('POST', '/api/questions/x/validate', {}); check('question validation is 404', r.status === 404, String(r.status));
+r = await lectA.req('POST', '/api/questions/draft', {}); check('AI question drafting is 404', r.status === 404, String(r.status));
+r = await stuA.req('POST', '/api/practice/x/events', { events: [] }); check('edit-event tracking is 404', r.status === 404, String(r.status));
 r = await adminA.req('GET', '/api/analytics/admin/overview'); check('admin overview', r.status === 200, `${r.status}`);
 r = await adminA.req('GET', '/api/analytics/admin/evidence'); check('admin evidence', r.status === 200, `${r.status}`);
 

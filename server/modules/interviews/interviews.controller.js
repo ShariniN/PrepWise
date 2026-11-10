@@ -4,7 +4,7 @@ import pdfUpload, { NOT_PDF_MESSAGE } from '../../middleware/pdfUpload.js';
 import { pdfText } from '../../services/pdfText.js';
 import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from '../../services/aiService.js';
 import { generateStarterCode, selectBestLanguage } from './interviews.starterCode.js';
-import { verifyCodeServerSide } from '../../services/interviewExecution.js';
+import { verifyCodeServerSide } from './interviews.execution.js';
 import { generateFallbackFeedback } from './interviews.fallbackFeedback.js';
 import { 
   validateAndSanitizeInput, 

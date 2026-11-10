@@ -15,9 +15,6 @@ import {
   deleteAnalysis
 } from '../cvAnalysis/cvAnalysis.controller.js';
 
-// Import Skills Assessment controller methods
-import { getRatings, deleteRatings } from '../skills/skills.controller.js';
-
 const userRouter = express.Router();
 
 // All routes require authentication
@@ -36,9 +33,5 @@ userRouter.delete('/cv', deleteCV);
 // CV Analysis routes (fresher only)
 userRouter.get('/saved-analyses', getSavedAnalysis); 
 userRouter.delete('/analysis/:id', deleteAnalysis);
-
-// Skills Assessment routes (fresher only)
-userRouter.get('/skills-assessments', getRatings);
-userRouter.delete('/assessment/:id', deleteRatings);
 
 export default userRouter;

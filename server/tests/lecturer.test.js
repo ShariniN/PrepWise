@@ -304,14 +304,12 @@ test('student profile and interview detail return answers, feedback source, exec
   });
   const voice = db.answer('behavioral', 65, { textResponse: '', transcription: 'I led a team of four', feedback: { score: 65, source: 'fallback', communicationClarity: 6 } });
   const iv = db.addInterview(studentsA[0], { responses: [code, voice] });
-  db.skills.push({ institutionId: IDS.instA, userId: studentsA[0]._id, createdAt: new Date(), skills: [{ name: 'SQL', category: 'Data', proficiencyLevel: 3 }, { name: 'JS', category: 'Code', proficiencyLevel: 8 }] });
   const prof = await get(`/api/lecturer/students/${studentsA[0]._id}`, lecA);
   assert.equal(prof.status, 200);
   assert.equal(prof.body.student.email, 'ann@a.edu');
   assert.equal(prof.body.interviews[0].jobExcerpt.startsWith('Junior developer'), true);
   assert.deepEqual(prof.body.interviews[0].categoryScores, { behavioural: null, technical: null, coding: 75, communication: 70 });
-  assert.equal(prof.body.skills.averageProficiency, 5.5);
-  assert.equal(prof.body.skills.weakest[0].name, 'SQL');
+  assert.equal('skills' in prof.body, false);
   const det = await get(`/api/lecturer/students/${studentsA[0]._id}/interviews/${iv._id}`, lecA);
   assert.equal(det.status, 200);
   const [q1, q2] = det.body.interview.questions;
@@ -367,7 +365,6 @@ test('CSV export: the table only, formula cells neutralised, audited', async () 
 test('no lecturer response ever contains CV text, passwords, OTPs, invite tokens, hidden tests or audio URLs', async () => {
   const iv = db.addInterview(studentsA[0], { responses: [db.answer('coding', 70, { executionResults: { success: true, output: 'fine' } })] });
   db.addCv(studentsA[0], [db.result(70), db.result(50, { aiAvailable: false })]);
-  db.skills.push({ institutionId: IDS.instA, userId: studentsA[0]._id, createdAt: new Date(), resumeHash: 'SECRET-HASH', skills: [{ name: 'SQL', proficiencyLevel: 3 }] });
   db.addAttempt(studentsA[0], { questionId: newId(), verdict: 'accepted', score: 100, scoreSource: 'tests' });
   for (const p of ['/api/lecturer/overview', '/api/lecturer/students', '/api/lecturer/students.csv',
     `/api/lecturer/students/${studentsA[0]._id}`, `/api/lecturer/students/${studentsA[0]._id}/interviews/${iv._id}`]) {

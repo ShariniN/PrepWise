@@ -17,7 +17,7 @@ const ALL_NULL = { cameraUsed: false, faceVisiblePct: null, eyeContactPct: null,
 let w, student, interview, aiPrompts;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
+  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   interview = {
@@ -35,13 +35,13 @@ beforeEach(() => {
   aiPrompts = [];
   mock.method(axios, 'post', async (url, body) => {
     aiPrompts.push(JSON.stringify(body));
-    return { data: { response: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
+    return { data: { generated_text: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
   });
   mock.method(console, 'error', () => {});
   mock.method(console, 'log', () => {});
   mock.method(console, 'warn', () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; });
+afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
 
 const answer = (body) => request(app).post('/api/interviews/i1/submit-answer').set('Cookie', w.cookie(student))
   .send({ questionId: 'b1', responseText: 'I built a timetable app for my university society with React and Node.', answerMode: 'audio', responseTime: 40, ...body });

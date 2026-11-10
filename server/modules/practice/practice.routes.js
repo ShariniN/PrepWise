@@ -1,10 +1,10 @@
 import express from 'express';
 import expressRateLimit from 'express-rate-limit';
-import userAuth from '../middleware/userAuth.js';
-import requireRole from '../middleware/requireRole.js';
+import userAuth from '../../middleware/userAuth.js';
+import requireRole from '../../middleware/requireRole.js';
 import {
-  listQuestions, getQuestion, runCode, browserRun, submit, startDraft, getDraft, autosave, addEvents,
-} from '../controllers/practiceController.js';
+  listQuestions, getQuestion, runCode, browserRun, submit, startDraft, getDraft, autosave,
+} from './practice.controller.js';
 
 const practiceRouter = express.Router();
 
@@ -30,6 +30,5 @@ practiceRouter.post('/questions/:id/submit', submitLimiter, submit);
 practiceRouter.post('/questions/:id/attempts', startDraft);
 practiceRouter.get('/questions/:id/draft', getDraft);
 practiceRouter.put('/attempts/:id/autosave', autosave);
-practiceRouter.post('/attempts/:id/events', addEvents);
 
 export default practiceRouter;
