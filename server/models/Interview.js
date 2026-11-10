@@ -14,6 +14,9 @@ const questionSchema = new mongoose.Schema({
     required: true, 
     enum: ['easy', 'medium', 'hard'] 
   },
+  // Adaptive interview: which of the 5 question slots this is, and the level it was asked at.
+  slot: { type: Number, min: 0, max: 4 },
+  level: { type: String, enum: ['easy', 'medium', 'hard'] },
   expectedDuration: { type: Number, default: 120 }, 
   // Optional hidden tests for coding questions. Never sent to the client (see getNextQuestion).
   tests: { type: [new mongoose.Schema({ input: String, expectedOutput: String, comparison: String }, { _id: true })], default: undefined },
@@ -111,11 +114,17 @@ const interviewSchema = new mongoose.Schema({
   },
   // Set at creation from req.user; not required so older documents stay valid
   institutionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Institution', default: null, index: true },
+  targetRoleId: { type: mongoose.Schema.Types.ObjectId, default: null },
   jobDescription: { type: String, required: true },
   resumeText: { type: String, required: true },
   
   questions: [questionSchema],
   totalQuestions: { type: Number, default: 10 },
+  startLevel: { type: String, enum: ['easy', 'medium', 'hard', null], default: null },
+  levelReached: { type: String, enum: ['easy', 'medium', 'hard', null], default: null },
+  readiness: { type: String, enum: ['just_starting', 'some_practice', 'ready', null], default: null },
+  // Server-side question bank for the adaptive flow. Never sent to the client.
+  pool: { type: mongoose.Schema.Types.Mixed, select: false },
   currentQuestionIndex: { type: Number, default: 0 },
   
   status: { 
@@ -223,6 +232,7 @@ interviewSchema.set('toJSON', {
   virtuals: true,
   transform: function(doc, ret) {
     delete ret.__v;
+    delete ret.pool;
     return ret;
   }
 });

@@ -27,20 +27,21 @@ const cvAnalysisSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  targetRoleId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  // Empty when the CV was scored against a target role instead of pasted job descriptions.
   jobDescriptions: {
     type: [String],
-    required: [true, 'Job descriptions are required'],
-    validate: {
-      validator: function(arr) {
-        return arr && arr.length > 0;
-      },
-      message: 'At least one job description is required'
-    }
+    default: []
   },
   results: [{
     jobIndex: {
       type: Number,
       default: 0
+    },
+    kind: {
+      type: String,
+      enum: ['target_role', 'job_description'],
+      default: 'job_description'
     },
     jobTitle: {
       type: String,
