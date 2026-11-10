@@ -15,12 +15,32 @@ const iconButton = 'grid h-8 w-8 place-items-center rounded-full text-ink-2 hove
  * `measuring` is true while the current answer is being given (the only time samples are kept).
  */
 export default function CameraSelfView({ coaching, measuring }) {
-  const { status, stream, hint, stop } = coaching;
+  const { status, stream, hint, stop, error } = coaching;
   const [hidden, setHidden] = useState(false);
+  if (status === 'error' && error) {
+    // e.g. the camera was unplugged mid-interview: say so instead of silently disappearing.
+    return (
+      <aside
+        aria-label="Camera coaching"
+        role="status"
+        className="fixed bottom-4 right-4 z-40 flex w-60 items-start gap-2 rounded-3xl border border-sun-200 bg-sun-50 p-3 text-xs text-sun-700 shadow-float print:hidden"
+      >
+        <CameraOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="flex-1">{error}</span>
+        <button type="button" onClick={stop} className="rounded-full px-1 font-semibold hover:underline" aria-label="Dismiss">
+          OK
+        </button>
+      </aside>
+    );
+  }
   if (status !== 'ready' && status !== 'starting') return null;
   const hintText = measuring && hint ? HINTS[hint] : null;
 
   return (
+    <>
+    {/* Room at the bottom of the page so the fixed self-view never covers the Skip / Submit buttons
+        on narrow screens (on wide screens the corner is clear of the centred content). */}
+    <div aria-hidden="true" className={cn('lg:hidden', hidden ? 'h-28' : 'h-72')} />
     <aside
       aria-label="Camera coaching"
       data-testid="camera-self-view"
@@ -76,5 +96,6 @@ export default function CameraSelfView({ coaching, measuring }) {
       </p>
       <p className="px-1 pt-1 text-[11px] leading-tight text-ink-muted">On this device only. Not recorded.</p>
     </aside>
+    </>
   );
 }

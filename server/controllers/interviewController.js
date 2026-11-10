@@ -714,7 +714,7 @@ export const completeInterview = async (req, res) => {
       return res.json({
         success: true,
         message: 'Interview already completed',
-        results
+        results: { ...results, deliverySummary: summarizeDelivery(interview.responses) }
       });
     }
 

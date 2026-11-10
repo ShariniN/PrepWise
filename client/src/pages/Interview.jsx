@@ -74,7 +74,7 @@ const MockInterviewSystem = () => {
   // Optional camera delivery coaching (off until the student turns it on; runs in the browser only).
   // The hook releases the camera itself on unmount.
   const coaching = useFaceCoaching();
-  const { setSampling, resetSamples, getSamples, stop: stopCoaching } = coaching;
+  const { setSampling, resetSamples, getSamples, stop: stopCoaching, status: coachingStatus } = coaching;
 
   // Authentication
   useEffect(() => {
@@ -135,7 +135,8 @@ const MockInterviewSystem = () => {
   // or while the answer screen is open for typed and coding answers. Never while submitting.
   const answeringNow = currentStep === 'interview' && !loading &&
     (isCodingQuestion || answerMode !== 'audio' || audio.isRecording);
-  useEffect(() => { setSampling(answeringNow); }, [answeringNow, setSampling]);
+  // coachingStatus is a dependency so a camera that becomes ready mid-answer starts sampling straight away.
+  useEffect(() => { setSampling(answeringNow); }, [answeringNow, coachingStatus, setSampling]);
   // Fresh samples for each question and answer mode, and for each new recording (re-recording
   // replaces the transcript, so it replaces the camera samples too).
   const currentQuestionId = interview.currentQuestion?.questionId;
@@ -168,15 +169,17 @@ const MockInterviewSystem = () => {
       
       codeEditor.resetCodeEditor(firstQuestion, codeEditor.language);
       setShowCodeEditor(isCodingQuestionType(firstQuestion.type));
+      // A camera problem already shown on the setup screen should not follow the student into the interview.
+      if (coachingStatus === 'error') stopCoaching();
       setCurrentStep('interview');
-      
+
     } catch (err) {
       setError(`Failed to create interview: ${err.message}`);
       addDebugLog(`Interview creation failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, addDebugLog]);
+  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, addDebugLog, coachingStatus, stopCoaching]);
 
   // Answer submission
   const handleSubmitAnswer = useCallback(async () => {
