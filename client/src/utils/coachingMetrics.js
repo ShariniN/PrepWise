@@ -15,6 +15,8 @@ export const HEAD_MOVEMENT_MEDIUM_DEG = 5;
 export const HEAD_MOVEMENT_HIGH_DEG = 10;
 /** Head movement needs at least this many face samples (about 1 second at 5 fps). */
 export const MIN_FACE_SAMPLES_FOR_MOVEMENT = 5;
+/** Shown wherever delivery numbers are shown. */
+export const PRIVACY_NOTE = 'Measured on your device. No video was recorded or uploaded.';
 /** Friendly speaking-pace range, words per minute. */
 export const PACE_TARGET = { min: 120, max: 160 };
 

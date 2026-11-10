@@ -113,9 +113,12 @@ export const useInterview = (addDebugLog) => {
 
     // Execution is recorded by the server; surface it if the response carries it.
     const execution = result.executionResults || result.response?.executionResults || result.feedback?.executionResults;
+    // The delivery coaching numbers exactly as the server stored them (after its validation).
+    const delivery = 'deliveryMetrics' in result ? { deliveryMetrics: result.deliveryMetrics } : {};
     if (result.feedback && typeof result.feedback === 'object' && (execution || result.feedback.executionSource)) {
-      return { ...result.feedback, execution, executionSource: result.feedback.executionSource };
+      return { ...result.feedback, execution, executionSource: result.feedback.executionSource, ...delivery };
     }
+    if (result.feedback && typeof result.feedback === 'object') return { ...result.feedback, ...delivery };
     return result.feedback;
   }, [addDebugLog]);
 
