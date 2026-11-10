@@ -1,27 +1,20 @@
 export const ROLES = {
   STUDENT: 'student',
   LECTURER: 'lecturer',
-  CAREER_OFFICER: 'career_officer',
   ADMIN: 'university_admin',
 };
 
-export const STAFF_ROLES = [ROLES.LECTURER, ROLES.CAREER_OFFICER];
+// Lecturer dashboard (/staff and the student pages under it). Admins open it as "Students".
+export const STAFF_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
-// Roles that may author questions (the career officer cannot).
+// Roles that may author questions.
 export const QUESTION_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
-// Phase 3B screens.
 export const GRADING_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
-export const CAREER_ROLES = [ROLES.CAREER_OFFICER, ROLES.ADMIN];
-
-// Phase 3A: assessments and the integrity review queue.
-export const ASSESSMENT_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
-export const INTEGRITY_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
 export const ROLE_LABELS = {
   student: 'Student',
   lecturer: 'Lecturer',
-  career_officer: 'Career officer',
   university_admin: 'University admin',
 };
 
@@ -30,7 +23,6 @@ export const homeForRole = (role) => {
     case ROLES.ADMIN:
       return '/manage-people';
     case ROLES.LECTURER:
-    case ROLES.CAREER_OFFICER:
       return '/staff';
     default:
       return '/fresher-dashboard';

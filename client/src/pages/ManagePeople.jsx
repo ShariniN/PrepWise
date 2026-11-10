@@ -1,21 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-import CoursesPanel from '../components/CoursesPanel';
 import UsageHeader from '../components/people/UsageHeader';
 import PeopleTable from '../components/people/PeopleTable';
 import InviteForm from '../components/people/InviteForm';
 import ImportCsv from '../components/people/ImportCsv';
-import { Tabs, TabPanel } from '../components/ui';
 import api, { errorMessage } from '../api/client';
 
-const TABS = [
-  { id: 'people', label: 'People' },
-  { id: 'courses', label: 'Courses' },
-];
-
 const ManagePeople = () => {
-  const [tab, setTab] = useState('people');
   const [usage, setUsage] = useState(null);
   const [usageError, setUsageError] = useState('');
   const [people, setPeople] = useState(null);
@@ -72,19 +64,12 @@ const ManagePeople = () => {
       subtitle={<Link to="/admin-overview" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Adoption and renewal overview</Link>}
     >
       <div className="space-y-6">
-        <Tabs tabs={TABS} value={tab} onChange={setTab} idBase="mp" ariaLabel="Sections" />
-
-        <TabPanel id="people" value={tab} idBase="mp" className="space-y-6">
-          <UsageHeader usage={usage} error={usage ? '' : usageError} />
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-            <InviteForm onDone={refresh} />
-            <ImportCsv onDone={refresh} />
-          </div>
-          <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} onChanged={refresh} />
-        </TabPanel>
-        <TabPanel id="courses" value={tab} idBase="mp">
-          <CoursesPanel />
-        </TabPanel>
+        <UsageHeader usage={usage} error={usage ? '' : usageError} />
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <InviteForm onDone={refresh} />
+          <ImportCsv onDone={refresh} />
+        </div>
+        <PeopleTable people={people} loading={loading} error={peopleError} filters={filters} setFilters={setFilters} onChanged={refresh} />
       </div>
     </AppShell>
   );

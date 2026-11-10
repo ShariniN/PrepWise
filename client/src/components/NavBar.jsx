@@ -6,7 +6,6 @@ import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
 import { homeForRole, ROLES, ROLE_LABELS } from "../utils/roles";
 import { toast } from "react-toastify";
-import { listMyCases } from "../api/integrity";
 import Logo from "./Logo";
 
 const linkCls = ({ isActive }) =>
@@ -18,18 +17,9 @@ const NavBar = () => {
   const navigate = useNavigate()
   const location = useLocation();
   const { userData, backendUrl, clearAuth, role } = useContext(AppContext);
-  const [hasCases, setHasCases] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const menuRef = useRef(null);
-
-  // Students only see the My cases link while a case is waiting for their response.
-  useEffect(() => {
-    if (role !== ROLES.STUDENT) return;
-    let cancelled = false;
-    listMyCases().then((d) => { if (!cancelled) setHasCases((d.cases || []).length > 0); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [role]);
 
   // Close menus on navigation, outside click and Escape.
   useEffect(() => { setMenuOpen(false); setSheetOpen(false); }, [location.pathname]);
@@ -57,12 +47,10 @@ const NavBar = () => {
   const links = role === ROLES.ADMIN
     ? [
         { to: '/manage-people', label: 'Manage people' },
+        { to: '/staff', label: 'Students' },
         { to: '/admin-overview', label: 'Overview' },
         { to: '/grading', label: 'Grading' },
-        { to: '/careers', label: 'Careers' },
         { to: '/questions', label: 'Questions' },
-        { to: '/assessments/manage', label: 'Assessments' },
-        { to: '/integrity', label: 'Integrity review' },
       ]
     : role === ROLES.STUDENT
       ? [
@@ -70,21 +58,15 @@ const NavBar = () => {
           { to: '/cv-analyzer', label: 'CV analyzer' },
           { to: '/swot', label: 'Skills' },
           { to: '/practice', label: 'Practice' },
-          { to: '/assessments', label: 'Assessments' },
           { to: '/interview', label: 'Interview' },
-          ...(hasCases ? [{ to: '/my-cases', label: 'My cases' }] : []),
         ]
       : role === ROLES.LECTURER
         ? [
             { to: '/staff', label: 'Dashboard' },
             { to: '/grading', label: 'Grading' },
             { to: '/questions', label: 'Questions' },
-            { to: '/assessments/manage', label: 'Assessments' },
-            { to: '/integrity', label: 'Integrity review' },
           ]
-        : role === ROLES.CAREER_OFFICER
-          ? [{ to: '/staff', label: 'My courses' }, { to: '/careers', label: 'Career readiness' }]
-          : [];
+        : [];
 
   const initial = userData?.name?.[0]?.toUpperCase() || '';
 

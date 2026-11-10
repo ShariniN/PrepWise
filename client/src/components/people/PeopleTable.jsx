@@ -123,7 +123,7 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, onChanged })
                     {p.status === 'active' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'deactivate', person: p })}>Deactivate</button>}
                     {p.status === 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'reactivate', person: p })}>Reactivate</button>}
                     {p.status === 'invited' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'resend', person: p })}>Resend invite</button>}
-                    {p.status !== 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: p.role })}>Change role</button>}
+                    {p.status !== 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: ROLE_LABELS[p.role] ? p.role : 'student' })}>Change role</button>}
                     <CopyLinkButton link={links[p.id]} />
                   </div>
                 </Td>

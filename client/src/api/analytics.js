@@ -1,39 +1,7 @@
 import api from './client';
 
-// Thin wrappers over the Phase 3B endpoints. Each returns response.data.
-const scopeParams = (courseId, cohortId, extra = {}) => {
-  const params = { courseId, ...extra };
-  if (cohortId) params.cohortId = cohortId;
-  return params;
-};
-
+// Thin wrappers over the admin analytics and grading endpoints. Each returns response.data.
 const get = async (path, params) => (await api.get(path, { params })).data;
-
-export const lecturer = {
-  failurePatterns: (c, k) => get('/api/analytics/lecturer/failure-patterns', scopeParams(c, k)),
-  topicHeatmap: (c, k) => get('/api/analytics/lecturer/topic-heatmap', scopeParams(c, k)),
-  studentsNeedingHelp: (c, k, thresholds) => get('/api/analytics/lecturer/students-needing-help', scopeParams(c, k, thresholds)),
-  questionQuality: (c, k, overExposurePct) =>
-    get('/api/analytics/lecturer/question-quality', scopeParams(c, k, overExposurePct ? { overExposurePct } : {})),
-  activity: (c, k, days) => get('/api/analytics/lecturer/activity', scopeParams(c, k, { days })),
-};
-
-const careerParams = (f = {}) => {
-  const p = {};
-  if (f.courseId) p.courseId = f.courseId;
-  if (f.cohortId) p.cohortId = f.cohortId;
-  return p;
-};
-
-export const careers = {
-  readiness: (f) => get('/api/analytics/careers/readiness', careerParams(f)),
-  coverage: (f) => get('/api/analytics/careers/coverage', careerParams(f)),
-  skillsGap: (f, threshold) => get('/api/analytics/careers/skills-gap', { ...careerParams(f), ...(threshold ? { threshold } : {}) }),
-  readinessCsv: async (f) => {
-    const res = await api.get('/api/analytics/careers/readiness.csv', { params: careerParams(f), responseType: 'blob' });
-    return res.data;
-  },
-};
 
 export const admin = {
   overview: () => get('/api/analytics/admin/overview'),

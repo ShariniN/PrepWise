@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Mic, Code2, Target, ClipboardList, ArrowRight } from "lucide-react";
+import { FileText, Mic, Code2, Target, ArrowRight } from "lucide-react";
 import AppShell from "../components/AppShell";
 import { Card, Reveal } from "../components/ui";
 import { AppContext } from "../context/AppContext";
@@ -69,13 +69,6 @@ const FresherDashboard = () => {
       to: "/swot",
       tint: "bg-danger-100 text-danger-700",
     },
-    {
-      title: "Assessments",
-      description: "See the assessments your university has opened for you.",
-      icon: <ClipboardList size={24} aria-hidden="true" />,
-      to: "/assessments",
-      tint: "bg-sand text-ink-2",
-    },
   ];
 
   return (
@@ -89,7 +82,7 @@ const FresherDashboard = () => {
       </Reveal>
 
       <Reveal delay={80}>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {cards.map((card) => (
             <Link to={card.to} key={card.to} className="group block rounded-3xl focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/25">
               <Card lift className="flex h-full flex-col">
