@@ -5,9 +5,9 @@ import { Mic, MicOff, Play, Pause, ChevronRight, Clock, User, FileText,
   Zap, MessageCircle } from 'lucide-react';
 import AppShell from "../../components/AppShell";
 import CodeEditor from '../../components/CodeEditor';
-import VerdictBadge from '../../components/VerdictBadge';
+import VerdictBadge from '../practice/components/VerdictBadge';
 import UnavailableNotice from '../../components/UnavailableNotice';
-import ExecutionInfo from '../../components/ExecutionInfo';
+import ExecutionInfo from '../practice/components/ExecutionInfo';
 
 // Custom hooks
 import { useInterview } from './hooks/useInterview';

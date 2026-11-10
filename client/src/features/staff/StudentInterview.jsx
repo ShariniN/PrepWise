@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, Camera, CameraOff } from 'lucide-react';
 import AppShell from '../../components/AppShell';
-import VerdictBadge from '../../components/VerdictBadge';
+import VerdictBadge from '../practice/components/VerdictBadge';
 import { Badge, Button, Card, CardTitle, Skeleton } from '../../components/ui';
 import { BarList } from '../../components/Charts';
 import { ErrorState } from '../../components/DataStates';

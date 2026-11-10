@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AppShell from '../components/AppShell';
-import { Badge, Card, EmptyState, Input, Select, Skeleton } from '../components/ui';
-import { listQuestions } from '../api/practice';
-import { errorMessage } from '../api/client';
-import { QUESTION_TYPES as TYPES, DIFFICULTIES as DIFFS } from '../utils/practice';
+import AppShell from '../../components/AppShell';
+import { Badge, Card, EmptyState, Input, Select, Skeleton } from '../../components/ui';
+import { listQuestions } from './api';
+import { errorMessage } from '../../lib/apiClient';
+import { QUESTION_TYPES as TYPES, DIFFICULTIES as DIFFS } from './utils';
 
 const DIFF_TONE = { easy: 'success', medium: 'warning', hard: 'danger' };
 

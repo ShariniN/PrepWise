@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Mic, Code2, Target, ArrowRight } from "lucide-react";
+import { FileText, Mic, Code2, ArrowRight } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { Card, Reveal } from "../../components/ui";
 import { AppContext } from "../../app/AppContext";
@@ -62,13 +62,6 @@ const StudentHome = () => {
       to: "/cv-analyzer",
       tint: "bg-success-100 text-success-700",
     },
-    {
-      title: "Skills",
-      description: "Assess your strengths and gaps and see where to focus next.",
-      icon: <Target size={24} aria-hidden="true" />,
-      to: "/swot",
-      tint: "bg-danger-100 text-danger-700",
-    },
   ];
 
   return (
@@ -82,7 +75,7 @@ const StudentHome = () => {
       </Reveal>
 
       <Reveal delay={80}>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {cards.map((card) => (
             <Link to={card.to} key={card.to} className="group block rounded-3xl focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-600/25">
               <Card lift className="flex h-full flex-col">

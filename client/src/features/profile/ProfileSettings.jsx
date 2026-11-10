@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AppShell from "../../components/AppShell";
 import PrivacyTab from "./components/PrivacyTab";
-import { PASSWORD_RULES, passwordProblems } from "../../utils/roles";
+import { PASSWORD_RULES, passwordProblems } from "../../lib/roles";
 
 const PHONE_OK = (v) => /^[\d\s\-.()]+$/.test(String(v).trim()) && /^\d{10,15}$/.test(String(v).replace(/\D/g, ''));
 
@@ -22,10 +22,8 @@ const ProfileSettings = () => {
     confirmPassword: ''
   });
   const [savedAnalyses, setSavedAnalyses] = useState([]);
-  const [skillsAssessments, setSkillsAssessments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [expandedAssessment, setExpandedAssessment] = useState(null);
 
   // CV management
   const [cvData, setCvData] = useState(null);
@@ -104,7 +102,6 @@ const ProfileSettings = () => {
         // Fetch additional data
         await Promise.all([
           fetchSavedAnalyses(),
-          fetchSkillsAssessments(),
           fetchCurrentCV()
         ]);
       } catch (error) {
@@ -190,86 +187,6 @@ const ProfileSettings = () => {
         console.error('Error fetching saved analyses:', error);
         toast.error('Failed to fetch saved analyses');
         setSavedAnalyses([]);
-      }
-    }
-  };
-
-  const fetchSkillsAssessments = async () => {
-    try {
-      const { data } = await axios.get(`${backendUrl}/api/user/skills-assessments`);
-
-      if (data.success) {
-        const assessments = data.data || [];
-
-        const formattedAssessments = assessments.map((assessment) => {
-          // Each skill carries a 'proficiencyLevel' from 1 to 10
-          const skills = assessment.skills || [];
-
-          // Calculate overall metrics
-          const totalTechnologies = skills.length;
-          const avgConfidence = totalTechnologies > 0
-            ? skills.reduce((sum, skill) => sum + (skill.proficiencyLevel || 0), 0) / totalTechnologies
-            : 0;
-
-          // Count by proficiency levels based on model structure
-          const expertCount = skills.filter(s => (s.proficiencyLevel || 0) >= 8).length;
-          const proficientCount = skills.filter(s => {
-            const level = s.proficiencyLevel || 0;
-            return level >= 6 && level < 8;
-          }).length;
-          const learningCount = skills.filter(s => (s.proficiencyLevel || 0) < 6).length;
-
-          const score = assessment.overallScore || Math.round((avgConfidence / 10) * 100);
-          let assessmentType = assessment.assessmentType || 'SWOT Analysis';
-
-          let level = 'Beginner';
-          if (avgConfidence >= 8) level = 'Expert';
-          else if (avgConfidence >= 6) level = 'Advanced';
-          else if (avgConfidence >= 4) level = 'Intermediate';
-
-          return {
-            id: assessment._id,
-            assessmentType,
-            level,
-            score,
-            totalTechnologies,
-            averageConfidence: avgConfidence,
-            expertCount,
-            proficientCount,
-            learningCount,
-            completedAt: assessment.completedAt || assessment.updatedAt,
-            createdAt: assessment.createdAt,
-            topTechnologies: skills
-              .sort((a, b) => (b.proficiencyLevel || 0) - (a.proficiencyLevel || 0))
-              .slice(0, 10)
-              .map(skill => ({
-                name: skill.name,
-                confidence: skill.proficiencyLevel || 0,
-                category: skill.category || 'General'
-              })),
-            isRecent: assessment.isRecent || false,
-            isSaved: assessment.isSaved !== false,
-            overallScore: score,
-            strengths: assessment.strengths || [],
-            weaknesses: assessment.weaknesses || [],
-            opportunities: assessment.opportunities || [],
-            threats: assessment.threats || [],
-            recommendations: assessment.recommendations || []
-          };
-        });
-
-        setSkillsAssessments(formattedAssessments);
-      } else {
-        setSkillsAssessments([]);
-      }
-    } catch (error) {
-      // 404: none yet, a normal state. 401 is handled by the interceptor.
-      if (error.response?.status === 404) {
-        setSkillsAssessments([]);
-      } else if (error.response?.status !== 401) {
-        console.error('Error fetching skills assessments:', error);
-        toast.error('Failed to fetch skills assessments');
-        setSkillsAssessments([]);
       }
     }
   };
@@ -376,278 +293,6 @@ const ProfileSettings = () => {
     await fetchCurrentCV();
   };
 
-  // PDF report of a saved CV analysis (jsPDF is loaded from a CDN on first use).
-  const generateAnalysisPDF = (analysis) => {
-    const { jsPDF } = window.jspdf || {};
-    if (!jsPDF) {
-      console.error('jsPDF library not loaded');
-      toast.error('PDF library not available. Please refresh the page and try again.');
-      return;
-    }
-
-    const doc = new jsPDF();
-    let yPos = 20;
-
-    // Premium Header with Logo Space
-    doc.setFillColor(40, 116, 166);
-    doc.rect(0, 0, 210, 30, 'F');
-
-    doc.setTextColor(255);
-    doc.setFontSize(24);
-    doc.text('CV Analysis Report', 20, 20);
-
-    doc.setFontSize(12);
-    doc.text('Detailed Analysis', 20, 25);
-    yPos = 45;
-
-    // Professional Analysis Summary Box
-    doc.setFillColor(245, 248, 251);
-    doc.rect(15, yPos - 5, 180, 35, 'F');
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(40, 116, 166);
-    doc.rect(15, yPos - 5, 180, 35);
-
-    doc.setTextColor(0);
-    doc.setFontSize(16);
-    doc.text('Analysis Summary', 20, yPos + 5);
-
-    doc.setFontSize(12);
-    doc.text(`Position: ${analysis.jobTitle}`, 20, yPos + 15);
-    doc.text(`Company: ${analysis.company}`, 20, yPos + 22);
-    doc.text(`Overall Match: ${analysis.matchPercentage}%`, 120, yPos + 15);
-    doc.text(`Analysis Date: ${new Date(analysis.createdAt).toLocaleDateString()}`, 120, yPos + 22);
-    yPos += 50;
-
-    // Enhanced Match Score with Color Coding
-    doc.setFontSize(14);
-    doc.text('Match Score Analysis:', 20, yPos);
-    yPos += 10;
-
-    // Professional progress bar with gradient effect
-    const barWidth = 150;
-    const barHeight = 15;
-    const fillWidth = (analysis.matchPercentage / 100) * barWidth;
-
-    // Background
-    doc.setFillColor(230, 230, 230);
-    doc.rect(20, yPos, barWidth, barHeight, 'F');
-
-    // Fill color based on score
-    if (analysis.matchPercentage >= 80) {
-      doc.setFillColor(34, 197, 94); // Green
-    } else if (analysis.matchPercentage >= 60) {
-      doc.setFillColor(59, 130, 246); // Blue
-    } else if (analysis.matchPercentage >= 40) {
-      doc.setFillColor(251, 191, 36); // Yellow
-    } else {
-      doc.setFillColor(239, 68, 68); // Red
-    }
-
-    doc.rect(20, yPos, fillWidth, barHeight, 'F');
-
-    // Score text
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text(`${analysis.matchPercentage}%`, 175, yPos + 10);
-    yPos += 25;
-
-    // Multiple Jobs Analysis (Premium Feature)
-    if (analysis.hasMultipleJobs) {
-      doc.setFontSize(14);
-      doc.text(`Multi-Job Analysis Results (${analysis.totalJobs} positions analyzed):`, 20, yPos);
-      yPos += 10;
-
-      doc.setFontSize(10);
-      doc.text(`• Software Engineering Roles: ${analysis.softwareJobs}`, 25, yPos);
-      yPos += 6;
-      doc.text(`• Average Match Score: ${analysis.matchPercentage}%`, 25, yPos);
-      yPos += 6;
-      doc.text(`• Best Match: ${analysis.jobTitle} at ${analysis.company}`, 25, yPos);
-      yPos += 15;
-    }
-
-    // Complete Strengths Section
-    if (analysis.strengths && analysis.strengths.length > 0) {
-      doc.setFontSize(14);
-      doc.setTextColor(34, 197, 94);
-      doc.text('✓ Key Strengths & Qualifications:', 20, yPos);
-      yPos += 10;
-
-      doc.setFontSize(10);
-      doc.setTextColor(0);
-      analysis.strengths.forEach((strength, index) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        const lines = doc.splitTextToSize(`${index + 1}. ${strength}`, 170);
-        lines.forEach(line => {
-          doc.text(line, 25, yPos);
-          yPos += 6;
-        });
-        yPos += 2;
-      });
-      yPos += 10;
-    }
-
-    // Complete Recommendations Section
-    if (analysis.recommendations && analysis.recommendations.length > 0) {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.setFontSize(14);
-      doc.setTextColor(239, 68, 68);
-      doc.text('⚠ Areas for Improvement:', 20, yPos);
-      yPos += 10;
-
-      doc.setFontSize(10);
-      doc.setTextColor(0);
-      analysis.recommendations.forEach((rec, index) => {
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        const lines = doc.splitTextToSize(`${index + 1}. ${rec}`, 170);
-        lines.forEach(line => {
-          doc.text(line, 25, yPos);
-          yPos += 6;
-        });
-        yPos += 2;
-      });
-      yPos += 15;
-    }
-
-    // Premium Insights Section
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setFontSize(14);
-    doc.setTextColor(40, 116, 166);
-    doc.text('🎯 Insights & Recommendations:', 20, yPos);
-    yPos += 10;
-
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-
-    const premiumInsights = [
-      `Your CV shows a ${analysis.matchPercentage}% compatibility with this role.`,
-      'Focus on highlighting the strengths mentioned above in your application.',
-      'Address the improvement areas to increase your match score.',
-      analysis.hasMultipleJobs ?
-        `Out of ${analysis.totalJobs} positions analyzed, ${analysis.softwareJobs} are software roles.` :
-        'Consider analyzing your CV against multiple similar positions for better insights.',
-      'Tailor your CV keywords to better match the job requirements.',
-      'Consider preparing specific examples that demonstrate your key strengths.'
-    ];
-
-    premiumInsights.forEach((insight) => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      const lines = doc.splitTextToSize(`• ${insight}`, 170);
-      lines.forEach(line => {
-        doc.text(line, 25, yPos);
-        yPos += 6;
-      });
-    });
-
-    // Professional Footer
-    doc.addPage();
-    yPos = 20;
-
-    doc.setFontSize(14);
-    doc.setTextColor(40, 116, 166);
-    doc.text('About This Analysis', 20, yPos);
-    yPos += 15;
-
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    const aboutText = [
-      'This comprehensive CV analysis was generated using advanced AI algorithms that compare your',
-      'resume content against specific job requirements. The analysis includes:',
-      '',
-      '• Keyword matching and relevance scoring',
-      '• Skills gap identification',
-      '• Content optimization recommendations',
-      '• Structure and formatting suggestions',
-      '',
-      'For best results, ensure your CV is updated with your latest experience and achievements.',
-      'Consider conducting regular analyses as you apply to different positions.',
-      '',
-      'This report is confidential and intended solely for the recipient\'s use in job applications.'
-    ];
-
-    aboutText.forEach(line => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.text(line, 20, yPos);
-      yPos += 6;
-    });
-
-    // Premium Footer
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text('Generated by PrepWise - CV Analysis', 20, 285);
-    doc.text(`Report ID: ${analysis.id.slice(-8)} | ${new Date().toLocaleDateString()}`, 140, 285);
-
-    return doc;
-  };
-
-  const downloadAnalysis = async (analysisId) => {
-    try {
-      // Find the analysis data
-      const analysis = savedAnalyses.find(a => a.id === analysisId);
-      if (!analysis) {
-        toast.error('Analysis data not found');
-        return;
-      }
-
-      // Check if jsPDF is available (load it if not)
-      if (!window.jspdf) {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-        script.onload = () => {
-          generateAndDownloadPDF(analysis);
-        };
-        script.onerror = () => {
-          toast.error('Failed to load PDF library');
-        };
-        document.head.appendChild(script);
-      } else {
-        generateAndDownloadPDF(analysis);
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Failed to generate PDF report');
-    }
-  };
-
-  const generateAndDownloadPDF = (analysis) => {
-    try {
-      const doc = generateAnalysisPDF(analysis);
-
-      if (doc) {
-        const fileName = `CV_Analysis_${analysis.jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${analysis.id.slice(-6)}.pdf`;
-        doc.save(fileName);
-
-        toast.success('PDF report downloaded successfully!');
-      }
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      toast.error('Failed to generate PDF. Please try again.');
-    }
-  };
-
   const updateProfile = async () => {
     const name = (localUser.name || '').trim();
     // Optional; an empty box clears it. Same rule as the server: 10 to 15 digits, separators ignored.
@@ -715,26 +360,6 @@ const ProfileSettings = () => {
     }
   };
 
-  const deleteAssessment = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this skills assessment?')) {
-      return;
-    }
-
-    try {
-      const { data } = await axios.delete(`${backendUrl}/api/user/assessment/${id}`);
-
-      if (data.success) {
-        setSkillsAssessments(prev => prev.filter(assessment => assessment.id !== id));
-        toast.success('Assessment deleted successfully');
-      } else {
-        toast.error(data.message || 'Failed to delete assessment');
-      }
-    } catch (error) {
-      const msg = error.response?.data?.message || error.message || 'Failed to delete assessment';
-      toast.error(msg);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await axios.post(backendUrl + '/api/auth/logout');
@@ -751,13 +376,6 @@ const ProfileSettings = () => {
       localStorage.removeItem('token'); // Clear token
       navigate('/login');
     }
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 90) return 'text-success-700 bg-success-100';
-    if (score >= 70) return 'text-primary-800 bg-primary-100';
-    if (score >= 50) return 'text-sun-700 bg-sun-100';
-    return 'text-danger-700 bg-danger-100';
   };
 
   const formatFileSize = (bytes) => {
@@ -985,13 +603,6 @@ const renderCVTab = () => (
                   <Target className="mr-2" size={16} />
                   Analyze CV Against Jobs
                 </button>
-                <button
-                  onClick={() => navigate('/swot')}
-                  className="w-full px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700 flex items-center justify-center"
-                >
-                  <Brain className="mr-2" size={16} />
-                  Skills Assessment
-                </button>
               </div>
             </div>
           </div>
@@ -1092,10 +703,6 @@ const renderCVTab = () => (
           <h5 className="font-medium text-ink mb-2">CV Analyzer</h5>
           <p className="text-ink-2">Your CV text is compared against job descriptions to identify matches, gaps, and improvement opportunities.</p>
         </div>
-        <div className="bg-surface rounded-xl p-4 shadow-sm">
-          <h5 className="font-medium text-ink mb-2">Skills Assessment</h5>
-          <p className="text-ink-2">The system extracts your skills and experience to provide personalized technology proficiency assessments.</p>
-        </div>
       </div>
       <div className="mt-4 p-3 bg-primary-100 rounded-xl">
         <p className="text-xs text-primary-800">
@@ -1106,270 +713,6 @@ const renderCVTab = () => (
     </div>
   </div>
 );
-
-  const renderSkillsTab = () => (
-    <div className="bg-surface p-6 rounded-xl shadow">
-      <h3 className="text-lg font-semibold mb-4 flex items-center">
-        <Brain className="mr-2" size={20} />
-        Skills Assessment Results ({skillsAssessments.length})
-      </h3>
-      {skillsAssessments.length === 0 ? (
-        <div className="text-center py-8">
-          <Brain className="mx-auto h-12 w-12 text-ink-muted mb-4" />
-          <p className="text-ink-2 mb-2">No skills assessments completed yet.</p>
-          <p className="text-sm text-ink-muted">Complete a SWOT analysis to see your technology proficiency results here.</p>
-          <button
-            onClick={() => navigate('/swot')}
-            className="mt-3 px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700"
-          >
-            Start Skills Assessment
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {skillsAssessments.map((assessment) => (
-            <div key={assessment.id} className="border border-line rounded-xl">
-              <div className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h4 className="font-medium text-lg text-ink">{assessment.assessmentType}</h4>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        assessment.level === 'Expert' ? 'bg-primary-100 text-primary-800' :
-                        assessment.level === 'Advanced' ? 'bg-primary-100 text-primary-800' :
-                        assessment.level === 'Intermediate' ? 'bg-success-100 text-success-700' :
-                        'bg-sand text-ink'
-                      }`}>
-                        {assessment.level}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                      <div className="text-center">
-                        <div className={`text-lg font-semibold px-2 py-1 rounded ${getScoreColor(assessment.score)}`}>
-                          {assessment.score}/100
-                        </div>
-                        <div className="text-xs text-ink-muted">Overall Score</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-ink">{assessment.totalTechnologies}</div>
-                        <div className="text-xs text-ink-muted">Technologies</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-success-600">{assessment.expertCount}</div>
-                        <div className="text-xs text-ink-muted">Expert Level</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-primary-600">{assessment.proficientCount}</div>
-                        <div className="text-xs text-ink-muted">Proficient</div>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-ink-muted mb-3">
-                      Completed on {new Date(assessment.completedAt).toLocaleDateString()}
-                      {assessment.isRecent && (
-                        <span className="ml-2 px-2 py-1 bg-success-100 text-success-700 text-xs rounded-full">
-                          Recent
-                        </span>
-                      )}
-                    </p>
-
-                    {/* Top Technologies Preview */}
-                    {assessment.topTechnologies && assessment.topTechnologies.length > 0 && (
-                      <div className="mb-3">
-                        <p className="text-sm font-medium text-ink-2 mb-2">Top Skills:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {assessment.topTechnologies.slice(0, 5).map((tech, idx) => (
-                            <div key={`tech-preview-${assessment.id}-${idx}-${tech.name}`} className="flex items-center space-x-1 bg-sand rounded-full px-3 py-1">
-                              <span className="text-sm font-medium">{tech.name}</span>
-                              <div className="flex">
-                                {[...Array(10)].map((_, i) => (
-                                  <Star
-                                    key={`star-preview-${assessment.id}-${tech.name}-${i}`}
-                                    size={10}
-                                    className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'}
-                                  />
-                                ))}
-                              </div>
-                              <span className="text-xs text-ink-2">{tech.confidence}/10</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2 ml-4">
-                    <button
-                      onClick={() => setExpandedAssessment(expandedAssessment === assessment.id ? null : assessment.id)}
-                      className="p-2 text-ink-2 hover:bg-sand rounded-xl"
-                      title="View Details"
-                    >
-                      {expandedAssessment === assessment.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
-                    <button
-                      onClick={() => downloadAnalysis(assessment.id)}
-                      className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl"
-                      title="Download Report"
-                    >
-                      <Download size={16} />
-                    </button>
-                    <button
-                      onClick={() => deleteAssessment(assessment.id)}
-                      className="p-2 text-danger-600 hover:bg-danger-50 rounded-xl"
-                      title="Delete Assessment"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Expanded Assessment Details */}
-              {expandedAssessment === assessment.id && (
-                <div className="border-t border-line p-4 bg-sand">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Confidence Distribution */}
-                    <div>
-                      <h5 className="font-medium text-ink mb-3 flex items-center">
-                        <TrendingUp className="mr-2" size={16} />
-                        Confidence Distribution
-                      </h5>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-ink-2">Expert (8-10)</span>
-                          <span className="font-medium text-primary-600">{assessment.expertCount} skills</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-ink-2">Proficient (6-7)</span>
-                          <span className="font-medium text-primary-600">{assessment.proficientCount} skills</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-ink-2">Learning (1-5)</span>
-                          <span className="font-medium text-success-600">{assessment.learningCount} skills</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t">
-                          <span className="text-sm font-medium text-ink-2">Average Confidence</span>
-                          <span className="font-semibold text-ink">{assessment.averageConfidence.toFixed(1)}/10</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* All Technologies */}
-                    {assessment.topTechnologies && assessment.topTechnologies.length > 0 && (
-                      <div>
-                        <h5 className="font-medium text-ink mb-3 flex items-center">
-                          <Award className="mr-2" size={16} />
-                          All Technologies ({assessment.totalTechnologies})
-                        </h5>
-                        <div className="max-h-48 overflow-y-auto space-y-2">
-                          {assessment.topTechnologies.map((tech, idx) => (
-                            <div key={`all-tech-${assessment.id}-${idx}-${tech.name}`} className="flex items-center justify-between p-2 bg-surface rounded border">
-                              <div className="flex-1">
-                                <span className="text-sm font-medium">{tech.name}</span>
-                                {tech.category && (
-                                  <span className="text-xs text-ink-muted ml-2">({tech.category})</span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex">
-                                  {[...Array(10)].map((_, i) => (
-                                    <Star
-                                      key={`detail-star-${assessment.id}-${tech.name}-${i}`}
-                                      size={12}
-                                      className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'}
-                                    />
-                                  ))}
-                                </div>
-                                <span className="text-xs text-ink-2 min-w-[30px]">{tech.confidence}/10</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SWOT Analysis Details if available */}
-                    {(assessment.strengths?.length > 0 || assessment.weaknesses?.length > 0 ||
-                      assessment.opportunities?.length > 0 || assessment.threats?.length > 0) && (
-                      <div className="col-span-2">
-                        <h5 className="font-medium text-ink mb-3 flex items-center">
-                          <Target className="mr-2" size={16} />
-                          SWOT Analysis Details
-                        </h5>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {assessment.strengths?.length > 0 && (
-                            <div>
-                              <h6 className="font-medium text-success-700 mb-2">Strengths</h6>
-                              <ul className="text-sm space-y-1">
-                                {assessment.strengths.slice(0, 3).map((item, idx) => (
-                                  <li key={`swot-strength-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-success-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {assessment.weaknesses?.length > 0 && (
-                            <div>
-                              <h6 className="font-medium text-danger-700 mb-2">Weaknesses</h6>
-                              <ul className="text-sm space-y-1">
-                                {assessment.weaknesses.slice(0, 3).map((item, idx) => (
-                                  <li key={`swot-weakness-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-danger-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {assessment.opportunities?.length > 0 && (
-                            <div>
-                              <h6 className="font-medium text-primary-700 mb-2">Opportunities</h6>
-                              <ul className="text-sm space-y-1">
-                                {assessment.opportunities.slice(0, 3).map((item, idx) => (
-                                  <li key={`swot-opportunity-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {assessment.threats?.length > 0 && (
-                            <div>
-                              <h6 className="font-medium text-sun-700 mb-2">Threats</h6>
-                              <ul className="text-sm space-y-1">
-                                {assessment.threats.slice(0, 3).map((item, idx) => (
-                                  <li key={`swot-threat-${assessment.id}-${idx}`} className="flex items-start">
-                                    <div className="w-2 h-2 bg-sun-500 rounded-full mt-2 mr-2 flex-shrink-0"></div>
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Assessment Stats */}
-                  <div className="mt-4 pt-4 border-t border-line">
-                    <div className="flex items-center justify-between text-sm text-ink-2">
-                      <span>Assessment ID: {assessment.id.slice(-8)}</span>
-                      <span>Overall Proficiency: {assessment.level}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 
   const renderSettingsTab = () => (
     <div className="bg-surface p-6 rounded-xl shadow">
@@ -1397,7 +740,6 @@ const renderCVTab = () => (
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'cv', label: 'CV Management', icon: FileText },
     { id: 'security', label: 'Security', icon: Lock },
-    { id: 'skills', label: 'Skills Assessment', icon: Brain },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'privacy', label: 'Privacy & data', icon: Lock }
   ];
@@ -1435,12 +777,6 @@ const renderCVTab = () => (
                     className="px-3 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700"
                   >
                     CV Analyzer
-                  </button>
-                  <button
-                    onClick={() => navigate('/swot')}
-                    className="px-3 py-2 text-sm bg-success-600 text-white rounded-xl hover:bg-success-700"
-                  >
-                    Skills Assessment
                   </button>
                 </>
               ) : (
@@ -1483,11 +819,6 @@ const renderCVTab = () => (
                             {savedAnalyses.length}
                           </span>
                         )}
-                        {tab.id === 'skills' && skillsAssessments.length > 0 && (
-                          <span className="bg-success-100 text-success-700 text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                            {skillsAssessments.length}
-                          </span>
-                        )}
                       </button>
                     </li>
                   );
@@ -1502,7 +833,6 @@ const renderCVTab = () => (
             {activeTab === 'profile' && renderProfileTab()}
             {activeTab === 'cv' && renderCVTab()}
             {activeTab === 'security' && renderSecurityTab()}
-            {activeTab === 'skills' && renderSkillsTab()}
             {activeTab === 'settings' && renderSettingsTab()}
             {activeTab === 'privacy' && <PrivacyTab />}
           </div>

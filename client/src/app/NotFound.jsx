@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppContext } from './AppContext';
-import { homeForRole } from '../utils/roles';
+import { homeForRole } from '../lib/roles';
 import Logo from '../components/Logo';
 import { Button } from '../components/ui';
 

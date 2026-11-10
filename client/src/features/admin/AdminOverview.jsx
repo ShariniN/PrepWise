@@ -11,8 +11,8 @@ import InsufficientData from './components/InsufficientData';
 import StatCard from './components/StatCard';
 import useApiData from '../../hooks/useApiData';
 import { admin } from './api';
-import { saveBlob } from '../../utils/download';
-import { errorMessage } from '../../api/client';
+import { saveBlob } from '../../lib/download';
+import { errorMessage } from '../../lib/apiClient';
 
 const Evidence = () => {
   const [includeStudents, setIncludeStudents] = useState(false);

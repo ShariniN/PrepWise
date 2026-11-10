@@ -1,4 +1,4 @@
-import api from '../../api/client';
+import api from '../../lib/apiClient';
 
 // Lecturer dashboard (/api/lecturer, see server/API_LECTURER.md). Each returns response.data.
 // Empty filters are left out so the server sees "all students".

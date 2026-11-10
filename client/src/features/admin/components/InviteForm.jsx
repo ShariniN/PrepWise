@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import api, { errorMessage } from '../../../api/client';
-import { ROLE_LABELS } from '../../../utils/roles';
+import api, { errorMessage } from '../../../lib/apiClient';
+import { ROLE_LABELS } from '../../../lib/roles';
 import { Button, Card, CardTitle, Field, Input, Select } from '../../../components/ui';
 import CopyLinkButton from './CopyLinkButton';
 

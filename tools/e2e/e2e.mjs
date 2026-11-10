@@ -52,13 +52,23 @@ if (st.codingId) {
   ok('coding question page renders with an editor', (await p.locator('.monaco-editor').count()) > 0);
   ok('statement example is not repeated under "Examples"', !(/\bExample\b/.test(t) && /\nExamples\n/.test(t)));
   await p.screenshot({ path: 'e2e/practice-question.png' });
+  // Run in the browser: Python on the starter code fails the visible tests, with the "not graded" label
+  await p.locator('select').first().selectOption('python');
+  await p.waitForTimeout(500);
+  await p.getByRole('button', { name: /^Run$/ }).click();
+  await p.getByText('Ran in your browser: not graded. Submit to check on the server.').waitFor({ timeout: 90000 }).catch(() => {});
+  const rt = await body(p);
+  ok('Run in the browser shows the "Ran in your browser" label', rt.includes('Ran in your browser: not graded. Submit to check on the server.'));
+  ok('Run in the browser lists the visible tests as failed for the starter code', /Failed/.test(rt) && /Test 1/.test(rt));
 }
 
-// 3. Skills page without a CV analysis: no debug text, link to the CV analyzer
-await p.goto(B + '/swot', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
-const sk = await body(p);
-ok('skills page asks for a CV analysis, no debug text', /Analyse your CV first/.test(sk) && !/Debug info/.test(sk));
-ok('skills page links to the CV analyzer', await p.getByRole('link', { name: /CV Analyzer/i }).count() > 0);
+// 3. Removed pages (skills, question authoring, grading) are gone, with no link left in the navigation or on the home page
+for (const path of ['/swot', '/questions', '/grading']) {
+  await p.goto(B + path, { waitUntil: 'networkidle' });
+  ok(`removed page (${path}) shows "Page not found"`, /Page not found/.test(await body(p)));
+}
+await p.goto(B + '/fresher-dashboard', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
+ok('student home and navigation have no link to the removed pages', await p.locator('a[href="/swot"], a[href^="/questions"], a[href="/grading"]').count() === 0);
 
 // 4. Profile: a bad phone is refused before saving
 await p.goto(B + '/profile-settings', { waitUntil: 'networkidle' }); await p.waitForTimeout(800);

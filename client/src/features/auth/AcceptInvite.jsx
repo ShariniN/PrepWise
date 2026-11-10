@@ -4,8 +4,8 @@ import { toast } from 'react-toastify';
 import AuthLayout from './components/AuthLayout';
 import { Button, Field, Input } from '../../components/ui';
 import { AppContext } from '../../app/AppContext';
-import api, { errorMessage, errorCode } from '../../api/client';
-import { homeForRole, passwordProblems, PASSWORD_RULES } from '../../utils/roles';
+import api, { errorMessage, errorCode } from '../../lib/apiClient';
+import { homeForRole, passwordProblems, PASSWORD_RULES } from '../../lib/roles';
 
 
 const AcceptInvite = () => {

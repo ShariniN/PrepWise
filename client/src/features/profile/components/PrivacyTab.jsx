@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api, { errorMessage } from '../../../api/client';
+import api, { errorMessage } from '../../../lib/apiClient';
 import { AppContext } from '../../../app/AppContext';
 
 const inputCls = 'w-full bg-sand rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-400';
@@ -106,7 +106,7 @@ const PrivacyTab = () => {
 
       <section aria-labelledby="pv-export">
         <h4 id="pv-export" className="font-medium text-ink mb-1">Download my data</h4>
-        <p className="text-sm text-ink-2 mb-3">A JSON file with your profile, interviews, CV analyses, skills and consents.</p>
+        <p className="text-sm text-ink-2 mb-3">A JSON file with your profile, interviews, CV analyses and consents.</p>
         <button type="button" onClick={download} disabled={downloading} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-60">
           {downloading ? 'Preparing...' : 'Download my data'}
         </button>
@@ -141,7 +141,7 @@ const PrivacyTab = () => {
 
       <section aria-labelledby="pv-delete" className="border border-danger-100 rounded-xl p-4">
         <h4 id="pv-delete" className="font-medium text-danger-700 mb-1">Delete my account</h4>
-        <p className="text-sm text-ink-2 mb-3">This permanently deletes your account and your interviews, CV analyses, skills results and consents. It cannot be undone.</p>
+        <p className="text-sm text-ink-2 mb-3">This permanently deletes your account and your interviews, CV analyses and consents. It cannot be undone.</p>
         {!confirming ? (
           <button type="button" onClick={() => setConfirming(true)} className="px-4 py-2 text-sm bg-danger-600 text-white rounded-xl hover:bg-danger-700">Delete my account</button>
         ) : (

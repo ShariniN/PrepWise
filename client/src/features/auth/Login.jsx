@@ -6,7 +6,7 @@ import { Mail, Lock } from 'lucide-react';
 import { AppContext } from "../../app/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { homeForRole } from "../../utils/roles";
+import { homeForRole } from "../../lib/roles";
 
 const Login = () => {
   const navigate = useNavigate();

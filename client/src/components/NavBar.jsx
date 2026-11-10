@@ -4,7 +4,7 @@ import { useContext } from "react";
 import axios from "axios";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
-import { homeForRole, ROLES, ROLE_LABELS } from "../utils/roles";
+import { homeForRole, ROLES, ROLE_LABELS } from "../lib/roles";
 import { toast } from "react-toastify";
 import Logo from "./Logo";
 
@@ -43,28 +43,23 @@ const NavBar = () => {
     }
   }
 
-  // Student-only tools (CV analyzer, skills, interview) are hidden from staff.
+  // Student-only tools (CV analyzer, practice, interview) are hidden from staff.
   const links = role === ROLES.ADMIN
     ? [
         { to: '/manage-people', label: 'Manage people' },
         { to: '/staff', label: 'Students' },
         { to: '/admin-overview', label: 'Overview' },
-        { to: '/grading', label: 'Grading' },
-        { to: '/questions', label: 'Questions' },
       ]
     : role === ROLES.STUDENT
       ? [
           { to: '/fresher-dashboard', label: 'Dashboard' },
           { to: '/cv-analyzer', label: 'CV analyzer' },
-          { to: '/swot', label: 'Skills' },
           { to: '/practice', label: 'Practice' },
           { to: '/interview', label: 'Interview' },
         ]
       : role === ROLES.LECTURER
         ? [
             { to: '/staff', label: 'Dashboard' },
-            { to: '/grading', label: 'Grading' },
-            { to: '/questions', label: 'Questions' },
           ]
         : [];
 
