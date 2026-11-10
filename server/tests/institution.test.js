@@ -314,3 +314,32 @@ test('an invited user without a password passes model validation when deactivate
   doc.status = 'active';
   await assert.rejects(doc.validate(), /Password is required/);
 });
+
+// QA-09: at the limit, each row is still labelled by its real problem; only valid new student rows are blocked_limit.
+test('CSV import at the limit validates every row first and labels each by its real reason', async () => {
+  w.institutions[IDS.instA].allowedEmailDomains = ['a.edu'];
+  for (let i = 0; i < 2; i++) w.addUser({ email: `seat${i}@a.edu`, role: 'student', institutionId: IDS.instA });
+  const csv = [
+    'email,name,role,group',
+    'stu@a.edu,Existing,student,',        // 2 existing user
+    'fresh@a.edu,Fresh,student,',         // 3 valid but no seat
+    'fresh@a.edu,Again,student,',         // 4 duplicate in file
+    'not-an-email,Bad,student,',          // 5 invalid email
+    'someone@gmail.com,Gmail,student,',   // 6 wrong domain
+    'odd@a.edu,Odd,wizard,',              // 7 invalid role
+    `long@a.edu,Long,student,${'g'.repeat(61)}`, // 8 group too long
+    'teach@a.edu,Teach,lecturer,',        // 9 staff still added
+  ].join('\n');
+  const res = await request(app).post('/api/institution/people/import').set(as(adminA)).set('Content-Type', 'text/csv').send(csv);
+  assert.equal(res.status, 200, res.text);
+  const by = Object.fromEntries(res.body.results.map((r) => [r.line, r.status]));
+  assert.deepEqual(by, { 2: 'skipped', 3: 'blocked_limit', 4: 'skipped', 5: 'error', 6: 'error', 7: 'error', 8: 'error', 9: 'invited' });
+  const reason = Object.fromEntries(res.body.results.map((r) => [r.line, r.reason]));
+  assert.match(reason[2], /already exists/);
+  assert.match(reason[4], /Duplicate/);
+  assert.match(reason[5], /valid email/);
+  assert.match(reason[6], /approved domains/);
+  assert.match(reason[3], /limit/);
+  assert.deepEqual(res.body.summary, { total: 8, skipped: 2, blocked_limit: 1, error: 4, invited: 1 });
+  assert.equal(res.body.limitReached, true);
+});

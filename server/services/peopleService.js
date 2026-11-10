@@ -160,7 +160,9 @@ export const importUsers = async ({ institution, actor, csvText }) => {
   let limitHit = false;
   const seenEmails = new Set();
 
-  // Student rows after the limit is reached are not processed. Staff rows still are, because they are free.
+  // Every row is validated first (email, role, group, domain, already exists) and labelled by its real problem.
+  // inviteUser checks the student limit last, so only valid new student rows become blocked_limit.
+  // Staff rows are still added after the limit is reached, because they are free.
   for (const row of parsed.rows) {
     const base = { line: row.line, email: row.email, role: row.role };
     if (row.email && seenEmails.has(row.email)) {
@@ -168,11 +170,6 @@ export const importUsers = async ({ institution, actor, csvText }) => {
       continue;
     }
     seenEmails.add(row.email);
-    if (row.role === 'student' && seats.used >= limit) {
-      limitHit = true;
-      results.push({ ...base, status: 'blocked_limit', reason: `Student limit of ${limit} reached` });
-      continue;
-    }
     try {
       const r = await inviteUser({ institution, actor, email: row.email, name: row.name, role: row.role, group: row.group, seats });
       results.push({ ...base, status: 'invited', emailSent: r.emailSent, ...(r.inviteLink ? { inviteLink: r.inviteLink } : {}) });
@@ -182,7 +179,7 @@ export const importUsers = async ({ institution, actor, csvText }) => {
       results.push({
         ...base,
         status: error.code === 'EMAIL_IN_USE' ? 'skipped' : error.code === 'STUDENT_LIMIT_REACHED' ? 'blocked_limit' : 'error',
-        reason: error.message,
+        reason: error.code === 'STUDENT_LIMIT_REACHED' ? `Student limit of ${limit} reached` : error.message,
       });
     }
   }
