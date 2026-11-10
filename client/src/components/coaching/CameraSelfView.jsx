@@ -20,6 +20,8 @@ export default function CameraSelfView({ coaching, measuring }) {
   if (status === 'error' && error) {
     // e.g. the camera was unplugged mid-interview: say so instead of silently disappearing.
     return (
+      <>
+      <div aria-hidden="true" className="h-28 lg:hidden" />
       <aside
         aria-label="Camera coaching"
         role="status"
@@ -31,6 +33,7 @@ export default function CameraSelfView({ coaching, measuring }) {
           OK
         </button>
       </aside>
+      </>
     );
   }
   if (status !== 'ready' && status !== 'starting') return null;
