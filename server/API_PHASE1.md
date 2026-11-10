@@ -4,7 +4,7 @@ All endpoints are JSON, authenticated with the existing `token` httpOnly cookie 
 Unless noted, errors look like `{ "success": false, "message": "...", "code": "OPTIONAL_CODE" }`.
 Unauthenticated: `401`. Wrong role: `403`. Something in another institution: `404` (never `403`, so ids cannot be probed).
 
-Roles: `student`, `lecturer`, `career_officer`, `university_admin`.
+Roles: `student`, `lecturer`, `university_admin`. The `career_officer` role was removed: an account that still carries it (or any other unknown role) cannot log in (`403 ROLE_NOT_SUPPORTED`, no cookie) and an existing token gets `403 ROLE_NOT_SUPPORTED` on every route. An admin can change its role or deactivate it.
 Account status: `invited` (cannot log in), `active`, `deactivated` (cannot log in, tokens stop working immediately).
 
 CORS now allows `PATCH`.
@@ -53,13 +53,14 @@ OTP endpoints (`send-verify-otp`, `verify-account`, `send-reset-otp`, `reset-pas
 
 Person object:
 ```json
-{ "id": "...", "name": "...", "email": "...", "role": "student", "status": "active",
+{ "id": "...", "name": "...", "email": "...", "role": "student", "status": "active", "group": "CS 2026",
   "isAccountVerified": true, "lastActive": "ISO|null", "createdAt": "ISO", "inviteExpiresAt": "ISO|null" }
 ```
-Students count toward the contract limit while `invited` or `active`. Lecturers, career officers and admins are free.
+Students count toward the contract limit while `invited` or `active`. Lecturers and admins are free.
+`group` is an optional free-text label (max 60 characters, `""` when not set), e.g. a class or year. It filters the lecturer dashboard (`/api/lecturer`, see API_LECTURER.md).
 
 ### GET /api/institution/people
-Query (all optional): `role`, `status`, `search` (matches name or email, case-insensitive). Max 1000 rows.
+Query (all optional): `role`, `status`, `group` (exact match), `search` (matches name or email, case-insensitive). Max 1000 rows.
 200: `{ success, people: [Person], counts: { total, byRole: {student: n, ...}, byStatus: {active: n, ...} }, usage: Usage }`
 `counts` covers the whole institution, not just the filtered list. 400 for an unknown `role` or `status`.
 
@@ -67,15 +68,15 @@ Query (all optional): `role`, `status`, `search` (matches name or email, case-in
 200: `{ success, studentLimit, activeStudents, invitedStudents, remaining }`
 
 ### POST /api/institution/people/invite
-Body: `{ email, name?, role? }` (`role` defaults to `student`; name defaults to the email prefix).
+Body: `{ email, name?, role?, group? }` (`role` defaults to `student`; name defaults to the email prefix; `group` is trimmed, max 60 characters).
 201: `{ success, user: Person, emailSent: boolean, warning?: string, inviteLink?: string }`
 - `warning` is set when students used reaches 90% of the limit or more after this invite.
 - `inviteLink` only outside production.
-Errors: `400` invalid email/role (`code` `INVALID_EMAIL`, `INVALID_ROLE`) or email domain not allowed (`DOMAIN_NOT_ALLOWED`; enforced for every role when the institution has `allowedEmailDomains`). `409` `STUDENT_LIMIT_REACHED` (message says the limit) or `EMAIL_IN_USE` (email exists anywhere on the platform; the message never says where).
+Errors: `400` invalid email/role/group (`code` `INVALID_EMAIL`, `INVALID_ROLE`, `INVALID_GROUP`) or email domain not allowed (`DOMAIN_NOT_ALLOWED`; enforced for every role when the institution has `allowedEmailDomains`). `409` `STUDENT_LIMIT_REACHED` (message says the limit) or `EMAIL_IN_USE` (email exists anywhere on the platform; the message never says where).
 
 ### POST /api/institution/people/import
 Body: CSV text with `Content-Type: text/csv` (or `text/plain`), or JSON `{ "csv": "..." }`.
-Columns: `email` (required), `name`, `role` (default `student`). Header row required, case-insensitive. UTF-8 BOM, CRLF and quoted fields are fine. Maximum 2000 data rows (more gives `413`, nothing imported).
+Columns: `email` (required), `name`, `role` (default `student`), `group` (optional, max 60 characters; a longer value makes only that row `error`). Header row required, case-insensitive. UTF-8 BOM, CRLF and quoted fields are fine. Maximum 2000 data rows (more gives `413`, nothing imported).
 200:
 ```json
 { "success": true,
@@ -84,7 +85,7 @@ Columns: `email` (required), `name`, `role` (default `student`). Header row requ
   "summary": { "total": 5, "invited": 3, "skipped": 1, "blocked_limit": 1 },
   "limitReached": true, "warning": "..." }
 ```
-`line` is the CSV line number including the header, so it matches a spreadsheet. Student rows after the limit is reached get `blocked_limit`; staff rows in the same file are still added. `skipped` = email already exists or is repeated in the file. `error` = invalid email, role or domain.
+`line` is the CSV line number including the header, so it matches a spreadsheet. Student rows after the limit is reached get `blocked_limit`; staff rows in the same file are still added. `skipped` = email already exists or is repeated in the file. `error` = invalid email, role, group or domain.
 `400` empty CSV / missing `email` column (`INVALID_CSV`).
 
 ### PATCH /api/institution/people/:id/deactivate
@@ -98,44 +99,30 @@ A person who never accepted their invitation returns to `invited` and gets a fre
 200: `{ success, user: Person, emailSent, inviteLink? }` (new token, old one stops working). `409 NOT_INVITED` unless the status is `invited`.
 
 ### PATCH /api/institution/people/:id/role
-Body: `{ role }`. 200: `{ success, user: Person }`. Audited. `400` own role or invalid role; `409` same role, student limit (when turning someone into a student), or last administrator.
+Body: `{ role }` (`student`, `lecturer` or `university_admin`). 200: `{ success, user: Person }`. Audited. `400` own role or invalid role; `409` same role, student limit (when turning someone into a student), or last administrator.
+
+### PATCH /api/institution/people/:id/group
+Body: `{ group }` (string, max 60 characters after trimming; `""` clears it). 200: `{ success, user: Person }`. Audited (`user.group_change`, meta `{ from, to }`).
+`400 INVALID_GROUP` missing, not text or too long. `404` unknown or other institution.
 
 ---
 
-## Courses: /api/courses
+## Courses: removed
 
-Course object:
-```json
-{ "id": "...", "code": "CS101", "title": "...", "description": "", "ownerId": "...",
-  "cohorts": [ { "id": "...", "name": "Group 1", "startsAt": null, "endsAt": null, "studentCount": 20 } ],
-  "studentCount": 40 }
-```
-For students `studentCount` fields are omitted and `cohorts` lists only their own cohorts.
-Lecturers see only courses they own or are assigned to; administrators see every course in their institution. Anything else is `404`.
-
-| Method and path | Roles | Body | Response |
-|---|---|---|---|
-| `GET /api/courses/mine` | student, lecturer, university_admin | none | `{ success, courses: [Course] }` |
-| `POST /api/courses` | lecturer, university_admin | `{ code, title, description? }` | 201 `{ success, course }`; `409` duplicate code |
-| `GET /api/courses/:courseId` | lecturer, university_admin | none | `{ success, course }` |
-| `POST /api/courses/:courseId/cohorts` | lecturer, university_admin | `{ name, startsAt?, endsAt? }` | 201 `{ success, cohort }`; `409` duplicate name |
-| `POST /api/courses/:courseId/cohorts/:cohortId/enrol` | lecturer, university_admin | `{ emails: [..] }` (max 500) | `{ success, enrolled, results: [{ email, status }] }` |
-| `GET /api/courses/:courseId/cohorts/:cohortId/students` | lecturer, university_admin | none | `{ success, students: [{ id, name, email, status }] }` |
-| `POST /api/courses/:courseId/lecturers` | university_admin | `{ email }` | `{ success, assigned: boolean }` gives a lecturer access to a course they do not own |
-
-Enrol result `status`: `enrolled`, `already_enrolled`, `not_found` (also for emails of other institutions), `not_a_student`, `deactivated`.
+`/api/courses` (courses, cohorts, enrolment, lecturer assignment) was removed: universities manage courses in their own LMS.
+Lecturers now see every student of their university; use the optional person `group` (below) to split them.
 
 ---
 
 ## Compliance
 
 ### GET /api/me/export  (any logged-in role; own data only)
-Downloads JSON (`Content-Disposition: attachment`): `{ exportedAt, profile, interviews, analyses, skills, consents, enrollments }`. No password, OTP or invite fields. Audited (`user.export`).
+Downloads JSON (`Content-Disposition: attachment`): `{ exportedAt, profile, interviews, analyses, skills, consents }`. No password, OTP or invite fields. Audited (`user.export`).
 
 ### DELETE /api/me  (any logged-in role)
-Body: `{ password }`. Deletes the account and its interviews, analyses, skills, consents and enrolments, clears the cookie, writes audit `user.delete` (ids only).
+Body: `{ password }`. Deletes the account and its interviews, analyses, skills and consents (plus any enrolment rows left from the removed courses feature), clears the cookie, writes audit `user.delete` (ids only).
 `400` no password, `403` wrong password, `409` the only active administrator.
-200: `{ success, message, deleted: { interviews, analyses, skills, consents, enrollments } }`
+200: `{ success, message, deleted: { interviews, analyses, skills, consents } }`
 
 ### POST /api/me/consent
 Body: `{ type: "terms"|"privacy"|"ai_processing"|"recording", version: "2026-11" }`. 201: `{ success, consent: { type, version, acceptedAt } }`.
@@ -155,7 +142,7 @@ In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, As
 
 ## Audit actions written
 
-`user.invite`, `user.invite_resend`, `user.invite_accept`, `user.import`, `user.deactivate`, `user.reactivate`, `user.role_change`, `user.export`, `user.delete`, `course.create`, `cohort.create`, `cohort.enrol`, `course.assign_lecturer`, `institution.create` (script). Login failures are not logged.
+`user.invite`, `user.invite_resend`, `user.invite_accept`, `user.import`, `user.deactivate`, `user.reactivate`, `user.role_change`, `user.group_change`, `user.export`, `user.delete`, `institution.create` (script). (`course.*` and `cohort.*` are no longer written.) Login failures are not logged.
 
 ## Owner scripts (run in `server/`, need `MONGODB_URI` in `.env`)
 
@@ -163,6 +150,6 @@ In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, As
 npm run owner:create-institution -- --name "Example University" --limit 200 --domains example.edu --admin-email admin@example.edu --admin-name "Ada Admin"
 npm run owner:usage-report            # table;  add -- --csv for CSV
 npm run owner:import-users -- --institution example-university --file students.csv
-npm run seed:demo                     # two fake universities; refuses when NODE_ENV=production; add -- --reset to replace
+npm run seed:demo                     # two fake universities (University A also gets fake interview/CV activity); refuses when NODE_ENV=production; add -- --reset to replace
 node scripts/migrate-default-institution.js   # existing prototype users -> "Default Institution" (run once before deploying this)
 ```
