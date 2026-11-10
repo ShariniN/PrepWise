@@ -145,6 +145,10 @@ In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, As
 ## Other behaviour the client may see
 
 - AI limit: when a university reaches its monthly AI call cap (default 20000, `Institution.monthlyAiCallCap`), the interview answer endpoint still succeeds but its `feedback.source` is `"fallback"` (basic scoring). Other AI endpoints (CV analysis, question generation) catch errors in their own way and may report a generic failure; only an uncaught cap error reaches the global handler as `429 { code: "AI_MONTHLY_CAP" }`.
+- CV analysis (`POST /api/analyze/analyze-resume`, `/analyze-profile-cv`): each job result has `recommendationsUnavailable: true` when the AI
+  could not write the advice (the advice arrays are then empty; show "AI advice is unavailable right now", not "no items"). The response has
+  `technologiesUnavailable: true` (also in `metadata`, or in `data` for the profile route) when the technologies for the skills
+  self-assessment could not be extracted; `extractedTechnologies` is then `[]` and means "unknown", not "none".
 - `feedback.source` on interview answers is `"ai"` or `"fallback"` (`"tests"` and `"human"` are reserved for later phases). Dashboards must exclude `"fallback"`. Older stored responses have no `source`.
 - The student's own interview results (`PUT /api/interviews/:id/complete`, `GET /api/interviews/:id/feedback`) also leave fallback-scored
   answers out of `score` and `categoryPercentages`, and add `excludedFallbackAnswers`, `scoredAnswers` and `scoreIsPartial`
