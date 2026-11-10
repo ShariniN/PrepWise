@@ -261,9 +261,9 @@ test('resend-invite issues a new hash for pending invitations only', async () =>
 });
 
 test('role change is audited, respects the limit, and cannot target yourself', async () => {
-  const ok = await request(app).patch(`/api/institution/people/${lecturerA._id}/role`).set(as(adminA)).send({ role: 'career_officer' });
+  const ok = await request(app).patch(`/api/institution/people/${lecturerA._id}/role`).set(as(adminA)).send({ role: 'university_admin' });
   assert.equal(ok.status, 200);
-  assert.deepEqual(w.audit.at(-1).meta, { from: 'lecturer', to: 'career_officer' });
+  assert.deepEqual(w.audit.at(-1).meta, { from: 'lecturer', to: 'university_admin' });
   const self = await request(app).patch(`/api/institution/people/${adminA._id}/role`).set(as(adminA)).send({ role: 'student' });
   assert.equal(self.status, 400);
   for (let i = 0; i < 2; i++) w.addUser({ email: `m${i}@a.edu`, role: 'student', institutionId: IDS.instA });

@@ -6,7 +6,7 @@ import { Button, Card, CardTitle, Field, Input, Select } from '../ui';
 import CopyLinkButton from './CopyLinkButton';
 
 const InviteForm = ({ onDone }) => {
-  const [form, setForm] = useState({ email: '', name: '', role: 'student' });
+  const [form, setForm] = useState({ email: '', name: '', role: 'student', group: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [last, setLast] = useState(null);
@@ -19,11 +19,12 @@ const InviteForm = ({ onDone }) => {
     try {
       const body = { email: form.email.trim(), role: form.role };
       if (form.name.trim()) body.name = form.name.trim();
+      if (form.group.trim()) body.group = form.group.trim();
       const { data } = await api.post('/api/institution/people/invite', body);
       setLast(data);
       if (data.warning) toast.warn(data.warning);
       toast.success(data.emailSent ? 'Invitation sent' : 'Invitation created (email not sent)');
-      setForm({ email: '', name: '', role: form.role });
+      setForm({ email: '', name: '', role: form.role, group: form.group });
       onDone();
     } catch (err) {
       const code = errorCode(err);
@@ -54,7 +55,10 @@ const InviteForm = ({ onDone }) => {
             </Select>
           )}
         </Field>
-        <div className="flex items-end">
+        <Field label="Group (optional)" hint="A class or year, e.g. CS 2026. Lecturers can filter by it.">
+          {(p) => <Input {...p} list="people-groups" maxLength={60} value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} />}
+        </Field>
+        <div className="flex items-end sm:col-span-2">
           <Button type="submit" loading={busy} block>{busy ? 'Sending...' : 'Send invite'}</Button>
         </div>
       </div>

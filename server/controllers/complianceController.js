@@ -78,7 +78,7 @@ export const SUBPROCESSORS = [
   { name: 'Judge0', purpose: 'Running candidate code (replaces JDoodle in Phase 2)', status: 'planned', data: 'Submitted code' },
   { name: 'AssemblyAI', purpose: 'Speech-to-text for spoken interview answers', status: 'in_use', data: 'Audio recordings; only when the student uses voice answers and a key is configured' },
   { name: 'Vercel', purpose: 'Hosting the web app and API', status: 'planned', data: 'All traffic', note: 'Not deployed from this repository yet' },
-  { name: 'Cloudflare', purpose: 'Evidence storage (R2) and DNS', status: 'planned', data: 'Integrity evidence', note: 'Not used by the code yet' },
+  { name: 'Cloudflare', purpose: 'DNS', status: 'planned', data: 'Traffic metadata', note: 'Not used by the code yet' },
 ];
 
 export const subprocessors = (req, res) => {

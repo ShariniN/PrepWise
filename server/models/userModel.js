@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ROLES } from '../config/roles.js';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -26,11 +27,26 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\d{10,15}$/, 'Please enter a valid phone number']
   },
+  // Checked only when the role is set or changed, so an older account with a removed role (career_officer)
+  // can still be saved (deactivated, re-roled by an admin, password reset) without a validation error.
   role: {
     type: String,
-    enum: ['student', 'lecturer', 'career_officer', 'university_admin'],
     default: 'student',
-    required: true
+    required: true,
+    validate: {
+      validator: function (v) {
+        if (typeof this?.isModified === 'function' && !this.isNew && !this.isModified('role')) return true;
+        return ROLES.includes(v);
+      },
+      message: (props) => `\`${props.value}\` is not a valid role`
+    }
+  },
+  // Optional free-text label set by the university admin, e.g. 'CS 2026'. Filters the lecturer dashboard.
+  group: {
+    type: String,
+    trim: true,
+    default: '',
+    maxlength: [60, 'Group cannot exceed 60 characters']
   },
   institutionId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -106,6 +122,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 }, { unique: true, name: 'email_unique' });
 userSchema.index({ isAccountVerified: 1 }, { name: 'account_verified' });
 userSchema.index({ institutionId: 1, role: 1, status: 1 }, { name: 'institution_role_status' });
+userSchema.index({ institutionId: 1, role: 1, group: 1 }, { name: 'institution_role_group' });
 userSchema.index({ lastActive: -1 }, { name: 'last_active' });
 userSchema.index({ 'currentCV.hash': 1 }, { name: 'cv_hash_lookup', sparse: true }); // Sparse index for CV hash
 

@@ -5,7 +5,6 @@ import { institutionOf } from '../middleware/tenancy.js';
 import { MAX_SOURCE_CHARS } from '../services/execution/index.js';
 import { normalizeLanguage } from '../services/execution/languages.js';
 import { studentQuestion, studentListItem } from '../services/questionSerializers.js';
-import { lockedQuestionIds } from '../services/assessments/lock.js';
 import { runForQuestion, submitForQuestion, cleanEvents, EVENT_LIMITS, CODE_TYPES } from '../services/practiceCore.js';
 
 export { EVENT_LIMITS };
@@ -27,8 +26,7 @@ export const listQuestions = async (req, res) => {
   if (typeof difficulty === 'string' && difficulty) filter.difficulty = difficulty;
   if (typeof type === 'string' && type) filter.type = type;
   if (unseen === '1' || unseen === 'true') filter.excludeIds = await questionRepo.solvedQuestionIds(institutionId, req.user.id);
-  const locked = await lockedQuestionIds(req); // questions inside an unfinished assessment are not practice material
-  const questions = (await questionRepo.listVisible(institutionId, filter)).filter((q) => !locked.has(String(q._id)));
+  const questions = await questionRepo.listVisible(institutionId, filter);
   res.json({ success: true, questions: questions.map(studentListItem) });
 };
 
@@ -84,7 +82,7 @@ export const autosave = async (req, res) => {
   if (!lang) return fail(res, 400, 'Unsupported language');
   const institutionId = institutionOf(req);
   const attempt = await questionRepo.findAttempt(institutionId, req.user.id, req.params.id);
-  if (!attempt || attempt.runKind !== 'draft' || attempt.assessmentSessionId) return fail(res, 404, 'Attempt not found'); // assessment drafts are only writable inside their session
+  if (!attempt || attempt.runKind !== 'draft') return fail(res, 404, 'Attempt not found');
   const updated = await questionRepo.updateAttempt(institutionId, req.user.id, req.params.id, { language: lang, source });
   res.json({ success: true, draft: draftView(updated) });
 };
@@ -98,7 +96,7 @@ export const addEvents = async (req, res) => {
 
   const institutionId = institutionOf(req);
   const attempt = await questionRepo.findAttempt(institutionId, req.user.id, req.params.id);
-  if (!attempt || attempt.assessmentSessionId) return fail(res, 404, 'Attempt not found');
+  if (!attempt) return fail(res, 404, 'Attempt not found');
   if (await questionRepo.countEventBatches(institutionId, attempt._id) >= EVENT_LIMITS.maxBatchesPerAttempt) return fail(res, 429, 'Too many event batches for this attempt');
   await questionRepo.addEventBatch({
     attemptId: attempt._id, questionId: attempt.questionId, userId: req.user.id, institutionId, seq: Number.isInteger(seq) ? seq : 0, events: clean,

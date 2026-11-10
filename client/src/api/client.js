@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// Shared axios instance for the Phase 1 pages. Cookie auth, JSON by default.
-// Pass full '/api/...' paths. Without VITE_BACKEND_URL the Vite proxy is used.
+// API origin. Empty means same origin (the Vite proxy in development, the same host in production).
+export const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+
+// Shared axios instance. Cookie auth, JSON by default. Pass full '/api/...' paths.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || '',
+  baseURL: backendUrl,
   withCredentials: true,
 });
 

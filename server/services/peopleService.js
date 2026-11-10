@@ -4,7 +4,9 @@ import { audit } from './audit.js';
 import { createInviteToken, buildInviteLink, exposeInviteLinks } from './inviteTokens.js';
 import { parseUsersCsv } from './csv.js';
 
-export const ROLES = ['student', 'lecturer', 'career_officer', 'university_admin'];
+import { ROLES } from '../config/roles.js';
+
+export { ROLES };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export class PeopleError extends Error {
@@ -22,11 +24,24 @@ export const publicUser = (u) => ({
   email: u.email,
   role: u.role,
   status: u.status,
+  group: u.group || '',
   isAccountVerified: !!u.isAccountVerified,
   lastActive: u.lastActive || null,
   createdAt: u.createdAt || null,
   inviteExpiresAt: u.status === 'invited' ? (u.inviteExpiresAt || null) : null,
 });
+
+export const MAX_GROUP_CHARS = 60;
+
+// Optional free-text group ('CS 2026'). Returns the trimmed value ('' clears it) or throws a 400.
+// Over-long values are rejected, never silently truncated.
+export const cleanGroup = (group) => {
+  if (group === undefined || group === null) return '';
+  if (typeof group !== 'string') throw new PeopleError(400, 'group must be text', 'INVALID_GROUP');
+  const g = group.trim().replace(/\s+/g, ' ');
+  if (g.length > MAX_GROUP_CHARS) throw new PeopleError(400, `group must be at most ${MAX_GROUP_CHARS} characters`, 'INVALID_GROUP');
+  return g;
+};
 
 export const emailDomainAllowed = (institution, email) => {
   const domains = institution.allowedEmailDomains || [];
@@ -85,10 +100,11 @@ export const sendInviteEmail = async (institution, user, link) => {
  * Invites one person. `seats` is an optional shared counter ({ used }) so an import counts seats once.
  * Throws PeopleError for anything the caller should see as a 4xx.
  */
-export const inviteUser = async ({ institution, actor, email, name, role = 'student', seats }) => {
+export const inviteUser = async ({ institution, actor, email, name, role = 'student', group, seats }) => {
   const cleanEmail = String(email || '').trim().toLowerCase();
   if (!EMAIL_RE.test(cleanEmail)) throw new PeopleError(400, 'A valid email is required', 'INVALID_EMAIL');
   if (!ROLES.includes(role)) throw new PeopleError(400, `Role must be one of: ${ROLES.join(', ')}`, 'INVALID_ROLE');
+  const cleanedGroup = cleanGroup(group);
   if (!emailDomainAllowed(institution, cleanEmail)) {
     throw new PeopleError(400, `Email must use one of the approved domains: ${institution.allowedEmailDomains.join(', ')}`, 'DOMAIN_NOT_ALLOWED');
   }
@@ -112,6 +128,7 @@ export const inviteUser = async ({ institution, actor, email, name, role = 'stud
     name: cleanName,
     email: cleanEmail,
     role,
+    group: cleanedGroup,
     institutionId: institution._id,
     status: 'invited',
     inviteTokenHash: invite.hash,
@@ -157,7 +174,7 @@ export const importUsers = async ({ institution, actor, csvText }) => {
       continue;
     }
     try {
-      const r = await inviteUser({ institution, actor, email: row.email, name: row.name, role: row.role, seats });
+      const r = await inviteUser({ institution, actor, email: row.email, name: row.name, role: row.role, group: row.group, seats });
       results.push({ ...base, status: 'invited', emailSent: r.emailSent, ...(r.inviteLink ? { inviteLink: r.inviteLink } : {}) });
     } catch (error) {
       if (!(error instanceof PeopleError)) throw error;
@@ -238,6 +255,17 @@ export const resendInvite = async ({ institution, actor, id }) => {
   const emailSent = await sendInviteEmail(institution, user, link);
   await audit({ actor: actor.id, action: 'user.invite_resend', target: user._id, institutionId: institution._id });
   return { user: publicUser(user), emailSent, ...(exposeInviteLinks() ? { inviteLink: link } : {}) };
+};
+
+export const setGroup = async ({ institution, actor, id, group }) => {
+  if (group === undefined) throw new PeopleError(400, 'group is required (send "" to clear it)', 'INVALID_GROUP');
+  const g = cleanGroup(group);
+  const user = await loadTarget(institution, id);
+  const from = user.group || '';
+  const updated = await peopleRepo.updateGroup(institution._id, user._id, g);
+  if (!updated) throw new PeopleError(404, 'Person not found', 'NOT_FOUND');
+  await audit({ actor: actor.id, action: 'user.group_change', target: user._id, institutionId: institution._id, meta: { from, to: g } });
+  return { user: publicUser(updated) };
 };
 
 export const changeRole = async ({ institution, actor, id, role }) => {

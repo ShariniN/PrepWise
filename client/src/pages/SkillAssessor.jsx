@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppShell from '../components/AppShell';
+import { backendUrl } from '../api/client';
 import { Button, Card, EmptyState } from '../components/ui';
 
 // Simple icon components to replace Lucide icons
@@ -113,7 +114,7 @@ const SWOTAnalysis = ({
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:4000/api/swot/save-ratings', {
+      const response = await fetch(`${backendUrl}/api/swot/save-ratings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +146,7 @@ const SWOTAnalysis = ({
     } catch (err) {
       console.error('Error saving ratings:', err);
       if (err.message.includes('404')) {
-        setError('API endpoint not found. Please check if your backend server is running on port 4000.');
+        setError('API endpoint not found. Please check that the PrepWise server is running.');
       } else if (err.message.includes('Failed to fetch')) {
         setError('Cannot connect to server. Please check if your backend is running.');
       } else {

@@ -1,32 +1,18 @@
 // Grading queue for short and behavioural answers. The AI only ever SUGGESTS rubric points (source 'ai').
 // A final score exists only after a lecturer confirms or overrides it (source 'human', confirmedBy set).
-import courseRepo from '../repositories/courseRepo.js';
+import peopleRepo from '../repositories/peopleRepo.js';
 import questionRepo from '../repositories/questionRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';
 import aiService from '../controllers/services/aiService.js';
-import { accessibleCourses, studentsOf, loadCourse, fail, isId } from '../analytics/access.js';
+import { fail, isId } from '../analytics/access.js';
 import gradingRepo from './repo.js';
 
 const MAX_BULK = 50;
 const r2 = (n) => Math.round(n * 100) / 100;
 
-// Student ids the caller may grade: whole institution for admins (null), enrolled students of their courses for lecturers.
-const gradableStudentIds = async (req, courseId = null) => {
-  const institutionId = institutionOf(req);
-  if (courseId) {
-    const course = await loadCourse(req, courseId);
-    if (!course) return undefined;
-    return (await studentsOf(institutionId, { courseIds: [course._id] })).students.map((s) => String(s._id));
-  }
-  if (req.user.role === 'university_admin') return null;
-  const courses = await accessibleCourses(req);
-  if (!courses.length) return [];
-  return (await studentsOf(institutionId, { courseIds: courses.map((c) => c._id) })).students.map((s) => String(s._id));
-};
-
-const canGrade = (ids, attempt) => ids === null || ids.includes(String(attempt.userId));
-
+// Lecturers and admins grade every practice answer in their own university. Every repository call below is
+// filtered by the caller's institutionId, so another university's answers are never found.
 const rubricOf = async (institutionId, questionId) => {
   const r = await questionRepo.getRubric(institutionId, questionId);
   return r?.criteria?.length ? r.criteria : null;
@@ -38,8 +24,6 @@ const loadItem = async (req, id) => {
   const institutionId = institutionOf(req);
   const attempt = await gradingRepo.find(institutionId, id);
   if (!attempt) return null;
-  const ids = await gradableStudentIds(req);
-  if (ids === undefined || !canGrade(ids, attempt)) return null;
   const question = await questionRepo.findVisible(institutionId, attempt.questionId);
   if (!question) return null;
   return { institutionId, attempt, question, rubric: await rubricOf(institutionId, attempt.questionId) };
@@ -56,16 +40,13 @@ const view = (attempt, question, rubric, student) => ({
 export const queue = async (req, res) => {
   const institutionId = institutionOf(req);
   const status = req.query.status === 'reviewed' ? 'reviewed' : 'pending';
-  const { courseId, questionId } = req.query;
-  if (courseId && !isId(courseId)) return fail(res, 404, 'Course not found');
+  const { questionId } = req.query;
   if (questionId && !isId(questionId)) return fail(res, 400, 'Invalid questionId');
-  const ids = await gradableStudentIds(req, courseId || null);
-  if (ids === undefined) return fail(res, 404, 'Course not found');
-  const rows = ids !== null && !ids.length ? [] : await gradingRepo.list(institutionId, { status, userIds: ids, questionId: questionId || null });
+  const rows = await gradingRepo.list(institutionId, { status, userIds: null, questionId: questionId || null });
   const qids = [...new Set(rows.map((r) => String(r.questionId)))];
   const questions = new Map();
   for (const qid of qids) questions.set(qid, await questionRepo.findVisible(institutionId, qid));
-  const users = rows.length ? await courseRepo.findUsersByIds(institutionId, [...new Set(rows.map((r) => String(r.userId)))]) : [];
+  const users = rows.length ? await peopleRepo.findUsersByIds(institutionId, [...new Set(rows.map((r) => String(r.userId)))]) : [];
   const names = new Map(users.map((u) => [String(u._id), u]));
   const items = rows.map((a) => {
     const q = questions.get(String(a.questionId));
@@ -75,7 +56,7 @@ export const queue = async (req, res) => {
 };
 
 const full = async (item) => {
-  const [student] = await courseRepo.findUsersByIds(item.institutionId, [item.attempt.userId]);
+  const [student] = await peopleRepo.findUsersByIds(item.institutionId, [item.attempt.userId]);
   const { attempt, question, rubric } = item;
   return {
     ...view(attempt, question, rubric, student),

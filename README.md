@@ -42,10 +42,9 @@ API keys for code execution (JDoodle or Judge0), AI (Gemini) and voice (Assembly
 |---|---|---|
 | University admin | `admin@email.com` | `admin@123` |
 | Lecturer | `lecturer@email.com` | `lecturer@123` |
-| Career officer | `careers@email.com` | `careers@123` |
 | Student | `student@email.com` | `student@123` |
 
-These belong to "Demo University A". A second university, "Demo University B", uses the same passwords with `@demo-b.test` emails, so you can check that the two cannot see each other's data. These logins are public: never use them anywhere real.
+These belong to "Demo University A". Its 40 students are split into "Group 1" and "Group 2", and 25 of them have fake mock interviews and CV analyses (marked "Demo data", no AI calls) so the lecturer dashboard has something to show. If your local database was seeded before this, run `npm run dev:local -- --fresh` once. A second university, "Demo University B", uses the same passwords with `@demo-b.test` emails, so you can check that the two cannot see each other's data. These logins are public: never use them anywhere real.
 
 Run the server tests with `npm test` inside `server/`. Tests never read `server/.env`.
 

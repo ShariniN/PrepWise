@@ -41,7 +41,7 @@ if (firstRun) {
   await seedQuestions.main();
   const seedDemo = await import('./seed-demo.js');
   await seedDemo.main();
-  console.log('\nDemo logins: admin@email.com, lecturer@email.com, careers@email.com, student@email.com (passwords: admin@123, lecturer@123, careers@123, student@123).\n');
+  console.log('\nDemo logins: admin@email.com, lecturer@email.com, student@email.com (passwords: admin@123, lecturer@123, student@123).\n');
 }
 
 const { default: app } = await import('../app.js');

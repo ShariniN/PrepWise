@@ -6,7 +6,7 @@ import AppShell from '../components/AppShell';
 import { Button, Card, Field, Select } from '../components/ui';
 import ConfirmDialog from '../components/analytics/ConfirmDialog';
 import { BarList } from '../components/analytics/Charts';
-import { EmptyState, ErrorState, LoadingState } from '../components/analytics/EmptyState';
+import { ErrorState, LoadingState } from '../components/analytics/EmptyState';
 import InsufficientData from '../components/analytics/InsufficientData';
 import StatCard from '../components/analytics/StatCard';
 import useAnalyticsData from '../hooks/useAnalyticsData';
@@ -42,7 +42,7 @@ const Evidence = () => {
     <Card as="section" className="space-y-4" aria-labelledby="ev-h">
       <div>
         <h2 id="ev-h" className="font-display text-xl font-semibold text-ink">Evidence for renewal</h2>
-        <p className="mt-1 text-sm text-ink-2">Counts by cohort and institution. Student names are left out unless you ask for them.</p>
+        <p className="mt-1 text-sm text-ink-2">Counts for the whole university. Student names are left out unless you ask for them.</p>
       </div>
       <div className="flex flex-wrap items-end gap-4">
         <Field label="Format" className="w-32">
@@ -81,7 +81,7 @@ const AdminOverview = () => {
       title="Overview: is the platform being used and is it working?"
       subtitle={(
         <>
-          Adoption against your contract, learning gains per cohort, and AI usage.{' '}
+          Adoption against your contract, improvement in Practice, and AI usage.{' '}
           <Link to="/manage-people" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Manage people</Link>
         </>
       )}
@@ -109,24 +109,18 @@ const AdminOverview = () => {
             </Card>
 
             <Card as="section" className="space-y-4" aria-labelledby="im-h">
-              <h2 id="im-h" className="font-display text-xl font-semibold text-ink">Improvement per cohort</h2>
+              <h2 id="im-h" className="font-display text-xl font-semibold text-ink">Improvement in Practice</h2>
               <p className="text-sm text-ink-2">{imp.definition}</p>
               <p className="text-xs text-ink-2">{imp.excludedAttempts} attempt{imp.excludedAttempts === 1 ? '' : 's'} not counted (fallback or unconfirmed AI scores).</p>
-              {!imp.cohorts?.length && <EmptyState title="No cohorts yet" />}
-              {imp.cohorts?.map((c) => (
-                <div key={c.cohortId} className="space-y-3 rounded-2xl border border-line bg-paper p-4 sm:p-5">
-                  <h3 className="font-display text-base font-semibold text-ink">{c.courseCode} / {c.cohort}</h3>
-                  {c.insufficientData ? (
-                    <InsufficientData n={c.n} minimum={c.minimum} notice={c.notice} />
-                  ) : (
-                    <>
-                      <BarList caption={`First vs latest mean score (${c.students} students, ${c.pairs} question pairs)`}
-                        items={[{ label: 'First attempt', value: c.meanFirst }, { label: 'Latest attempt', value: c.meanLatest }]} />
-                      <p className="text-sm text-ink">Change: {c.delta > 0 ? '+' : ''}{c.delta} points. {c.excluded} not counted.</p>
-                    </>
-                  )}
+              {imp.insufficientData ? (
+                <InsufficientData n={imp.n} minimum={imp.minimum} notice={imp.notice} />
+              ) : (
+                <div className="space-y-3">
+                  <BarList caption={`First vs latest mean score (${imp.students} students, ${imp.pairs} question pairs)`}
+                    items={[{ label: 'First attempt', value: imp.meanFirst }, { label: 'Latest attempt', value: imp.meanLatest }]} />
+                  <p className="text-sm text-ink">Change: {imp.delta > 0 ? '+' : ''}{imp.delta} points.</p>
                 </div>
-              ))}
+              )}
             </Card>
 
             <Card as="section" className="space-y-4" aria-labelledby="au-h">

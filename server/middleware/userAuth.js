@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import userModel from "../models/userModel.js";
 import { runWithTenant } from "./tenancy.js";
+import { isKnownRole } from "../config/roles.js";
 
 const userAuth = async (req, res, next) => {
   const token = req.cookies.token;
@@ -37,6 +38,15 @@ const userAuth = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: "This account is not active.",
+      });
+    }
+
+    // A role PrepWise no longer has (e.g. the removed career_officer) means no access anywhere.
+    if (!isKnownRole(user.role)) {
+      return res.status(403).json({
+        success: false,
+        code: "ROLE_NOT_SUPPORTED",
+        message: "Your account has no role with access to PrepWise. Ask your university administrator to assign one.",
       });
     }
 

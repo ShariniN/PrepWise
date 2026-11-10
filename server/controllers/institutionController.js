@@ -2,7 +2,7 @@ import peopleRepo from '../repositories/peopleRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import {
   PeopleError, ROLES, publicUser, getUsage, inviteUser, importUsers,
-  deactivateUser, reactivateUser, resendInvite, changeRole,
+  deactivateUser, reactivateUser, resendInvite, changeRole, setGroup, cleanGroup,
 } from '../services/peopleService.js';
 
 const STATUSES = ['invited', 'active', 'deactivated'];
@@ -22,10 +22,14 @@ const withInstitution = (fn) => async (req, res) => {
 };
 
 export const listPeople = withInstitution(async (req, res, institution) => {
-  const { role, status, search } = req.query;
+  const { role, status, search, group } = req.query;
   if (role && !ROLES.includes(role)) return res.status(400).json({ success: false, message: 'Unknown role filter' });
   if (status && !STATUSES.includes(status)) return res.status(400).json({ success: false, message: 'Unknown status filter' });
-  const filters = { role, status, search: typeof search === 'string' ? search.trim().slice(0, 100) : undefined };
+  const filters = {
+    role, status,
+    search: typeof search === 'string' ? search.trim().slice(0, 100) : undefined,
+    group: typeof group === 'string' && group.trim() ? cleanGroup(group) : undefined,
+  };
 
   const [people, groups] = await Promise.all([
     peopleRepo.findUsers(institution._id, filters),
@@ -46,8 +50,8 @@ export const usage = withInstitution(async (req, res, institution) => {
 });
 
 export const invite = withInstitution(async (req, res, institution) => {
-  const { email, name, role } = req.body || {};
-  const result = await inviteUser({ institution, actor: req.user, email, name, role: role || 'student' });
+  const { email, name, role, group } = req.body || {};
+  const result = await inviteUser({ institution, actor: req.user, email, name, role: role || 'student', group });
   res.status(201).json({ success: true, ...result });
 });
 
@@ -70,6 +74,10 @@ export const reactivate = withInstitution(async (req, res, institution) => {
 
 export const resend = withInstitution(async (req, res, institution) => {
   res.json({ success: true, ...(await resendInvite({ institution, actor: req.user, id: req.params.id })) });
+});
+
+export const setGroupOf = withInstitution(async (req, res, institution) => {
+  res.json({ success: true, ...(await setGroup({ institution, actor: req.user, id: req.params.id, group: req.body?.group })) });
 });
 
 export const setRole = withInstitution(async (req, res, institution) => {

@@ -44,11 +44,11 @@ const AuthLayout = ({ title, subtitle, footer, children }) => (
           </div>
         </div>
         <div className="glass !bg-white/90 ml-10 animate-float rounded-3xl p-4 text-ink [animation-delay:-2s]">
-          <p className="mb-2 text-xs font-semibold">Cohort heatmap</p>
+          <p className="mb-2 text-xs font-semibold">Practice this week</p>
           <Heatmap />
         </div>
       </div>
-      <p className="relative text-sm text-white/60">Practice, assessment and integrity review with humans in the loop.</p>
+      <p className="relative text-sm text-white/60">Mock interviews, CV feedback and coding practice, with lecturers in the loop.</p>
     </aside>
   </div>
 );

@@ -3,6 +3,7 @@ import ScoreBreakdown from '../components/ScoreBreakdown';
 import { CheckCircle, XCircle, AlertTriangle, Lightbulb, FileText, Layout, Target, BarChart3, ArrowLeft, Star, TrendingUp, Settings, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
 import AppShell from "../components/AppShell";
 import { useNavigate } from "react-router-dom";
+import { backendUrl } from '../api/client';
 
 
 // Enhanced Skills Assessment Component
@@ -554,7 +555,7 @@ const SkillsAssessment = ({
 };
 
 // API Configuration
-const API_BASE_URL = import.meta.env?.VITE_BACKEND_URL || 'http://localhost:4000';
+const API_BASE_URL = backendUrl;
 
 const API_ENDPOINTS = {
   analyzeResume: `${API_BASE_URL}/api/analyze/analyze-resume`,

@@ -7,7 +7,6 @@ const institutionSchema = new mongoose.Schema({
   contractStart: { type: Date, default: null },
   contractEnd: { type: Date, default: null },
   allowedEmailDomains: { type: [String], default: [] },
-  retentionDays: { type: Number, default: 90, min: 1 },
   monthlyAiCallCap: { type: Number, default: 20000, min: 0 },
   status: { type: String, enum: ['active', 'suspended', 'archived'], default: 'active' }
 }, { timestamps: true, collection: 'institutions' });

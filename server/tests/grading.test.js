@@ -5,9 +5,10 @@ import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
 import { installAnalyticsWorld } from './support/analyticsWorld.js';
 import aiService from '../controllers/services/aiService.js';
+import * as agg from '../analytics/aggregate.js';
 import app from '../app.js';
 
-let w, db, adminA, lecA1, lecA2, lecB, stu, stuOther, course, cohort, qShort, item;
+let w, db, adminA, lecA1, lecA2, lecB, stu, stuOther, qShort, item;
 const as = (u) => ({ Cookie: w.cookie(u) });
 const criteria = [{ name: 'Accuracy', description: 'correct', maxPoints: 6 }, { name: 'Clarity', description: 'clear', maxPoints: 4 }];
 
@@ -21,12 +22,7 @@ beforeEach(() => {
   lecA2 = w.addUser({ email: 'l2@a.edu', role: 'lecturer', institutionId: IDS.instA });
   lecB = w.addUser({ email: 'l@b.edu', role: 'lecturer', institutionId: IDS.instB });
   stu = w.addUser({ name: 'Ann', email: 'ann@a.edu', role: 'student', institutionId: IDS.instA });
-  stuOther = w.addUser({ name: 'Bob', email: 'bob@a.edu', role: 'student', institutionId: IDS.instA }); // not in lecA1 course
-  course = { _id: newId(), institutionId: IDS.instA, code: 'CS101', title: 'Intro', ownerId: lecA1._id };
-  cohort = { _id: newId(), institutionId: IDS.instA, courseId: course._id, name: 'G1' };
-  w.courses.push(course);
-  w.cohorts.push(cohort);
-  w.enrollments.push({ institutionId: IDS.instA, userId: stu._id, kind: 'student', courseId: course._id, cohortId: cohort._id });
+  stuOther = w.addUser({ name: 'Bob', email: 'bob@a.edu', role: 'student', institutionId: IDS.instA });
   qShort = db.addQuestion({ institutionId: IDS.instA, type: 'short', title: 'Explain recursion', statement: 'Explain recursion.', topic: ['recursion'] });
   db.rubrics.push({ _id: newId(), institutionId: IDS.instA, questionId: qShort._id, criteria });
   item = db.addAttempt({ institutionId: IDS.instA, userId: stu._id, questionId: qShort._id, verdict: 'pending_review', score: null, needsReview: true, answer: 'A function that calls itself.' });
@@ -38,31 +34,30 @@ const stubAi = (points = [5, 3]) => mock.method(aiService, 'suggestRubricScore',
   summary: 'decent',
 }));
 
-test('roles: students 403, career officers 403, unknown or other-university items 404', async () => {
-  const co = w.addUser({ email: 'co@a.edu', role: 'career_officer', institutionId: IDS.instA });
+test('roles: students 403, unknown or other-university items 404, any lecturer of the university may grade', async () => {
   assert.equal((await request(app).get('/api/grading/queue')).status, 401);
   assert.equal((await request(app).get('/api/grading/queue').set(as(stu))).status, 403);
-  assert.equal((await request(app).get('/api/grading/queue').set(as(co))).status, 403);
   assert.equal((await request(app).get(`/api/grading/${item._id}`).set(as(stu))).status, 403);
   assert.equal((await request(app).get(`/api/grading/${item._id}`).set(as(lecB))).status, 404);
-  assert.equal((await request(app).get(`/api/grading/${item._id}`).set(as(lecA2))).status, 404, 'lecturer of another course');
+  assert.equal((await request(app).patch(`/api/grading/${item._id}`).set(as(lecB)).send({ criteria: [] })).status, 404);
+  assert.equal((await request(app).post(`/api/grading/${item._id}/suggest`).set(as(lecB))).status, 404);
   assert.equal((await request(app).get(`/api/grading/${newId()}`).set(as(lecA1))).status, 404);
-  assert.equal((await request(app).patch(`/api/grading/${item._id}`).set(as(lecA2)).send({ criteria: [] })).status, 404);
-  assert.equal((await request(app).post(`/api/grading/${item._id}/suggest`).set(as(lecA2))).status, 404);
+  assert.equal((await request(app).get(`/api/grading/${item._id}`).set(as(lecA2))).status, 200, 'no courses: every lecturer of the university');
 });
 
-test('queue lists pending answers only from the callers own courses', async () => {
+test('queue lists pending answers from the whole university, never another one', async () => {
   db.addAttempt({ institutionId: IDS.instA, userId: stuOther._id, questionId: qShort._id, verdict: 'pending_review', needsReview: true, answer: 'x' });
+  const stuB = w.addUser({ name: 'Zed', email: 'z@b.edu', role: 'student', institutionId: IDS.instB });
+  db.addAttempt({ institutionId: IDS.instB, userId: stuB._id, questionId: qShort._id, verdict: 'pending_review', needsReview: true, answer: 'b' });
   const mine = await request(app).get('/api/grading/queue').set(as(lecA1));
   assert.equal(mine.status, 200);
-  assert.deepEqual(mine.body.items.map((i) => i.studentName), ['Ann']);
+  assert.deepEqual(mine.body.items.map((i) => i.studentName).sort(), ['Ann', 'Bob']);
   assert.equal(mine.body.items[0].questionTitle, 'Explain recursion');
   assert.equal(mine.body.items[0].answer, undefined, 'answers only on the item view');
-  assert.equal((await request(app).get('/api/grading/queue').set(as(lecA2))).body.count, 0);
-  assert.equal((await request(app).get('/api/grading/queue').set(as(lecB))).body.count, 0);
+  assert.equal(JSON.stringify(mine.body).includes('Zed'), false);
+  assert.equal((await request(app).get('/api/grading/queue').set(as(lecA2))).body.count, 2);
   assert.equal((await request(app).get('/api/grading/queue').set(as(adminA))).body.count, 2);
-  assert.equal((await request(app).get('/api/grading/queue').query({ courseId: String(course._id) }).set(as(adminA))).body.count, 1);
-  assert.equal((await request(app).get('/api/grading/queue').query({ courseId: String(course._id) }).set(as(lecA2))).status, 404);
+  assert.equal((await request(app).get('/api/grading/queue').query({ questionId: 'nope' }).set(as(lecA1))).status, 400);
 });
 
 test('item view shows question, rubric and answer', async () => {
@@ -87,9 +82,8 @@ test('flow: AI suggests (stored as ai, no score) -> lecturer overrides -> final 
   assert.equal(stored.scoreSource, undefined);
   assert.equal(stored.needsReview, true);
   // unconfirmed AI is excluded from analytics
-  const hm = await request(app).get('/api/analytics/lecturer/topic-heatmap').query({ courseId: String(course._id) }).set(as(lecA1));
-  assert.equal(hm.body.excluded, 1);
-  assert.deepEqual(hm.body.topics, []);
+  assert.equal(agg.partitionAttempts(db.attempts).excluded, 1);
+  assert.equal(agg.partitionAttempts(db.attempts).eligible.length, 0);
 
   const bad = await request(app).patch(`/api/grading/${item._id}`).set(as(lecA1)).send({ criteria: [{ name: 'Accuracy', points: 7 }, { name: 'Clarity', points: 1 }] });
   assert.equal(bad.status, 400, 'points above the criterion maximum');
@@ -114,9 +108,9 @@ test('flow: AI suggests (stored as ai, no score) -> lecturer overrides -> final 
   assert.equal((await request(app).get('/api/grading/queue').set(as(lecA1))).body.count, 0);
   assert.equal((await request(app).get('/api/grading/queue').query({ status: 'reviewed' }).set(as(lecA1))).body.count, 1);
   // now the confirmed human score counts in analytics
-  const after = await request(app).get('/api/analytics/lecturer/topic-heatmap').query({ courseId: String(course._id) }).set(as(lecA1));
-  assert.equal(after.body.excluded, 0);
-  assert.equal(after.body.columns[0].mean, 70);
+  const after = agg.partitionAttempts(db.attempts);
+  assert.equal(after.excluded, 0);
+  assert.deepEqual(after.eligible.map((a) => a.score), [70]);
 });
 
 test('a lecturer can accept the AI suggestion on a single item', async () => {
@@ -141,17 +135,22 @@ test('bulk confirm only touches explicitly selected items that carry an AI sugge
     { attemptId: String(item._id), decision: 'accept_ai_suggestion' },
     { attemptId: String(b._id) }, // no explicit decision
     { attemptId: String(c._id), decision: 'accept_ai_suggestion' }, // no suggestion stored
-    { attemptId: String(other._id), decision: 'accept_ai_suggestion' }, // not this lecturer's student
+    { attemptId: String(other._id), decision: 'accept_ai_suggestion' }, // another student of the same university
+    { attemptId: String(newId()), decision: 'accept_ai_suggestion' }, // unknown
   ] });
   assert.equal(res.status, 200, res.text);
   const by = Object.fromEntries(res.body.results.map((r) => [r.attemptId, r.status]));
-  assert.deepEqual(by, { [item._id]: 'confirmed', [b._id]: 'skipped', [c._id]: 'skipped', [other._id]: 'skipped' });
+  assert.equal(by[item._id], 'confirmed');
+  assert.equal(by[b._id], 'skipped');
+  assert.equal(by[c._id], 'skipped');
+  assert.equal(by[other._id], 'confirmed');
+  assert.equal(res.body.results.at(-1).status, 'skipped');
   assert.equal(db.attempts.find((a) => a._id === item._id).scoreSource, 'human');
   assert.equal(db.attempts.find((a) => a._id === b._id).score, null);
-  assert.equal(db.attempts.find((a) => a._id === other._id).needsReview, true);
+  assert.equal(db.attempts.find((a) => a._id === other._id).needsReview, false);
   assert.equal((await request(app).post('/api/grading/bulk-confirm').set(as(lecA1)).send({})).status, 400);
   assert.equal((await request(app).post('/api/grading/bulk-confirm').set(as(lecA1)).send({ items: 'all' })).status, 400);
-  assert.ok(w.audit.some((a) => a.action === 'grading.bulk_confirm' && a.meta.confirmed === 1));
+  assert.ok(w.audit.some((a) => a.action === 'grading.bulk_confirm' && a.meta.confirmed === 2));
 });
 
 test('AI monthly cap exceeded: clear 429 with manual grading still possible', async () => {

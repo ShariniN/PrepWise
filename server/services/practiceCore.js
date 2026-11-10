@@ -1,6 +1,5 @@
-// The Phase 2 run / submit / event-cleaning logic as plain functions that return { status, body }.
-// Used by the practice API and by assessment mode, so marking is identical in both. `ctx.attemptExtra` is merged
-// into every stored attempt (assessment mode sets assessmentSessionId there).
+// The Phase 2 run / submit / event-cleaning logic as plain functions that return { status, body }, used by the
+// practice API. `ctx.attemptExtra` (optional) is merged into every stored attempt.
 import questionRepo from '../repositories/questionRepo.js';
 import { gradeTests } from './grading.js';
 import {

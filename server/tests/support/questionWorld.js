@@ -3,7 +3,6 @@
 import { mock } from 'node:test';
 import questionRepo from '../../repositories/questionRepo.js';
 import { newId } from '../helpers.js';
-import { installAssessmentWorld } from './assessmentWorld.js';
 
 const same = (a, b) => String(a ?? '') === String(b ?? '');
 const clone = (o) => (o == null ? o : structuredClone(o));
@@ -89,7 +88,7 @@ export const installQuestionWorld = (world) => {
     return clone(a);
   });
   mock.method(questionRepo, 'findAttempt', async (inst, uid, id) =>
-    clone(db.attempts.find((a) => same(a._id, id) && same(a.institutionId, inst) && same(a.userId, uid))) || null);
+    clone(db.attempts.find((a) => same(a._id, id) && !a.assessmentSessionId && same(a.institutionId, inst) && same(a.userId, uid))) || null);
   mock.method(questionRepo, 'updateAttempt', async (inst, uid, id, patch) => {
     const a = db.attempts.find((x) => same(x._id, id) && same(x.institutionId, inst) && same(x.userId, uid));
     if (!a) return null;
@@ -115,6 +114,5 @@ export const installQuestionWorld = (world) => {
     tests.forEach((t, order) => db.tests.push({ _id: newId(), institutionId: d.institutionId, questionId: d._id, weight: 1, comparison: 'trim', visible: false, order, ...t }));
     return d;
   };
-  installAssessmentWorld(world); // assessments share the attempts / batches stored above
   return db;
 };
