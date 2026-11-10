@@ -1,6 +1,6 @@
 import InterviewModel from '../models/InterviewModel.js';
 import userModel from '../models/userModel.js';
-import multer from 'multer';
+import pdfUpload, { NOT_PDF_MESSAGE } from '../middleware/pdfUpload.js';
 import pdfParse from 'pdf-parse';
 import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from './services/aiService.js';
 import { generateStarterCode, selectBestLanguage } from './services/codeGenerationService.js';
@@ -96,28 +96,12 @@ export const getUserCV = async (req, res) => {
   }
 };
 
-const cvStorage = multer.memoryStorage();
-const cvUpload = multer({
-  storage: cvStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'), false);
-    }
-  }
-});
+// PDF only, by type and by content; a refused file is answered with a 400 by the middleware itself.
+const cvUpload = pdfUpload('cv', 5 * 1024 * 1024);
 
 export const processCV = async (req, res) => {
   try {
-    const uploadSingle = cvUpload.single('cv');
-    
-    uploadSingle(req, res, async (uploadError) => {
-      if (uploadError) {
-        return res.status(400).json({ success: false, error: uploadError.message });
-      }
-
+    cvUpload(req, res, async () => {
       if (!req.file) {
         return res.status(400).json({ success: false, error: 'No PDF file provided' });
       }
@@ -166,10 +150,7 @@ export const processCV = async (req, res) => {
 
       } catch (extractionError) {
         console.error('PDF extraction error:', extractionError);
-        res.status(500).json({
-          success: false,
-          error: 'Failed to extract text from PDF.'
-        });
+        res.status(400).json({ success: false, error: NOT_PDF_MESSAGE, message: NOT_PDF_MESSAGE });
       }
     });
 

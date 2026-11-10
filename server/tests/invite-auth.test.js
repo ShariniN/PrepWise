@@ -145,7 +145,8 @@ test('profile update still accepts only name and phone, whatever else is sent', 
   const res = await request(app).put('/api/user/profile').set('Cookie', w.cookie(student))
     .send({ name: 'N', phoneNumber: '0771234567', role: 'university_admin', institutionId: IDS.instB, status: 'active', accountType: 'Admin' });
   assert.equal(res.status, 200);
-  assert.deepEqual(Object.keys(captured).sort(), ['lastActive', 'name', 'phoneNumber']);
+  assert.deepEqual(Object.keys(captured), ['$set']); // only $set (no $unset when a phone is sent)
+  assert.deepEqual(Object.keys(captured.$set).sort(), ['lastActive', 'name', 'phoneNumber']);
 });
 
 test('hashToken is SHA-256 hex and invite tokens are 32 random bytes', () => {

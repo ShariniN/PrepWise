@@ -15,6 +15,12 @@ CORS now allows `PATCH`.
 - `userType: "fresher"` is still returned by login and is-auth for everyone.
 - New fields on login and is-auth: `role`, `institutionId` (is-auth also `status`).
 - Profile endpoints (`/api/user/*`) work for all roles. They still accept only `name` and `phoneNumber` on update.
+  `PUT /api/user/profile`: `name` required (1-100 chars); `phoneNumber` optional: absent = unchanged, `""`/`null` = cleared, otherwise
+  10-15 digits (spaces, dashes, dots and brackets are removed), else `400` "Phone number must be 10 to 15 digits (numbers only)".
+  A badly formatted phone stored before this rule is dropped (or reduced to digits) on the account's next save, so it cannot break other saves.
+  `PUT /api/user/change-password`: the new password follows the same rule as accept-invite (6+ chars, an uppercase letter, a digit, a special character), else `400`.
+  CV uploads (`PUT /api/user/upload-cv`, `POST /api/analyze/analyze-resume`, `POST /api/interviews/process-cv`): anything that is not a real PDF
+  (wrong type, or a renamed text file) gets `400` "Only PDF files are accepted. Please upload your CV as a PDF." (`message`, and `error` too).
 - `POST /api/auth/register` no longer exists (404). The signup page must be replaced by the accept-invite page.
 
 ## Invitation links

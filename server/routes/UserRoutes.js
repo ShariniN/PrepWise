@@ -1,6 +1,6 @@
 import express from "express";
-import multer from 'multer';
 import userAuth from "../middleware/userAuth.js";
+import pdfUpload from "../middleware/pdfUpload.js";
 import {
   getUserProfile,
   updateUserProfile,
@@ -25,21 +25,6 @@ import {
 
 const userRouter = express.Router();
 
-// Configure multer for CV uploads
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'), false);
-    }
-  }
-});
 
 // Middleware to ensure user is a fresher (for protected routes)
 const ensureFresher = (req, res, next) => {
@@ -61,7 +46,7 @@ userRouter.put('/profile', updateUserProfile);
 userRouter.put('/change-password', changePassword);
 
 // CV Management routes (fresher only)
-userRouter.put('/upload-cv', upload.single('cv'), uploadCV);
+userRouter.put('/upload-cv', pdfUpload('cv'), uploadCV);
 userRouter.get('/cv', getCurrentCV);
 userRouter.delete('/cv', deleteCV);
 

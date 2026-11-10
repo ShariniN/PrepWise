@@ -147,6 +147,17 @@ userSchema.virtual('cvAge').get(function() {
 userSchema.set('toJSON', { virtuals: true });
 userSchema.set('toObject', { virtuals: true });
 
+// Older accounts may hold a phone number that was stored without validation (e.g. 'abc'). Such a value must not
+// make an unrelated save fail (CV upload, deactivation, password reset): keep it as digits when that makes it valid,
+// otherwise drop it. A phone the user is setting right now is still validated normally.
+userSchema.pre('validate', function(next) {
+  if (this.phoneNumber && !this.isNew && !this.isModified('phoneNumber')) {
+    const digits = String(this.phoneNumber).replace(/[\s\-.()]/g, '');
+    this.phoneNumber = /^\d{10,15}$/.test(digits) ? digits : undefined;
+  }
+  next();
+});
+
 // Pre-save middleware
 userSchema.pre('save', function(next) {
   if (!this.isNew) {
