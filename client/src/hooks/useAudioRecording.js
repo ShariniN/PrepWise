@@ -11,12 +11,15 @@ export const useAudioRecording = (addDebugLog) => {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState('');
   const [transcriptionError, setTranscriptionError] = useState('');
+  // Exact length of the last recording in seconds (for speaking pace), null before the first one.
+  const [recordingDuration, setRecordingDuration] = useState(null);
 
   const mediaRecorderRef = useRef(null);
   const audioStreamRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const audioPlaybackRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingStartedAtRef = useRef(0);
 
   const initializeAudio = useCallback(async () => {
     try {
@@ -102,6 +105,7 @@ export const useAudioRecording = (addDebugLog) => {
       setAudioBlob(null);
       audioChunksRef.current = [];
       setRecordingTime(0);
+      setRecordingDuration(null);
       setTranscription('');
 
       const mediaRecorder = new MediaRecorder(stream, {
@@ -130,6 +134,7 @@ export const useAudioRecording = (addDebugLog) => {
       };
 
       mediaRecorder.start(250);
+      recordingStartedAtRef.current = performance.now();
       setIsRecording(true);
 
       recordingTimerRef.current = setInterval(() => {
@@ -147,6 +152,7 @@ export const useAudioRecording = (addDebugLog) => {
       if (mediaRecorderRef.current && isRecording) {
         mediaRecorderRef.current.stop();
         setIsRecording(false);
+        setRecordingDuration((performance.now() - recordingStartedAtRef.current) / 1000);
         
         if (recordingTimerRef.current) {
           clearInterval(recordingTimerRef.current);
@@ -198,6 +204,7 @@ export const useAudioRecording = (addDebugLog) => {
     isRecording,
     audioBlob,
     recordingTime,
+    recordingDuration,
     isPlaying,
     audioPermission,
     audioError,

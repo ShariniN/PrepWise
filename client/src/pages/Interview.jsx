@@ -14,6 +14,12 @@ import { useInterview } from '../hooks/useInterview';
 import { useAudioRecording } from '../hooks/useAudioRecording';
 import { useCodeEditor } from '../hooks/useCodeEditor';
 import { useCV } from '../hooks/useCV';
+import { useFaceCoaching } from '../hooks/useFaceCoaching';
+import CameraCoachingSetup from '../components/coaching/CameraCoachingSetup';
+import CameraSelfView from '../components/coaching/CameraSelfView';
+import DeliveryCard from '../components/coaching/DeliveryCard';
+import DeliverySummary from '../components/coaching/DeliverySummary';
+import { buildDeliveryMetrics, countFillerWords } from '../utils/coachingMetrics';
 
 // Utilities
 import { 
@@ -65,6 +71,10 @@ const MockInterviewSystem = () => {
   const audio = useAudioRecording(addDebugLog);
   const codeEditor = useCodeEditor(SUPPORTED_LANGUAGES, addDebugLog);
   const cv = useCV(addDebugLog);
+  // Optional camera delivery coaching (off until the student turns it on; runs in the browser only).
+  // The hook releases the camera itself on unmount.
+  const coaching = useFaceCoaching();
+  const { setSampling, resetSamples, getSamples, stop: stopCoaching, status: coachingStatus } = coaching;
 
   // Authentication
   useEffect(() => {
@@ -121,6 +131,18 @@ const MockInterviewSystem = () => {
     return isCodingQuestionType(interview.currentQuestion?.type);
   }, [interview.currentQuestion?.type]);
 
+  // Camera samples are kept only while an answer is being given: while recording a spoken answer,
+  // or while the answer screen is open for typed and coding answers. Never while submitting.
+  const answeringNow = currentStep === 'interview' && !loading &&
+    (isCodingQuestion || answerMode !== 'audio' || audio.isRecording);
+  // coachingStatus is a dependency so a camera that becomes ready mid-answer starts sampling straight away.
+  useEffect(() => { setSampling(answeringNow); }, [answeringNow, coachingStatus, setSampling]);
+  // Fresh samples for each question and answer mode, and for each new recording (re-recording
+  // replaces the transcript, so it replaces the camera samples too).
+  const currentQuestionId = interview.currentQuestion?.questionId;
+  useEffect(() => { resetSamples(); }, [currentQuestionId, answerMode, resetSamples]);
+  useEffect(() => { if (audio.isRecording) resetSamples(); }, [audio.isRecording, resetSamples]);
+
   // Interview creation
   const handleCreateInterview = useCallback(async () => {
     if (!user || !isSetupValid(interviewData.jobDescription, interviewData.resumeText)) {
@@ -147,15 +169,17 @@ const MockInterviewSystem = () => {
       
       codeEditor.resetCodeEditor(firstQuestion, codeEditor.language);
       setShowCodeEditor(isCodingQuestionType(firstQuestion.type));
+      // A camera problem already shown on the setup screen should not follow the student into the interview.
+      if (coachingStatus === 'error') stopCoaching();
       setCurrentStep('interview');
-      
+
     } catch (err) {
       setError(`Failed to create interview: ${err.message}`);
       addDebugLog(`Interview creation failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, addDebugLog]);
+  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, addDebugLog, coachingStatus, stopCoaching]);
 
   // Answer submission
   const handleSubmitAnswer = useCallback(async () => {
@@ -172,6 +196,17 @@ const MockInterviewSystem = () => {
     setError('');
 
     try {
+      // Delivery coaching numbers for this answer (no images, just numbers). Speech numbers only for a
+      // real spoken transcript, not for typed answers or a hand-typed transcript after a failed transcription.
+      const spoken = !isCodingQuestion && answerMode === 'audio' && !audio.transcriptionError;
+      const deliveryMetrics = buildDeliveryMetrics({
+        samples: getSamples(),
+        spoken,
+        transcript: audio.transcription,
+        durationSec: audio.recordingDuration,
+      });
+      const fillerBreakdown = spoken ? countFillerWords(audio.transcription).byWord : null;
+
       const submitData = {
         questionId: interview.currentQuestion.questionId,
         responseTime: Math.max(Math.floor(timer / (interview.responses.length + 1)), 30),
@@ -180,10 +215,16 @@ const MockInterviewSystem = () => {
         code: isCodingQuestion ? codeEditor.code : null,
         language: isCodingQuestion ? codeEditor.language : null,
         questionType: interview.currentQuestion.type,
-        difficulty: interview.currentQuestion.difficulty || 'intermediate'
+        difficulty: interview.currentQuestion.difficulty || 'intermediate',
+        deliveryMetrics
       };
 
       const aiFeedback = await interview.submitAnswer(interview.interview.id, submitData);
+      resetSamples();
+      // Prefer the numbers as the server stored them (after its validation).
+      const storedDelivery = aiFeedback && typeof aiFeedback === 'object' && 'deliveryMetrics' in aiFeedback
+        ? aiFeedback.deliveryMetrics
+        : deliveryMetrics;
       const processedFeedback = processFeedback(aiFeedback, isCodingQuestion);
 
       interview.setQuestionFeedbacks(prev => ({
@@ -203,7 +244,9 @@ const MockInterviewSystem = () => {
         answerMode: isCodingQuestion ? 'code' : answerMode,
         timestamp: new Date().toISOString(),
         feedback: processedFeedback,
-        score: processedFeedback.score || 50
+        score: processedFeedback.score || 50,
+        deliveryMetrics: storedDelivery,
+        fillerBreakdown
       };
 
       interview.setResponses(prev => [...prev, response]);
@@ -213,14 +256,14 @@ const MockInterviewSystem = () => {
       } else {
         await handleCompleteInterview();
       }
-          
+
     } catch (err) {
       setError(`Failed to submit answer: ${err.message}`);
       addDebugLog(`Submit answer failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [isCodingQuestion, codeEditor, answerMode, audio, textAnswer, interview, timer, addDebugLog]);
+  }, [isCodingQuestion, codeEditor, answerMode, audio, textAnswer, interview, timer, addDebugLog, getSamples, resetSamples]);
 
   // Skip question
   const handleSkipQuestion = useCallback(async () => {
@@ -299,6 +342,8 @@ const MockInterviewSystem = () => {
 
   // Complete interview
   const handleCompleteInterview = useCallback(async () => {
+    // The interview is over: release the camera now (coaching is opt-in again next time).
+    stopCoaching();
     try {
       const overallFeedback = await interview.completeInterview(interview.interview.id);
       
@@ -311,7 +356,7 @@ const MockInterviewSystem = () => {
       setCurrentStep('feedback');
       addDebugLog(`Complete interview failed: ${err.message}`, 'error');
     }
-  }, [interview, addDebugLog]);
+  }, [interview, addDebugLog, stopCoaching]);
 
   // Reset interview
   const resetInterview = useCallback(() => {
@@ -322,7 +367,9 @@ const MockInterviewSystem = () => {
     setShowCodeEditor(false);
     setFeedback(null);
     setTimer(0);
-    
+    stopCoaching();
+    resetSamples();
+
     interview.reset();
     codeEditor.setCode('');
     codeEditor.setCodeOutput('');
@@ -333,7 +380,7 @@ const MockInterviewSystem = () => {
     } else {
       cv.changeCvMode('upload', setInterviewData);
     }
-  }, [interview, codeEditor, cv]);
+  }, [interview, codeEditor, cv, stopCoaching, resetSamples]);
 
   // Event handlers
   const handleJobDescriptionChange = useCallback((e) => {
@@ -584,6 +631,8 @@ const MockInterviewSystem = () => {
               )}
             </div>
 
+            <CameraCoachingSetup coaching={coaching} />
+
             {error && (
               <div className="flex items-center gap-2 p-3 bg-danger-50 border border-danger-100 rounded-xl">
                 <AlertCircle className="w-4 h-4 text-danger-500" />
@@ -611,7 +660,7 @@ const MockInterviewSystem = () => {
             </button>
           </div>
     </AppShell>
-  ), [user, interviewData, audio, error, loading, CVSection, handleJobDescriptionChange, handleCreateInterview]);
+  ), [user, interviewData, audio, error, loading, CVSection, handleJobDescriptionChange, handleCreateInterview, coaching]);
 
   // Interview Phase Component
   const InterviewPhase = useMemo(() => (
@@ -946,8 +995,9 @@ const MockInterviewSystem = () => {
       </div>
 
       <audio ref={audio.audioPlaybackRef} className="hidden" />
+      <CameraSelfView coaching={coaching} measuring={answeringNow} />
     </AppShell>
-  ), [interview, timer, isCodingQuestion, answerMode, audio, textAnswer, codeEditor, showCodeEditor, loading, error, handleSubmitAnswer, handleSkipQuestion]);
+  ), [interview, timer, isCodingQuestion, answerMode, audio, textAnswer, codeEditor, showCodeEditor, loading, error, handleSubmitAnswer, handleSkipQuestion, coaching, answeringNow]);
 
   // Feedback Phase Component
   const FeedbackPhase = useMemo(() => (
@@ -992,6 +1042,8 @@ const MockInterviewSystem = () => {
               )}
             </div>
           )}
+
+          <DeliverySummary metricsList={interview.responses.filter(r => !r.skipped).map(r => r.deliveryMetrics)} />
 
           {Object.keys(interview.questionFeedbacks).length > 0 && (
             <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 mb-8">
@@ -1060,6 +1112,10 @@ const MockInterviewSystem = () => {
                             ))}
                           </ul>
                         </div>
+                      )}
+
+                      {!response.skipped && (
+                        <DeliveryCard metrics={response.deliveryMetrics} fillerBreakdown={response.fillerBreakdown} />
                       )}
                     </div>
                   );

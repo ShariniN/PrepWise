@@ -14,6 +14,62 @@ import {
   getFallbackQuestions
 } from './services/utilityService.js';
 
+// Delivery coaching metrics (camera + speech), measured in the browser. Numbers only, never video.
+// Strict: wrong types become null, numbers are clamped, unknown keys are dropped, nothing is rejected.
+// These are coaching hints for the student and are never used for the score.
+const DELIVERY_HEAD_MOVEMENT = ['low', 'medium', 'high'];
+const finiteNumber = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const clampNumber = (v, min, max, digits = 1) => {
+  const n = finiteNumber(v);
+  if (n === null) return null;
+  const f = 10 ** digits;
+  return Math.round(Math.min(max, Math.max(min, n)) * f) / f;
+};
+const clampInteger = (v, max) => {
+  const n = finiteNumber(v);
+  return n === null ? null : Math.round(Math.min(max, Math.max(0, n)));
+};
+
+export const sanitizeDeliveryMetrics = (raw) => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const cameraUsed = raw.cameraUsed === true;
+  return {
+    cameraUsed,
+    faceVisiblePct: cameraUsed ? clampNumber(raw.faceVisiblePct, 0, 100) : null,
+    eyeContactPct: cameraUsed ? clampNumber(raw.eyeContactPct, 0, 100) : null,
+    lookAwayCount: cameraUsed ? clampInteger(raw.lookAwayCount, 1000) : null,
+    headMovement: cameraUsed && DELIVERY_HEAD_MOVEMENT.includes(raw.headMovement) ? raw.headMovement : null,
+    wordsPerMinute: clampNumber(raw.wordsPerMinute, 0, 600, 0),
+    fillerWordCount: clampInteger(raw.fillerWordCount, 10000),
+    durationSec: clampNumber(raw.durationSec, 0, 7200)
+  };
+};
+
+// Delivery summary across the answered questions, for the student's report.
+export const summarizeDelivery = (responses = []) => {
+  const list = responses
+    .filter((r) => !r?.skipped && r?.deliveryMetrics)
+    .map((r) => (r.deliveryMetrics.toObject ? r.deliveryMetrics.toObject() : r.deliveryMetrics));
+  const camera = list.filter((m) => m.cameraUsed);
+  const values = (key, from = list) => from.map((m) => m[key]).filter((v) => typeof v === 'number' && Number.isFinite(v));
+  const mean = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null);
+  const sum = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) : null);
+  const levels = camera.map((m) => m.headMovement).filter((v) => DELIVERY_HEAD_MOVEMENT.includes(v));
+  const counts = DELIVERY_HEAD_MOVEMENT.map((l) => levels.filter((v) => v === l).length);
+  const wpm = values('wordsPerMinute');
+  return {
+    answersMeasured: list.length,
+    answersWithCamera: camera.length,
+    answersWithSpeech: wpm.length,
+    faceVisiblePct: mean(values('faceVisiblePct', camera)),
+    eyeContactPct: mean(values('eyeContactPct', camera)),
+    lookAwayCount: sum(values('lookAwayCount', camera)),
+    headMovement: levels.length ? DELIVERY_HEAD_MOVEMENT[counts.indexOf(Math.max(...counts))] : null,
+    wordsPerMinute: mean(wpm),
+    fillerWordCount: sum(values('fillerWordCount'))
+  };
+};
+
 // CV Management
 export const getUserCV = async (req, res) => {
   try {
@@ -455,6 +511,8 @@ export const submitAnswer = async (req, res) => {
     const { interviewId } = req.params;
     const { questionId, responseTime, answerMode, responseText, code, language, skipped } = req.body;
     // req.body.executionResults is deliberately never read: only the server's own sandbox run counts.
+    // req.body.deliveryMetrics is stored for the student's coaching only; it never reaches the AI or the score.
+    const deliveryMetrics = sanitizeDeliveryMetrics(req.body?.deliveryMetrics);
     const userId = req.user?.userId || req.user?.id || req.user?._id;
 
     const interview = await InterviewModel.findOne({ _id: interviewId, userId });
@@ -550,7 +608,8 @@ export const submitAnswer = async (req, res) => {
       submittedAt: new Date(),
       feedback: analysis,
       skipped: false,
-      executionResults
+      executionResults,
+      deliveryMetrics
     };
 
     interview.responses.push(response);
@@ -568,6 +627,7 @@ export const submitAnswer = async (req, res) => {
       success: true,
       message: 'Answer submitted successfully',
       feedback: analysis,
+      deliveryMetrics,
       progress: {
         current: interview.responses.length,
         total: interview.questions.length,
@@ -654,7 +714,7 @@ export const completeInterview = async (req, res) => {
       return res.json({
         success: true,
         message: 'Interview already completed',
-        results
+        results: { ...results, deliverySummary: summarizeDelivery(interview.responses) }
       });
     }
 
@@ -692,7 +752,8 @@ export const completeInterview = async (req, res) => {
         ...finalResults,
         feedback: interview.overallFeedback,
         questionsAnswered: interview.responses.length,
-        totalQuestions: interview.questions.length
+        totalQuestions: interview.questions.length,
+        deliverySummary: summarizeDelivery(interview.responses)
       }
     });
   } catch (error) {
@@ -757,7 +818,8 @@ export const getInterviewFeedback = async (req, res) => {
         ...finalResults,
         feedback: interview.overallFeedback,
         responses: interview.responses,
-        recommendations: interview.overallFeedback?.recommendations || []
+        recommendations: interview.overallFeedback?.recommendations || [],
+        deliverySummary: summarizeDelivery(interview.responses)
       }
     });
   } catch (error) {

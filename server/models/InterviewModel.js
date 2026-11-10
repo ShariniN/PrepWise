@@ -44,6 +44,20 @@ const executionResultsSchema = new mongoose.Schema({
   executedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
+// Delivery coaching, measured in the student's browser (camera + transcript). Numbers only:
+// no video or images are ever uploaded or stored. Coaching only: never feeds into the score.
+// Sanitised by sanitizeDeliveryMetrics in controllers/interviewController.js before it is stored.
+const deliveryMetricsSchema = new mongoose.Schema({
+  cameraUsed: { type: Boolean, default: false },
+  faceVisiblePct: { type: Number, min: 0, max: 100, default: null },
+  eyeContactPct: { type: Number, min: 0, max: 100, default: null },
+  lookAwayCount: { type: Number, min: 0, default: null },
+  headMovement: { type: String, enum: ['low', 'medium', 'high', null], default: null },
+  wordsPerMinute: { type: Number, min: 0, default: null },
+  fillerWordCount: { type: Number, min: 0, default: null },
+  durationSec: { type: Number, min: 0, default: null }
+}, { _id: false });
+
 const responseSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   question: { type: String, required: true },
@@ -58,6 +72,7 @@ const responseSchema = new mongoose.Schema({
   submittedAt: { type: Date, default: Date.now },
   skipped: { type: Boolean, default: false },
   executionResults: executionResultsSchema, // JDoodle execution results
+  deliveryMetrics: { type: deliveryMetricsSchema, default: null },
   feedback: {
     score: { type: Number, min: 0, max: 100 },
     questionRelevance: { type: Number, min: 0, max: 10 },
