@@ -1,9 +1,16 @@
 // Creates two fake universities for demos and tests. Fake data only, no real CVs, no AI calls.
+// University A also gets fake mock interviews and CV analyses for 25 of its 40 students (see demoActivity.js),
+// so the lecturer dashboard has data. Students are split into 'Group 1' and 'Group 2'.
 // Usage: npm run seed:demo            (refuses to run when NODE_ENV=production)
 //        npm run seed:demo -- --reset (deletes the two demo institutions and everything in them first)
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { connect, isMain, run } from './_db.js';
+import { demoPlan, buildDemoActivity } from './demoActivity.js';
+
+// Which demo universities get fake interview and CV activity.
+export const ACTIVITY_SLUGS = ['demo-a'];
 
 const FIRST = ['Amara', 'Ben', 'Chloe', 'Dev', 'Elena', 'Farid', 'Grace', 'Hiro', 'Isla', 'Jonas', 'Kavya', 'Liam', 'Maya', 'Noah', 'Olu', 'Priya', 'Quinn', 'Rosa', 'Sami', 'Tara'];
 const LAST = ['Adams', 'Brooks', 'Chen', 'Dias', 'Evans', 'Fox', 'Gupta', 'Hughes', 'Ito', 'Jones'];
@@ -34,8 +41,9 @@ export const main = async () => {
     return;
   }
   await connect();
-  const [{ default: Institution }, { default: userModel }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'),
+  const [{ default: Institution }, { default: userModel }, { default: Interview }, { default: CVAnalysis }, { default: SkillsAssessment }, { default: Attempt }] = await Promise.all([
+    import('../models/Institution.js'), import('../models/userModel.js'), import('../models/InterviewModel.js'),
+    import('../models/CVAnalysisModel.js'), import('../models/SkillAssessorModel.js'), import('../models/Attempt.js'),
   ]);
 
   const reset = process.argv.includes('--reset');
@@ -44,6 +52,13 @@ export const main = async () => {
     if (existing && !reset) throw new Error(`${d.slug} already exists. Re-run with --reset to replace the demo data.`);
     if (existing) {
       const id = existing._id;
+      const ids = (await userModel.find({ institutionId: id }).select('_id').lean()).map((u) => u._id);
+      await Promise.all([
+        Interview.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
+        CVAnalysis.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
+        SkillsAssessment.deleteMany({ $or: [{ institutionId: id }, { userId: { $in: ids } }] }),
+        Attempt.deleteMany({ institutionId: id }),
+      ]);
       await userModel.deleteMany({ institutionId: id });
       await Institution.deleteOne({ _id: id });
     }
@@ -57,9 +72,9 @@ export const main = async () => {
     });
     console.log(`\n=== ${d.name} (slug ${d.slug}, student limit ${d.limit}) ===`);
 
-    const make = async (name, email, role, password) => userModel.create({
+    const make = async (name, email, role, password, extra = {}) => userModel.create({
       name, email, role, institutionId: institution._id, status: 'active', isAccountVerified: true,
-      password: await bcrypt.hash(password, 10),
+      password: await bcrypt.hash(password, 10), ...extra,
     });
 
     const staff = [];
@@ -73,16 +88,35 @@ export const main = async () => {
       console.log(`${role.padEnd(16)} ${email}  password: ${password}`);
     }
 
-    // The first student gets the short login; the other 39 fill the cohorts so dashboards have data.
+    // The first student gets the short login; the other 39 fill the two groups so dashboards have data.
     const studentPassword = DEMO_PASSWORDS.student;
-    const students = [];
-    for (const [i, n] of studentNames(40).entries()) {
-      const email = i === 0 ? `student@${d.loginDomain}` : `student${String(i + 1).padStart(2, '0')}@${d.domain}`;
-      students.push(await make(`${n.first} ${n.last}`, email, 'student', studentPassword));
+    const now = new Date();
+    const plan = demoPlan({ count: 40 });
+    const planned = studentNames(40).map((n, i) => ({
+      _id: new mongoose.Types.ObjectId(), name: `${n.first} ${n.last}`, group: plan[i].group,
+      email: i === 0 ? `student@${d.loginDomain}` : `student${String(i + 1).padStart(2, '0')}@${d.domain}`,
+    }));
+    const withActivity = ACTIVITY_SLUGS.includes(d.slug);
+    const activity = withActivity ? buildDemoActivity({ students: planned, institutionId: institution._id, now, plan }) : null;
+    for (const [i, s] of planned.entries()) {
+      await make(s.name, s.email, 'student', studentPassword, { _id: s._id, group: s.group, lastActive: activity ? activity.lastActive[i] : now });
     }
     console.log(`student          student@${d.loginDomain}  password: ${studentPassword}`);
     console.log(`student          student02@${d.domain} .. student40@${d.domain}  password (all 39): ${studentPassword}`);
+    console.log('students are split into "Group 1" and "Group 2" (20 each)');
 
+    if (activity) {
+      // Checked against the Interview schema, then written through the driver so fields the schema in this
+      // branch does not declare yet (responses[].deliveryMetrics) are kept.
+      for (const doc of activity.interviews) {
+        const err = new Interview(doc).validateSync();
+        if (err) throw new Error(`Demo interview is invalid: ${err.message}`);
+      }
+      await Interview.collection.insertMany(activity.interviews);
+      await CVAnalysis.insertMany(activity.cvAnalyses);
+      const people = new Set(activity.interviews.map((x) => String(x.userId))).size;
+      console.log(`demo activity: ${activity.interviews.length} completed mock interviews and ${activity.cvAnalyses.length} CV analyses for ${people} students (marked "Demo data"); ${planned.length - people} students have none`);
+    }
   }
   console.log('\nDemo data only. These logins are fixed and public: never use them outside local demos.');
 };
