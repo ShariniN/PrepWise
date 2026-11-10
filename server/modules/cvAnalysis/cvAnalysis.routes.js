@@ -1,12 +1,12 @@
 import express from 'express';
-import pdfUpload from '../middleware/pdfUpload.js';
+import pdfUpload from '../../middleware/pdfUpload.js';
 import { 
   analyzeResume,
   saveAnalysis,
   getSavedAnalysis,
   deleteAnalysis,
-} from '../controllers/cvAnalysiscontroller.js';
-import userAuth from '../middleware/userAuth.js';
+} from './cvAnalysis.controller.js';
+import userAuth from '../../middleware/userAuth.js';
 
 const analysisRouter = express.Router();
 

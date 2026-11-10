@@ -1,4 +1,4 @@
-import SkillsAssessment from '../models/SkillsAssessment.js';
+import SkillsAssessment from '../../models/SkillsAssessment.js';
 import crypto from 'crypto';
 
 // Helper function to calculate summary statistics

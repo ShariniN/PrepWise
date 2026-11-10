@@ -1,10 +1,10 @@
 import pdfParse from "pdf-parse";
 import crypto from 'crypto';
-import CVAnalysis from "../models/CvAnalysis.js";
-import userModel from '../models/User.js';
-import { GEMINI_MODEL, CV_MODELS, AI_MODELS } from '../config/ai.js';
-import { generateWithFallback } from '../services/geminiClient.js';
-import { scoreResume } from '../services/cvScoring.js';
+import CVAnalysis from "../../models/CvAnalysis.js";
+import userModel from '../../models/User.js';
+import { GEMINI_MODEL, CV_MODELS, AI_MODELS } from '../../config/ai.js';
+import { generateWithFallback } from '../../services/geminiClient.js';
+import { scoreResume } from './cvAnalysis.scoring.js';
 
 
 // Utility functions
@@ -280,7 +280,7 @@ const getDefaultCSRecommendations = () => ({
 
 const generateScore = (prompt) => generateWithFallback(prompt, { models: CV_MODELS, temperature: 0 });
 
-// Main analysis: score (services/cvScoring.js) and written feedback run in parallel.
+// Main analysis: score (cvAnalysis.scoring.js) and written feedback run in parallel.
 const analyzeResumeMatch = async (resumeText, jobDesc) => {
   const [score, structuredAnalysis] = await Promise.all([
     scoreResume({ resumeText, jobDesc, generate: generateScore }),

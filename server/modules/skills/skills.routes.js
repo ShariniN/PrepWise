@@ -1,6 +1,6 @@
 import express from 'express';
-import { saveRatings } from '../controllers/skillAssessorController.js';
-import userAuth from '../middleware/userAuth.js';
+import { saveRatings } from './skills.controller.js';
+import userAuth from '../../middleware/userAuth.js';
 
 const skillAssessor = express.Router();
 

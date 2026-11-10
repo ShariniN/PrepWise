@@ -13,10 +13,10 @@ import {
 import { 
   getSavedAnalysis, 
   deleteAnalysis
-} from '../../controllers/cvAnalysiscontroller.js';
+} from '../cvAnalysis/cvAnalysis.controller.js';
 
 // Import Skills Assessment controller methods
-import { getRatings, deleteRatings } from '../../controllers/skillAssessorController.js';
+import { getRatings, deleteRatings } from '../skills/skills.controller.js';
 
 const userRouter = express.Router();
 

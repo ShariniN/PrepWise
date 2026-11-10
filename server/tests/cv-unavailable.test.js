@@ -2,7 +2,7 @@
 // flagged instead of looking like "no technologies" (QA-08). No real AI: the model call is injected.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractTechnologiesFromResume, buildJobResult } from '../controllers/cvAnalysiscontroller.js';
+import { extractTechnologiesFromResume, buildJobResult } from '../modules/cvAnalysis/cvAnalysis.controller.js';
 
 beforeEach(() => { for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {}); });
 afterEach(() => mock.restoreAll());

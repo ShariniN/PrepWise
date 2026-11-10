@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { findSkills, keywordMatch, parseScore, scoreResume } from '../services/cvScoring.js';
+import { findSkills, keywordMatch, parseScore, scoreResume } from '../modules/cvAnalysis/cvAnalysis.scoring.js';
 
 const JD = 'Software Engineering Intern. Required: Python, JavaScript, React, REST APIs, Git, SQL databases, data structures and algorithms.';
 const CASHIER_CV = 'Jane Perera. Contact: jane@mail.com. Education: BSc in progress. Experience: cashier at a grocery store for two years. Hobbies: reading, cricket, travelling. Skills: communication, teamwork, Microsoft Word.';

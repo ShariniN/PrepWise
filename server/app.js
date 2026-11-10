@@ -7,9 +7,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import authRouter from './modules/auth/auth.routes.js';
-import skillAssessor from './routes/SkillAssessorRoutes.js';
+import skillAssessor from './modules/skills/skills.routes.js';
 import userRouter from './modules/users/users.routes.js';
-import analysisRouter from './routes/CVanalysisRoutes.js';
+import analysisRouter from './modules/cvAnalysis/cvAnalysis.routes.js';
 import interviewRouter from './routes/InterviewRoutes.js';
 import codeRouter from './routes/codeRoutes.js';
 import institutionRouter from './routes/InstitutionRoutes.js';
