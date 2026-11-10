@@ -77,9 +77,9 @@ export const makeWorld = () => {
     });
 
     mock.method(peopleRepo, 'getInstitution', async (id) => inst(id) || null);
-    mock.method(peopleRepo, 'findUsers', async (institutionId, { role, status, search } = {}) =>
+    mock.method(peopleRepo, 'findUsers', async (institutionId, { role, status, search, group } = {}) =>
       world.users.filter((u) => same(u.institutionId, institutionId)
-        && (!role || u.role === role) && (!status || u.status === status)
+        && (!role || u.role === role) && (!status || u.status === status) && (!group || (u.group || '') === group)
         && (!search || `${u.name} ${u.email}`.toLowerCase().includes(search.toLowerCase()))));
     mock.method(peopleRepo, 'countGroups', async (institutionId) => {
       const g = {};

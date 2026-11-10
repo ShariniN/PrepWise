@@ -2,16 +2,17 @@ import userModel from '../models/userModel.js';
 import Institution from '../models/Institution.js';
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const PUBLIC_FIELDS = 'name email role status isAccountVerified lastActive createdAt inviteExpiresAt';
+const PUBLIC_FIELDS = 'name email role status group isAccountVerified lastActive createdAt inviteExpiresAt';
 
 // Every function that takes institutionId filters by it. Controllers must pass req.user.institutionId.
 const peopleRepo = {
   getInstitution: (id) => Institution.findById(id),
 
-  findUsers: (institutionId, { role, status, search } = {}, limit = 1000) => {
+  findUsers: (institutionId, { role, status, search, group } = {}, limit = 1000) => {
     const q = { institutionId };
     if (role) q.role = role;
     if (status) q.status = status;
+    if (group) q.group = group;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
       q.$or = [{ name: rx }, { email: rx }];

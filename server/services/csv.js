@@ -32,8 +32,9 @@ export const parseCsv = (text) => {
 
 export const MAX_IMPORT_ROWS = 2000;
 
-// Returns { rows: [{ line, email, name, role }] } or { error }. `line` is the 1-based CSV line number
-// of the record, counting the header, so it matches what a spreadsheet shows.
+// Returns { rows: [{ line, email, name, role, group }] } or { error }. `line` is the 1-based CSV line number
+// of the record, counting the header, so it matches what a spreadsheet shows. `group` is optional ('' when absent);
+// its length is checked when the row is invited, so one bad row does not reject the whole file.
 export const parseUsersCsv = (text) => {
   const table = parseCsv(text);
   if (!table.length) return { error: 'The CSV is empty' };
@@ -42,6 +43,7 @@ export const parseUsersCsv = (text) => {
   if (emailIdx === -1) return { error: 'The CSV needs an "email" column' };
   const nameIdx = header.indexOf('name');
   const roleIdx = header.indexOf('role');
+  const groupIdx = header.indexOf('group');
   const body = table.slice(1);
   if (body.length > MAX_IMPORT_ROWS) {
     return { error: `Too many rows: ${body.length}. The maximum is ${MAX_IMPORT_ROWS} per import`, tooMany: true };
@@ -52,6 +54,7 @@ export const parseUsersCsv = (text) => {
       email: (r[emailIdx] || '').trim().toLowerCase(),
       name: nameIdx === -1 ? '' : (r[nameIdx] || '').trim(),
       role: roleIdx === -1 ? 'student' : ((r[roleIdx] || '').trim().toLowerCase() || 'student'),
+      group: groupIdx === -1 ? '' : (r[groupIdx] || '').trim(),
     })),
   };
 };
