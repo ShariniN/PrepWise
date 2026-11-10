@@ -20,8 +20,6 @@ import practiceRouter from './routes/practiceRoutes.js';
 import questionRouter from './routes/questionRoutes.js';
 import analyticsRouter from './routes/AnalyticsRoutes.js';
 import gradingRouter from './routes/GradingRoutes.js';
-import assessmentRouter from './routes/assessmentRoutes.js';
-import integrityRouter from './routes/integrityRoutes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -66,8 +64,6 @@ app.use('/api/practice', practiceRouter);
 app.use('/api/questions', questionRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/grading', gradingRouter);
-app.use('/api/assessments', assessmentRouter);
-app.use('/api/integrity', integrityRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {
