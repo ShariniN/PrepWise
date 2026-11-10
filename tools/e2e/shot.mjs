@@ -1,4 +1,4 @@
-// Usage: node shot.mjs <path> <out.png> [--width 1440] [--height 900] [--full] [--role admin|lecturer|student|careers|adminB] [--base http://localhost:5180] [--wait ms] [--scroll px]
+// Usage: node shot.mjs <path> <out.png> [--width 1440] [--height 900] [--full] [--role admin|lecturer|student|adminB|studentB] [--base http://localhost:5173] [--wait ms] [--scroll px]
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,15 +9,15 @@ const [rawPath, out] = args;
 // Git Bash rewrites "/login" into "C:/Program Files/Git/login"; undo that, then normalise the leading slash.
 const urlPath = '/' + String(rawPath).replace(/^[A-Za-z]:[\\/]Program Files[\\/]Git/, '').replace(/^\/+/, '');
 const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
-const width = +opt('width', 1440), height = +opt('height', 900), base = opt('base', 'http://localhost:5180'), role = opt('role', ''), wait = +opt('wait', 900), scroll = +opt('scroll', 0);
+const width = +opt('width', 1440), height = +opt('height', 900), base = opt('base', process.env.WEB || 'http://localhost:5173'), role = opt('role', ''), wait = +opt('wait', 900), scroll = +opt('scroll', 0);
 const full = args.includes('--full');
 // Fixed demo logins seeded by `npm run dev:local` (local demo data only).
 const ROLES = {
   admin: ['admin@email.com', 'admin@123'],
   lecturer: ['lecturer@email.com', 'lecturer@123'],
-  careers: ['careers@email.com', 'careers@123'],
   student: ['student@email.com', 'student@123'],
   adminB: ['admin@demo-b.test', 'admin@123'],
+  studentB: ['student@demo-b.test', 'student@123'],
 };
 const exe = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));
 const browser = await chromium.launch({ executablePath: exe, headless: true });
