@@ -1,7 +1,7 @@
 // Live smoke test against the local embedded-DB server. Reads demo passwords from the server log.
 import fs from 'node:fs';
 const LOG = process.argv[2];
-const BASE = 'http://localhost:4000';
+const BASE = process.env.API || 'http://localhost:4000';
 const log = fs.readFileSync(LOG, 'utf8');
 const pw = (label, who) => {
   const re = new RegExp(`${who}[^\\n]*password(?: \\(all 40\\))?: (\\S+)`);
@@ -43,7 +43,7 @@ check('is-auth returns role', (await stuA.req('GET', '/api/auth/is-auth')).data?
 // ---- admin / people
 let r = await adminA.req('GET', '/api/institution/usage'); check('admin usage', r.status === 200 && r.data.studentLimit === 60, JSON.stringify(r.data).slice(0, 200));
 r = await adminA.req('GET', '/api/institution/people?role=student'); check('admin people list', r.status === 200 && (r.data.people?.length ?? r.data.data?.length) > 0, JSON.stringify(r.data).slice(0, 200));
-r = await adminA.req('POST', '/api/institution/people/invite', { email: 'newkid@demo-a.test', name: 'New Kid', role: 'student' }); check('admin invite student', r.status === 200 || r.status === 201, JSON.stringify(r.data).slice(0, 200));
+r = await adminA.req('POST', '/api/institution/people/invite', { email: `newkid${Date.now()}@demo-a.test`, name: 'New Kid', role: 'student' }); check('admin invite student', r.status === 200 || r.status === 201, JSON.stringify(r.data).slice(0, 200));
 const inviteLink = r.data.inviteLink; check('invite link returned in dev', !!inviteLink);
 if (inviteLink) {
   const token = new URL(inviteLink).searchParams.get('token');
@@ -73,8 +73,8 @@ r = await stuA.req('GET', `/api/practice/questions/${qid}`); const qj = JSON.str
 check('question detail', r.status === 200); check('no reference solution leaked', !/referenceSolution|wrongSolution/.test(qj));
 const hiddenLeak = (r.data.question?.tests || r.data.tests || []).some?.((t) => t.visible === false && (t.input != null || t.expectedOutput != null));
 check('no hidden test data leaked', !hiddenLeak);
-r = await stuA.req('POST', `/api/practice/questions/${qid}/run`, { language: 'python', source: 'print(1)' }); check('run -> unavailable (no sandbox), not fake success', r.status === 503, `${r.status} ${JSON.stringify(r.data).slice(0, 160)}`);
-r = await stuA.req('POST', `/api/practice/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('submit -> unavailable and no score', r.status === 503, `${r.status}`);
+r = await stuA.req('POST', `/api/practice/questions/${qid}/run`, { language: 'python', source: 'print(1)' }); check('run gives a real verdict, or 503 when no sandbox is set up (never fake success)', r.status === 503 || (r.status === 200 && ['wrong_answer','accepted','runtime_error','compile_error'].includes(r.data.verdict)), `${r.status} ${JSON.stringify(r.data).slice(0, 160)}`);
+r = await stuA.req('POST', `/api/practice/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('submit gives a real graded result, or 503 with no score', r.status === 503 || (r.status === 200 && typeof r.data.score === 'number' && r.data.verdict !== 'accepted'), `${r.status}`);
 r = await stuA.req('GET', '/api/practice/questions?type=mcq'); const mcq = (r.data.questions || [])[0];
 if (mcq) { const mid = mcq.id || mcq._id; const d = await stuA.req('GET', `/api/practice/questions/${mid}`); const opts = d.data.question?.options || d.data.options || []; const s = await stuA.req('POST', `/api/practice/questions/${mid}/submit`, { answer: [0], selected: [0], choice: 0 }); check('mcq submit works server-side', s.status === 200 || s.status === 400, `${s.status} ${JSON.stringify(s.data).slice(0, 200)}`); }
 
@@ -85,8 +85,8 @@ check('lecturer creates question', r.status === 200 || r.status === 201, `${r.st
 const newQ = r.data.question || r.data.data; const newQid = newQ?.id || newQ?._id;
 if (newQid) {
   const t = await lectA.req('POST', `/api/questions/${newQid}/tests`, { input: '1 2', expectedOutput: '3', visible: true, weight: 1 }); check('add test case', t.status === 200 || t.status === 201, `${t.status} ${JSON.stringify(t.data).slice(0, 200)}`);
-  const v = await lectA.req('POST', `/api/questions/${newQid}/validate`, {}); check('validate -> sandbox unavailable (honest)', v.status === 503 || v.data?.verdict === 'unavailable' || v.data?.unavailable, `${v.status} ${JSON.stringify(v.data).slice(0, 200)}`);
-  const pub = await lectA.req('PATCH', `/api/questions/${newQid}/status`, { status: 'published' }); check('publish blocked without validation', pub.status >= 400, `${pub.status} ${JSON.stringify(pub.data).slice(0, 160)}`);
+  const v = await lectA.req('POST', `/api/questions/${newQid}/validate`, {}); check('validate runs the reference solution in the sandbox, or reports unavailable', v.status === 503 || v.data?.unavailable || (v.status === 200 && v.data.referencePassed === true), `${v.status} ${JSON.stringify(v.data).slice(0, 200)}`);
+  const pub = await lectA.req('PATCH', `/api/questions/${newQid}/status`, { status: 'published' }); check('publish allowed only after a passing validation', v.data?.referencePassed === true ? pub.status === 200 : pub.status >= 400, `${pub.status} ${JSON.stringify(pub.data).slice(0, 160)}`);
 }
 r = await stuA.req('GET', '/api/questions'); check('student blocked from question API', r.status === 403);
 r = await adminB.req('GET', '/api/questions'); check('B admin question list excludes A-owned', !JSON.stringify(r.data).includes('Sum two numbers'));
@@ -125,7 +125,7 @@ if (courseId && qid) {
     check('server deadline present', !!(sess?.deadline || sess?.deadlineAt));
     if (sid) {
       const ev = await stuA.req('POST', `/api/assessments/sessions/${sid}/integrity-events`, { events: [{ type: 'tab_hidden', t: 1000 }, { type: 'tab_visible', t: 9000 }, { type: 'paste', t: 12000, meta: { length: 1800, inEditor: true } }] }); check('integrity events accepted', ev.status === 200 || ev.status === 201, `${ev.status} ${JSON.stringify(ev.data).slice(0, 200)}`);
-      const run = await stuA.req('POST', `/api/assessments/sessions/${sid}/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('assessment submit unavailable not faked', run.status === 503 || run.status === 404 || run.status === 400, `${run.status} ${JSON.stringify(run.data).slice(0, 200)}`);
+      const run = await stuA.req('POST', `/api/assessments/sessions/${sid}/questions/${qid}/submit`, { language: 'python', source: 'print(1)' }); check('assessment submit records the answer without revealing a verdict', (run.status === 200 && !('verdict' in run.data)) || run.status === 503, `${run.status} ${JSON.stringify(run.data).slice(0, 200)}`);
       const fin = await stuA.req('POST', `/api/assessments/sessions/${sid}/finish`, {}); check('finish session', fin.status === 200, `${fin.status} ${JSON.stringify(fin.data).slice(0, 200)}`);
       const cases = await lectA.req('GET', '/api/integrity/cases'); check('integrity case list (real Mongo)', cases.status === 200, `${cases.status} ${JSON.stringify(cases.data).slice(0, 250)}`);
       const sc = await stuA.req('GET', '/api/integrity/cases'); check('student cannot list integrity cases', sc.status === 403 || (sc.status === 200 && (sc.data.cases || []).length === 0), String(sc.status));
