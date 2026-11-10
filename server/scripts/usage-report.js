@@ -15,7 +15,7 @@ export const toCsv = (rows) => {
 const main = async () => {
   await connect();
   const [{ default: Institution }, { default: peopleRepo }, { usageRepo, currentMonth }] = await Promise.all([
-    import('../models/Institution.js'), import('../repositories/peopleRepo.js'), import('../services/aiUsage.js'),
+    import('../models/Institution.js'), import('../modules/people/people.repo.js'), import('../services/aiUsage.js'),
   ]);
   const month = currentMonth();
   const rows = [];

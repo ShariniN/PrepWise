@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import './helpers.js';
-import { parseCsv, parseUsersCsv } from '../services/csv.js';
+import { parseCsv, parseUsersCsv } from '../modules/people/people.csv.js';
 import { scoped, TenantError, runWithTenant, currentInstitutionId } from '../middleware/tenancy.js';
 import requireRole from '../middleware/requireRole.js';
 import { consumeAi, usageRepo, AiLimitError, resetAiCapCache, currentMonth } from '../services/aiUsage.js';

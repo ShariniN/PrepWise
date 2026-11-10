@@ -1,4 +1,4 @@
-// Courses, assessments, integrity review and the old course-scoped / career-officer analytics were removed.
+// Courses, assessments, integrity review, the old course-scoped / career-officer analytics and unused student routes were removed.
 // Their URLs must answer a JSON 404 to a logged-in user (anonymous calls under /api/analytics get 401 first,
 // which leaks nothing).
 import { test, mock, beforeEach, afterEach } from 'node:test';
@@ -46,6 +46,13 @@ export const REMOVED = [
   ['get', '/api/analytics/lecturer/students-needing-help'], ['get', '/api/analytics/lecturer/question-quality'],
   ['get', '/api/analytics/lecturer/activity'], ['get', '/api/analytics/careers/readiness'], ['get', '/api/analytics/careers/readiness.csv'],
   ['get', '/api/analytics/careers/coverage'], ['get', '/api/analytics/careers/skills-gap'],
+  // unused duplicates and debug routes of the student features (the client never called them)
+  ['get', '/api/user/skills-stats'], ['get', `/api/user/skills-assessment/${id}`],
+  ['post', '/api/analyze/toggle-save'], ['post', '/api/analyze/analyze-profile-cv'],
+  ['get', '/api/swot/health'], ['get', '/api/swot/test-auth'], ['get', '/api/swot/ratings'], ['get', '/api/swot/stats'],
+  ['get', '/api/swot/ratings/abc'], ['delete', `/api/swot/delete/${id}`],
+  ['post', '/api/interviews/execute'], ['get', '/api/interviews/user/history'],
+  ['post', `/api/interviews/${id}/answer`], ['post', `/api/interviews/${id}/skip`],
 ];
 
 test('every removed endpoint returns a JSON 404 for every role', async () => {

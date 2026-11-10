@@ -5,9 +5,9 @@ import assert from 'node:assert/strict';
 import axios from 'axios';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
-import InterviewModel from '../models/InterviewModel.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
-import { calculateFinalResults } from '../controllers/services/utilityService.js';
+import { calculateFinalResults } from '../modules/interviews/interviews.questions.js';
 import app from '../app.js';
 
 const ans = (questionType, score, source = 'ai', extra = {}) => ({

@@ -1,6 +1,6 @@
 // Turns the AI's raw draft output into validated draft objects. The AI call goes through aiService, so the
 // per-university monthly cap applies. Nothing here is trusted: every draft still has to pass the sandbox gate.
-import aiService from '../controllers/services/aiService.js';
+import aiService from './aiService.js';
 
 const text = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
 

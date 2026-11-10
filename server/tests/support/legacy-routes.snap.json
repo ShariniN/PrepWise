@@ -1,0 +1,1612 @@
+{
+  "analyze ai unavailable": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "resumeHash": "cvhash",
+      "resumeText": "Profile CV content",
+      "extractedTechnologies": [],
+      "technologiesUnavailable": true,
+      "analysis": [
+        {
+          "matchPercentage": 0,
+          "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
+          "hasError": true,
+          "isNonTechRole": false,
+          "timestamp": "<date>",
+          "strengths": [],
+          "contentWeaknesses": [],
+          "structureWeaknesses": [],
+          "contentRecommendations": [],
+          "structureRecommendations": [],
+          "recommendationsUnavailable": true,
+          "message": "AI analysis is unavailable right now, so no match score was calculated.",
+          "scoreBreakdown": {
+            "aiAvailable": false,
+            "aiScore": null,
+            "aiWeight": 0.7,
+            "keywordScore": 1,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "matchedSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "missingSkills": [],
+            "aiError": "Unreadable AI reply: about half",
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": []
+        }
+      ],
+      "metadata": {
+        "useProfileCV": true,
+        "resumeFileName": "cv.pdf",
+        "analysisDate": "<date>",
+        "jobDescriptionCount": 1,
+        "technologiesFound": 0,
+        "technologiesUnavailable": true,
+        "apiUsed": "Gemini 2.5 Flash Enhanced",
+        "realAnalysis": true,
+        "enhancedParsing": true
+      }
+    }
+  },
+  "analyze bad json": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Invalid job descriptions format",
+      "error": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+    }
+  },
+  "analyze no file": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Resume file is required when not using profile CV"
+    }
+  },
+  "analyze no jds": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "At least one job description is required"
+    }
+  },
+  "analyze no profile cv": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "No CV found in your profile. Please upload a CV first."
+    }
+  },
+  "analyze profile cv": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "resumeHash": "cvhash",
+      "resumeText": "Profile CV content",
+      "extractedTechnologies": [
+        {
+          "name": "Node.js",
+          "category": "Web Frameworks",
+          "confidenceLevel": 7
+        }
+      ],
+      "technologiesUnavailable": false,
+      "analysis": [
+        {
+          "matchPercentage": 86,
+          "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
+          "hasError": false,
+          "isNonTechRole": false,
+          "rawSimilarity": 0.86,
+          "timestamp": "<date>",
+          "strengths": [
+            "Node.js projects"
+          ],
+          "contentWeaknesses": [
+            "no tests"
+          ],
+          "structureWeaknesses": [],
+          "contentRecommendations": [
+            "add tests"
+          ],
+          "structureRecommendations": [
+            "add links"
+          ],
+          "recommendationsUnavailable": false,
+          "message": null,
+          "scoreBreakdown": {
+            "aiAvailable": true,
+            "aiScore": 0.8,
+            "aiWeight": 0.7,
+            "keywordScore": 1,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "matchedSkills": [
+              "node.js",
+              "express",
+              "git",
+              "rest",
+              "api",
+              "mongodb"
+            ],
+            "missingSkills": [],
+            "aiError": null,
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web Frameworks",
+              "confidenceLevel": 7
+            }
+          ]
+        },
+        {
+          "matchPercentage": 0,
+          "jobDescription": "Head chef wanted for a busy restaurant kitchen, full time, weekends included.",
+          "hasError": false,
+          "isNonTechRole": true,
+          "timestamp": "<date>",
+          "strengths": [],
+          "contentWeaknesses": [],
+          "structureWeaknesses": [],
+          "contentRecommendations": [],
+          "structureRecommendations": [],
+          "recommendationsUnavailable": false,
+          "message": "This position is not a Computer Science or Software Engineering internship. Please provide a CS/Software Engineering job description for accurate analysis.",
+          "scoreBreakdown": {
+            "aiAvailable": true,
+            "aiScore": 0.8,
+            "aiWeight": 0.7,
+            "keywordScore": 0,
+            "keywordWeight": 0.3,
+            "requiredSkills": [],
+            "matchedSkills": [],
+            "missingSkills": [],
+            "aiError": null,
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web Frameworks",
+              "confidenceLevel": 7
+            }
+          ]
+        },
+        {
+          "matchPercentage": 0,
+          "isNonTechRole": true,
+          "hasError": true,
+          "message": "Analysis failed: Job description too short. Please provide a detailed job posting.",
+          "jobDescription": "Short JD",
+          "extractedTechnologies": []
+        }
+      ],
+      "metadata": {
+        "useProfileCV": true,
+        "resumeFileName": "cv.pdf",
+        "analysisDate": "<date>",
+        "jobDescriptionCount": 3,
+        "technologiesFound": 1,
+        "technologiesUnavailable": false,
+        "apiUsed": "Gemini 2.5 Flash Enhanced",
+        "realAnalysis": true,
+        "enhancedParsing": true
+      }
+    }
+  },
+  "cv delete bad id": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Invalid analysis ID format.",
+      "received": "xyz"
+    }
+  },
+  "cv delete not found": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Analysis not found or you do not have permission to delete it"
+    }
+  },
+  "cv delete ok via user": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Analysis deleted successfully",
+      "deletedId": "<id>",
+      "deletedAnalysis": {
+        "id": "<id>",
+        "resumeText": "cv",
+        "analysisCount": 1,
+        "wasSaved": true,
+        "technologiesCount": 0,
+        "deletedAt": "<date>",
+        "analysisVersion": "legacy"
+      }
+    }
+  },
+  "cv delete ok": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Analysis deleted successfully",
+      "deletedId": "<id>",
+      "deletedAnalysis": {
+        "id": "<id>",
+        "resumeText": "cv",
+        "analysisCount": 1,
+        "wasSaved": true,
+        "technologiesCount": 0,
+        "deletedAt": "<date>",
+        "analysisVersion": "legacy"
+      }
+    }
+  },
+  "cv save missing fields": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Missing required fields for saving analysis",
+      "required": [
+        "resumeText",
+        "jobDescriptions",
+        "results"
+      ],
+      "received": {
+        "resumeText": false,
+        "jobDescriptions": true,
+        "results": false,
+        "resumeHash": false
+      }
+    }
+  },
+  "cv save new": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "CV analysis saved successfully.",
+      "saved": true,
+      "data": {
+        "id": "<id>",
+        "isSaved": true,
+        "resumeHash": "h1"
+      },
+      "analysis": {
+        "id": "<id>",
+        "resumeText": "CV content saved",
+        "isSaved": true,
+        "analysisCount": 2,
+        "updatedAt": "<date>",
+        "extractedTechnologies": [],
+        "technologiesCount": 0,
+        "analysisVersion": "legacy"
+      },
+      "stats": {
+        "totalAnalyses": 2,
+        "softwareRoles": 1,
+        "nonTechRoles": 1,
+        "avgMatchScore": 72,
+        "technologiesExtracted": 0
+      }
+    }
+  },
+  "cv save update": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "CV analysis updated successfully.",
+      "saved": false,
+      "data": {
+        "id": "<id>",
+        "isSaved": false,
+        "resumeHash": "h1"
+      },
+      "analysis": {
+        "id": "<id>",
+        "resumeText": "CV content saved",
+        "isSaved": false,
+        "analysisCount": 1,
+        "updatedAt": "<date>",
+        "extractedTechnologies": [
+          {
+            "name": "Node.js"
+          }
+        ],
+        "technologiesCount": 1,
+        "analysisVersion": "gemini-2.5-flash-lite"
+      },
+      "stats": {
+        "totalAnalyses": 1,
+        "softwareRoles": 1,
+        "nonTechRoles": 0,
+        "avgMatchScore": 72,
+        "technologiesExtracted": 1
+      }
+    }
+  },
+  "cv save without hash": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "CV analysis saved successfully.",
+      "saved": true,
+      "data": {
+        "id": "<id>",
+        "isSaved": true,
+        "resumeHash": "01f148b2ac7eb56c2ce3333d2ae2e7918e121a7dab30bf2f46ec95dd8513c013"
+      },
+      "analysis": {
+        "id": "<id>",
+        "resumeText": "CV content saved",
+        "isSaved": true,
+        "analysisCount": 1,
+        "updatedAt": "<date>",
+        "extractedTechnologies": [],
+        "technologiesCount": 0,
+        "analysisVersion": "legacy"
+      },
+      "stats": {
+        "totalAnalyses": 1,
+        "softwareRoles": 1,
+        "nonTechRoles": 0,
+        "avgMatchScore": 72,
+        "technologiesExtracted": 0
+      }
+    }
+  },
+  "cv saved empty": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "No saved analyses found",
+      "data": []
+    }
+  },
+  "cv saved list": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Found 1 saved analyses",
+      "data": [
+        {
+          "_id": "<id>",
+          "userId": "<id>",
+          "resumeHash": "h",
+          "jobDescriptions": [
+            "JD"
+          ],
+          "results": [
+            {
+              "jobIndex": 0,
+              "matchPercentage": 72,
+              "isNonTechRole": false,
+              "recommendationsUnavailable": false,
+              "scoreBreakdown": {
+                "aiScore": 70,
+                "keywordScore": 76
+              },
+              "strengths": [
+                "Node.js"
+              ],
+              "contentWeaknesses": [
+                "tests"
+              ],
+              "structureWeaknesses": [],
+              "contentRecommendations": [
+                "add tests"
+              ],
+              "structureRecommendations": [
+                "links"
+              ],
+              "message": null,
+              "skillsMatched": [],
+              "skillsMissing": [],
+              "_id": "<id>"
+            },
+            {
+              "jobIndex": 0,
+              "matchPercentage": 0,
+              "isNonTechRole": true,
+              "recommendationsUnavailable": false,
+              "scoreBreakdown": null,
+              "strengths": [],
+              "contentWeaknesses": [],
+              "structureWeaknesses": [],
+              "contentRecommendations": [],
+              "structureRecommendations": [],
+              "message": "not a CS role",
+              "skillsMatched": [],
+              "skillsMissing": [],
+              "_id": "<id>"
+            },
+            {
+              "jobIndex": 0,
+              "matchPercentage": 40,
+              "isNonTechRole": false,
+              "recommendationsUnavailable": false,
+              "scoreBreakdown": {
+                "aiScore": 70,
+                "keywordScore": 76
+              },
+              "strengths": [
+                "Node.js"
+              ],
+              "contentWeaknesses": [
+                "tests"
+              ],
+              "structureWeaknesses": [],
+              "contentRecommendations": [
+                "add tests"
+              ],
+              "structureRecommendations": [
+                "links"
+              ],
+              "message": null,
+              "skillsMatched": [],
+              "skillsMissing": [],
+              "_id": "<id>"
+            }
+          ],
+          "isSaved": true,
+          "createdAt": "<date>",
+          "updatedAt": "<date>",
+          "jobTitle": "Software Engineering Position",
+          "company": "Company",
+          "matchPercentage": 56,
+          "totalJobs": 3,
+          "softwareJobs": 2,
+          "strengths": [
+            "Node.js"
+          ],
+          "contentRecommendations": [
+            "add tests"
+          ],
+          "structureRecommendations": [
+            "links"
+          ],
+          "recommendations": [
+            "add tests",
+            "links"
+          ],
+          "averageMatch": 56,
+          "bestMatch": {
+            "jobIndex": 0,
+            "matchPercentage": 72,
+            "isNonTechRole": false,
+            "recommendationsUnavailable": false,
+            "scoreBreakdown": {
+              "aiScore": 70,
+              "keywordScore": 76
+            },
+            "strengths": [
+              "Node.js"
+            ],
+            "contentWeaknesses": [
+              "tests"
+            ],
+            "structureWeaknesses": [],
+            "contentRecommendations": [
+              "add tests"
+            ],
+            "structureRecommendations": [
+              "links"
+            ],
+            "message": null,
+            "skillsMatched": [],
+            "skillsMissing": [],
+            "_id": "<id>"
+          }
+        }
+      ],
+      "count": 1
+    }
+  },
+  "cv toggle existing": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "CV analysis saved successfully.",
+      "saved": true,
+      "data": {
+        "id": "<id>",
+        "isSaved": true
+      }
+    }
+  },
+  "cv toggle unknown hash": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "CV analysis not found. Please analyze your resume first.",
+      "resumeHash": "nope"
+    }
+  },
+  "iv complete all skipped": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Interview completed successfully",
+      "results": {
+        "score": 0,
+        "duration": "<duration>",
+        "categoryPercentages": {
+          "behavioral": 0,
+          "technical": 0,
+          "coding": 0,
+          "communication": 0,
+          "technicalAccuracy": 0,
+          "problemSolving": 0
+        },
+        "breakdown": {
+          "totalQuestions": 2,
+          "answeredQuestions": 0,
+          "skippedQuestions": 2,
+          "behavioralQuestions": 0,
+          "technicalQuestions": 0,
+          "codingQuestions": 0,
+          "averageResponseTime": 0
+        },
+        "excludedFallbackAnswers": 0,
+        "scoredAnswers": 0,
+        "scoreIsPartial": false,
+        "feedback": {
+          "score": 0,
+          "readinessLevel": null,
+          "categoryPercentages": {
+            "behavioral": 0,
+            "technical": 0,
+            "coding": 0,
+            "communication": 0,
+            "technicalAccuracy": 0,
+            "problemSolving": 0
+          },
+          "breakdown": {
+            "totalQuestions": 2,
+            "behavioralQuestions": 0,
+            "technicalQuestions": 0,
+            "codingQuestions": 0,
+            "averageResponseTime": 0
+          },
+          "duration": "<duration>"
+        },
+        "questionsAnswered": 2,
+        "totalQuestions": 2,
+        "deliverySummary": {
+          "answersMeasured": 0,
+          "answersWithCamera": 0,
+          "answersWithSpeech": 0,
+          "faceVisiblePct": null,
+          "eyeContactPct": null,
+          "lookAwayCount": null,
+          "headMovement": null,
+          "wordsPerMinute": null,
+          "fillerWordCount": null
+        }
+      }
+    }
+  },
+  "iv create ai": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Interview created successfully",
+      "usedFallbackQuestions": false,
+      "interview": {
+        "id": "<id>",
+        "_id": "<id>",
+        "userId": "<id>",
+        "jobDescription": "Backend intern, Java and Spring",
+        "questions": [
+          {
+            "questionId": "q1",
+            "type": "behavioral",
+            "question": "Tell me about your Node.js project",
+            "category": "projects",
+            "difficulty": "easy",
+            "expectedDuration": 180,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q2",
+            "type": "coding",
+            "question": "Write a function that sums an array of numbers",
+            "category": "general",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [
+              "why?"
+            ],
+            "starterCode": {
+              "java": "public class Solution {\n    public static int solution(int[] arr) {\n        // Write a function that sums an array of n...\n        \n        // Your code here\n        \n        return 0;\n    }\n    \n    public static void main(String[] args) {\n        int[] test = {1, 2, 3, 4, 5};\n        System.out.println(solution(test));\n    }\n}"
+            },
+            "language": "java",
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q3",
+            "type": "coding",
+            "question": "Reverse a string",
+            "category": "general",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [],
+            "starterCode": {
+              "python": "def solution(text):\n    # Reverse a string\n    \n    # Your code here\n    \n    return text\n\nprint(solution(\"hello world\"))"
+            },
+            "language": "python",
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q4",
+            "type": "technical",
+            "question": "Design a URL shortener",
+            "category": "general",
+            "difficulty": "easy",
+            "expectedDuration": 150,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          }
+        ],
+        "totalQuestions": 4,
+        "status": "created",
+        "cvSource": "manual",
+        "usedFallbackQuestions": false,
+        "createdAt": "<date>"
+      }
+    }
+  },
+  "iv create fallback": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Interview created successfully",
+      "usedFallbackQuestions": true,
+      "interview": {
+        "id": "<id>",
+        "_id": "<id>",
+        "userId": "<id>",
+        "jobDescription": "Frontend intern",
+        "questions": [
+          {
+            "questionId": "q1",
+            "type": "behavioral",
+            "question": "Tell me about a programming project you worked on recently. What challenges did you face?",
+            "category": "project_experience",
+            "difficulty": "easy",
+            "expectedDuration": 180,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q2",
+            "type": "behavioral",
+            "question": "Describe a time when you had to learn a new technology for a project.",
+            "category": "learning_ability",
+            "difficulty": "easy",
+            "expectedDuration": 180,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q3",
+            "type": "behavioral",
+            "question": "Tell me about a time when you worked with others on a coding project.",
+            "category": "teamwork",
+            "difficulty": "easy",
+            "expectedDuration": 180,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q4",
+            "type": "technical",
+            "question": "What is the difference between frontend and backend in web development?",
+            "category": "web_basics",
+            "difficulty": "easy",
+            "expectedDuration": 150,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q5",
+            "type": "technical",
+            "question": "Explain what Git is and why it's useful for programmers.",
+            "category": "tools_basics",
+            "difficulty": "easy",
+            "expectedDuration": 150,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q6",
+            "type": "technical",
+            "question": "What is a function in programming? Why are functions useful?",
+            "category": "programming_basics",
+            "difficulty": "easy",
+            "expectedDuration": 150,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q7",
+            "type": "technical",
+            "question": "What is debugging? Describe a simple debugging process.",
+            "category": "debugging_basics",
+            "difficulty": "easy",
+            "expectedDuration": 150,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q8",
+            "type": "coding",
+            "question": "Write a function that finds the largest number in an array.",
+            "category": "basic_arrays",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [],
+            "starterCode": {
+              "javascript": "function findLargest(numbers) {\n    // Find and return the largest number\n    return 0;\n}\n\nconsole.log(findLargest([3, 7, 2, 9, 1])); // Should return 9"
+            },
+            "language": "javascript",
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q9",
+            "type": "coding",
+            "question": "Create a function that counts how many times a character appears in a string.",
+            "category": "string_basics",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [],
+            "starterCode": {
+              "javascript": "function countCharacter(text, char) {\n    // Count how many times 'char' appears in 'text'\n    return 0;\n}\n\nconsole.log(countCharacter(\"hello world\", \"l\")); // Should return 3"
+            },
+            "language": "javascript",
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q10",
+            "type": "coding",
+            "question": "Write a function that checks if a number is even or odd.",
+            "category": "basic_logic",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [],
+            "starterCode": {
+              "javascript": "function checkEvenOdd(number) {\n    // Return \"even\" or \"odd\"\n    return \"\";\n}\n\nconsole.log(checkEvenOdd(4)); // Should return \"even\""
+            },
+            "language": "javascript",
+            "_id": "<id>"
+          }
+        ],
+        "totalQuestions": 10,
+        "status": "created",
+        "cvSource": "manual",
+        "usedFallbackQuestions": true,
+        "createdAt": "<date>"
+      }
+    }
+  },
+  "iv create missing": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "Missing required fields: jobDescription and resumeText are required"
+    }
+  },
+  "iv feedback all skipped": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "feedback": {
+        "score": 0,
+        "duration": 0,
+        "categoryPercentages": {
+          "behavioral": 0,
+          "technical": 0,
+          "coding": 0,
+          "communication": 0,
+          "technicalAccuracy": 0,
+          "problemSolving": 0
+        },
+        "breakdown": {
+          "totalQuestions": 2,
+          "answeredQuestions": 0,
+          "skippedQuestions": 2,
+          "behavioralQuestions": 0,
+          "technicalQuestions": 0,
+          "codingQuestions": 0,
+          "averageResponseTime": 0
+        },
+        "excludedFallbackAnswers": 0,
+        "scoredAnswers": 0,
+        "scoreIsPartial": false,
+        "feedback": {
+          "score": 0,
+          "readinessLevel": null,
+          "categoryPercentages": {
+            "behavioral": 0,
+            "technical": 0,
+            "coding": 0,
+            "communication": 0,
+            "technicalAccuracy": 0,
+            "problemSolving": 0
+          },
+          "breakdown": {
+            "totalQuestions": 2,
+            "behavioralQuestions": 0,
+            "technicalQuestions": 0,
+            "codingQuestions": 0,
+            "averageResponseTime": 0
+          }
+        },
+        "responses": [
+          {
+            "questionId": "b1",
+            "question": "Q1",
+            "questionType": "behavioral",
+            "transcription": null,
+            "textResponse": "Question skipped",
+            "code": null,
+            "language": null,
+            "responseTime": 12,
+            "submittedAt": "<date>",
+            "skipped": true,
+            "deliveryMetrics": null,
+            "feedback": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "c1",
+            "question": "Q2",
+            "questionType": "coding",
+            "transcription": null,
+            "textResponse": "Question skipped",
+            "code": null,
+            "language": null,
+            "responseTime": 0,
+            "submittedAt": "<date>",
+            "skipped": true,
+            "deliveryMetrics": null,
+            "feedback": null,
+            "_id": "<id>"
+          }
+        ],
+        "recommendations": [],
+        "deliverySummary": {
+          "answersMeasured": 0,
+          "answersWithCamera": 0,
+          "answersWithSpeech": 0,
+          "faceVisiblePct": null,
+          "eyeContactPct": null,
+          "lookAwayCount": null,
+          "headMovement": null,
+          "wordsPerMinute": null,
+          "fillerWordCount": null
+        }
+      }
+    }
+  },
+  "iv get not found": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "error": "Interview not found"
+    }
+  },
+  "iv get": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "interview": {
+        "userId": "<id>",
+        "institutionId": "<id>",
+        "jobDescription": "JD",
+        "resumeText": "CV",
+        "questions": [
+          {
+            "questionId": "b1",
+            "type": "behavioral",
+            "question": "Q1",
+            "category": "c",
+            "difficulty": "easy",
+            "expectedDuration": 120,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "c1",
+            "type": "coding",
+            "question": "Q2",
+            "category": "c",
+            "difficulty": "easy",
+            "expectedDuration": 120,
+            "tests": [
+              {
+                "input": "1",
+                "expectedOutput": "2",
+                "_id": "<id>",
+                "id": "<id>"
+              }
+            ],
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": "javascript",
+            "_id": "<id>"
+          }
+        ],
+        "totalQuestions": 2,
+        "currentQuestionIndex": 0,
+        "status": "in_progress",
+        "usedProfileCV": false,
+        "usedFallbackQuestions": false,
+        "cvSource": "manual",
+        "overallFeedback": {
+          "feedback": {
+            "strengths": [],
+            "improvements": [],
+            "recommendations": []
+          }
+        },
+        "createdAt": "<date>",
+        "updatedAt": "<date>",
+        "_id": "<id>",
+        "responses": [],
+        "startedAt": "<date>",
+        "duration": null,
+        "id": "<id>"
+      }
+    }
+  },
+  "iv history": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "interviews": [
+        {
+          "userId": "<id>",
+          "institutionId": "<id>",
+          "jobDescription": "JD",
+          "resumeText": "CV",
+          "questions": [
+            {
+              "questionId": "b1",
+              "type": "behavioral",
+              "question": "Q1",
+              "category": "c",
+              "difficulty": "easy",
+              "expectedDuration": 120,
+              "followUpQuestions": [],
+              "starterCode": null,
+              "language": null,
+              "_id": "<id>"
+            },
+            {
+              "questionId": "c1",
+              "type": "coding",
+              "question": "Q2",
+              "category": "c",
+              "difficulty": "easy",
+              "expectedDuration": 120,
+              "tests": [
+                {
+                  "input": "1",
+                  "expectedOutput": "2",
+                  "_id": "<id>",
+                  "id": "<id>"
+                }
+              ],
+              "followUpQuestions": [],
+              "starterCode": null,
+              "language": "javascript",
+              "_id": "<id>"
+            }
+          ],
+          "totalQuestions": 2,
+          "currentQuestionIndex": 0,
+          "status": "in_progress",
+          "usedProfileCV": false,
+          "usedFallbackQuestions": false,
+          "cvSource": "manual",
+          "overallFeedback": {
+            "feedback": {
+              "strengths": [],
+              "improvements": [],
+              "recommendations": []
+            }
+          },
+          "createdAt": "<date>",
+          "updatedAt": "<date>",
+          "_id": "<id>",
+          "responses": [],
+          "startedAt": "<date>",
+          "duration": null,
+          "id": "<id>"
+        }
+      ],
+      "pagination": {
+        "current": 1,
+        "total": 1,
+        "count": 1,
+        "totalRecords": 1
+      }
+    }
+  },
+  "iv next after skip": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "question": {
+        "questionId": "c1",
+        "type": "coding",
+        "question": "Q2",
+        "category": "c",
+        "difficulty": "easy",
+        "expectedDuration": 120,
+        "followUpQuestions": [],
+        "starterCode": null,
+        "language": "javascript",
+        "_id": "<id>"
+      },
+      "progress": {
+        "current": 2,
+        "total": 2,
+        "percentage": 100
+      }
+    }
+  },
+  "iv next done": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "completed": true,
+      "message": "All questions completed",
+      "progress": {
+        "current": 2,
+        "total": 2,
+        "percentage": 100
+      }
+    }
+  },
+  "iv next first": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "question": {
+        "questionId": "b1",
+        "type": "behavioral",
+        "question": "Q1",
+        "category": "c",
+        "difficulty": "easy",
+        "expectedDuration": 120,
+        "followUpQuestions": [],
+        "starterCode": null,
+        "language": null,
+        "_id": "<id>"
+      },
+      "progress": {
+        "current": 1,
+        "total": 2,
+        "percentage": 50
+      }
+    }
+  },
+  "iv profile missing jd": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "Missing required field: jobDescription is required"
+    }
+  },
+  "iv profile no cv": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "No CV found in user profile. Please upload a CV first."
+    }
+  },
+  "iv profile ok": {
+    "status": 201,
+    "body": {
+      "success": true,
+      "message": "Interview created successfully with profile CV",
+      "usedFallbackQuestions": false,
+      "interview": {
+        "id": "<id>",
+        "questions": [
+          {
+            "questionId": "q1",
+            "type": "behavioral",
+            "question": "Tell me about your Node.js project",
+            "category": "projects",
+            "difficulty": "easy",
+            "expectedDuration": 180,
+            "followUpQuestions": [],
+            "starterCode": null,
+            "language": null,
+            "_id": "<id>"
+          },
+          {
+            "questionId": "q2",
+            "type": "coding",
+            "question": "Write a function that sums an array of numbers",
+            "category": "general",
+            "difficulty": "easy",
+            "expectedDuration": 300,
+            "followUpQuestions": [
+              "why?"
+            ],
+            "starterCode": {
+              "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint solution(vector<int>& arr) {\n    // Write a function that sums an array of n...\n    \n    // Your code here\n    \n    return 0;\n}\n\nint main() {\n    vector<int> test = {1, 2, 3, 4, 5};\n    cout << solution(test) << endl;\n    return 0;\n}"
+            },
+            "language": "cpp",
+            "_id": "<id>"
+          }
+        ],
+        "totalQuestions": 2,
+        "status": "created",
+        "cvSource": "profile",
+        "usedFallbackQuestions": false,
+        "createdAt": "<date>"
+      }
+    }
+  },
+  "iv start again": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "Interview already started or completed"
+    }
+  },
+  "iv start not found": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "error": "Interview not found"
+    }
+  },
+  "iv start ok": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Interview started successfully",
+      "firstQuestion": {
+        "questionId": "b1",
+        "type": "behavioral",
+        "question": "Q1",
+        "category": "c",
+        "difficulty": "easy",
+        "expectedDuration": 120,
+        "followUpQuestions": [],
+        "starterCode": null,
+        "language": null,
+        "_id": "<id>"
+      },
+      "totalQuestions": 2,
+      "questions": [
+        {
+          "questionId": "b1",
+          "type": "behavioral",
+          "question": "Q1",
+          "category": "c",
+          "difficulty": "easy",
+          "expectedDuration": 120,
+          "followUpQuestions": [],
+          "starterCode": null,
+          "language": null,
+          "_id": "<id>"
+        },
+        {
+          "questionId": "c1",
+          "type": "coding",
+          "question": "Q2",
+          "category": "c",
+          "difficulty": "easy",
+          "expectedDuration": 120,
+          "tests": [
+            {
+              "input": "1",
+              "expectedOutput": "2",
+              "_id": "<id>"
+            }
+          ],
+          "followUpQuestions": [],
+          "starterCode": null,
+          "language": "javascript",
+          "_id": "<id>"
+        }
+      ]
+    }
+  },
+  "iv submit ai": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Answer submitted successfully",
+      "feedback": {
+        "score": 77,
+        "questionRelevance": 8,
+        "responseType": "mostly-relevant",
+        "correctness": 7,
+        "syntax": 5,
+        "languageBestPractices": 7,
+        "efficiency": 5,
+        "structureAndReadability": 6,
+        "edgeCaseHandling": 3,
+        "strengths": [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "improvements": [
+          "i"
+        ],
+        "detailedAnalysis": "d",
+        "overallAssessment": "o",
+        "communicationClarity": 6,
+        "technicalAccuracy": 7,
+        "source": "ai",
+        "executionSource": "none"
+      },
+      "deliveryMetrics": {
+        "cameraUsed": true,
+        "faceVisiblePct": 100,
+        "eyeContactPct": 55.6,
+        "lookAwayCount": 3,
+        "headMovement": "low",
+        "wordsPerMinute": 131,
+        "fillerWordCount": 2,
+        "durationSec": 40
+      },
+      "progress": {
+        "current": 1,
+        "total": 2,
+        "completed": false
+      }
+    }
+  },
+  "iv submit empty answer": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "Response text is required"
+    }
+  },
+  "iv submit fallback": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Answer submitted successfully",
+      "feedback": {
+        "score": 15,
+        "questionRelevance": 1,
+        "responseType": "mostly-irrelevant",
+        "correctness": 1,
+        "syntax": 1,
+        "languageBestPractices": 1,
+        "efficiency": 1,
+        "structureAndReadability": 1,
+        "edgeCaseHandling": 1,
+        "strengths": [
+          "Provided response"
+        ],
+        "improvements": [
+          "Use STAR method (Situation, Task, Action, Result)",
+          "Provide specific examples",
+          "Explain learning outcomes"
+        ],
+        "detailedAnalysis": "Response demonstrates minimal understanding. The 73 character response lacks technical depth.",
+        "overallAssessment": "Significantly below intern level - requires substantial preparation",
+        "communicationClarity": 1,
+        "technicalAccuracy": 1,
+        "source": "fallback",
+        "executionSource": "none"
+      },
+      "deliveryMetrics": null,
+      "progress": {
+        "current": 2,
+        "total": 2,
+        "completed": true
+      }
+    }
+  },
+  "iv submit skipped": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Question skipped successfully",
+      "progress": {
+        "current": 1,
+        "total": 2,
+        "completed": false
+      }
+    }
+  },
+  "iv submit unknown question": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "error": "Question not found"
+    }
+  },
+  "skills bad techs": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Technology validation failed",
+      "errors": [
+        "Technology 1: name is required and must be a string",
+        "Technology 2: confidenceLevel/proficiencyLevel is required and must be a number",
+        "Technology 3: confidenceLevel/proficiencyLevel must be between 1 and 10"
+      ]
+    }
+  },
+  "skills create": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Skills assessment saved successfully",
+      "data": {
+        "id": "<id>",
+        "resumeHash": "h",
+        "saved": true,
+        "technologiesCount": 3,
+        "summary": {
+          "totalTechnologies": 3,
+          "averageConfidence": 6.5,
+          "expertCount": 1,
+          "proficientCount": 1,
+          "learningCount": 1
+        },
+        "createdAt": "<date>",
+        "updatedAt": "<date>"
+      },
+      "stats": {
+        "totalTechnologies": 3,
+        "averageConfidence": 6.5,
+        "distribution": {
+          "expert": 1,
+          "proficient": 1,
+          "learning": 1
+        },
+        "usingEnhancedModel": true
+      }
+    }
+  },
+  "skills delete bad id": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Invalid assessment ID format",
+      "received": "xyz"
+    }
+  },
+  "skills delete not found": {
+    "status": 404,
+    "body": {
+      "success": false,
+      "message": "Assessment not found or you do not have permission to delete it"
+    }
+  },
+  "skills delete ok": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Assessment deleted successfully",
+      "deletedId": "<id>",
+      "deletedAssessment": {
+        "id": "<id>",
+        "resumeHash": "h",
+        "skillsCount": 1,
+        "wasSaved": true,
+        "deletedAt": "<date>",
+        "usingEnhancedModel": true
+      }
+    }
+  },
+  "skills list empty": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "No skills assessments found",
+      "data": []
+    }
+  },
+  "skills list": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Found 1 skills assessments",
+      "data": [
+        {
+          "_id": "<id>",
+          "userId": "<id>",
+          "assessmentType": "Technical Skills",
+          "resumeHash": "h",
+          "strengths": [],
+          "weaknesses": [],
+          "opportunities": [],
+          "threats": [],
+          "skills": [
+            {
+              "name": "Node.js",
+              "category": "Web",
+              "proficiencyLevel": 8,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false,
+              "_id": "<id>",
+              "lastUsed": "<date>"
+            },
+            {
+              "name": "SQL",
+              "category": "DB",
+              "proficiencyLevel": 7,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false,
+              "_id": "<id>",
+              "lastUsed": "<date>"
+            },
+            {
+              "name": "Git",
+              "category": "General",
+              "proficiencyLevel": 4,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false,
+              "_id": "<id>",
+              "lastUsed": "<date>"
+            }
+          ],
+          "topTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web",
+              "proficiencyLevel": 8,
+              "confidence": 8,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false
+            },
+            {
+              "name": "SQL",
+              "category": "DB",
+              "proficiencyLevel": 7,
+              "confidence": 7,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false
+            },
+            {
+              "name": "Git",
+              "category": "General",
+              "proficiencyLevel": 4,
+              "confidence": 4,
+              "yearsOfExperience": 0,
+              "isCoreTechnology": false
+            }
+          ],
+          "overallScore": 64,
+          "averageProficiency": 6.3,
+          "totalTechnologies": 3,
+          "expertCount": 1,
+          "proficientCount": 1,
+          "learningCount": 1,
+          "level": "Advanced",
+          "recommendations": [],
+          "careerSuggestions": [],
+          "improvementAreas": [],
+          "isSaved": true,
+          "completedAt": "<date>",
+          "createdAt": "<date>",
+          "updatedAt": "<date>",
+          "skillCategories": [
+            "Web",
+            "DB",
+            "General"
+          ]
+        }
+      ],
+      "count": 1
+    }
+  },
+  "skills no hash": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "Valid resume hash is required",
+      "required": [
+        "resumeHash"
+      ]
+    }
+  },
+  "skills no techs": {
+    "status": 400,
+    "body": {
+      "success": false,
+      "message": "At least one technology rating is required",
+      "required": [
+        "technologies"
+      ],
+      "format": "Array of {name, category, confidenceLevel/proficiencyLevel}"
+    }
+  },
+  "skills update": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Skills assessment draft updated successfully",
+      "data": {
+        "id": "<id>",
+        "resumeHash": "h",
+        "saved": false,
+        "technologiesCount": 1,
+        "summary": {
+          "totalTechnologies": 1,
+          "averageConfidence": 8,
+          "expertCount": 1,
+          "proficientCount": 0,
+          "learningCount": 0
+        },
+        "createdAt": "<date>",
+        "updatedAt": "<date>"
+      },
+      "stats": {
+        "totalTechnologies": 1,
+        "averageConfidence": 8,
+        "distribution": {
+          "expert": 1,
+          "proficient": 0,
+          "learning": 0
+        },
+        "usingEnhancedModel": true
+      }
+    }
+  }
+}

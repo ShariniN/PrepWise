@@ -5,9 +5,9 @@ import assert from 'node:assert/strict';
 import axios from 'axios';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
-import InterviewModel from '../models/InterviewModel.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
-import { sanitizeDeliveryMetrics, summarizeDelivery } from '../controllers/interviewController.js';
+import { sanitizeDeliveryMetrics, summarizeDelivery } from '../modules/interviews/interviews.controller.js';
 import app from '../app.js';
 
 const KEYS = ['cameraUsed', 'faceVisiblePct', 'eyeContactPct', 'lookAwayCount', 'headMovement', 'wordsPerMinute', 'fillerWordCount', 'durationSec'];

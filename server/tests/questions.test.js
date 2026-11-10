@@ -6,7 +6,7 @@ import { makeWorld, IDS } from './helpers.js';
 import { installQuestionWorld } from './support/questionWorld.js';
 import { VmProvider } from './support/vmChecker.js';
 import * as exec from '../services/execution/index.js';
-import aiService from '../controllers/services/aiService.js';
+import aiService from '../services/aiService.js';
 import app from '../app.js';
 
 const REF = 'const n = parseInt(require("fs").readFileSync(0,"utf8").trim(), 10);\nconsole.log(n * 2);';

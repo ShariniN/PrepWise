@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
 import { installAnalyticsWorld } from './support/analyticsWorld.js';
-import * as agg from '../analytics/aggregate.js';
+import * as agg from '../modules/analytics/analytics.aggregate.js';
 import app from '../app.js';
 
 let w, db, adminA, lecA1, adminB, students, stuB, qCode, qTopic2;

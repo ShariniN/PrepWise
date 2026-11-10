@@ -1,8 +1,8 @@
-// In-memory stand-in for lecturer/repo.js. Like the real repository it filters by institutionId, but it returns
+// In-memory stand-in for modules/lecturer/lecturer.repo.js. Like the real repository it filters by institutionId, but it returns
 // FULL documents (CV text, secrets, hidden tests included) so the tests prove the controller's whitelists, not
 // the fake's projection.
 import { mock } from 'node:test';
-import lecturerRepo from '../../lecturer/repo.js';
+import lecturerRepo from '../../modules/lecturer/lecturer.repo.js';
 import { newId } from '../helpers.js';
 
 const same = (a, b) => String(a ?? '') === String(b ?? '');

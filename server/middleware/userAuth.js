@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import userModel from "../models/userModel.js";
+import userModel from "../models/User.js";
 import { runWithTenant } from "./tenancy.js";
 import { isKnownRole } from "../config/roles.js";
 

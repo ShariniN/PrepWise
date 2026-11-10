@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { makeWorld, IDS, userModel } from './helpers.js';
-import { parseUsersCsv } from '../services/csv.js';
+import { parseUsersCsv } from '../modules/people/people.csv.js';
 import app from '../app.js';
 
 let w, adminA, adminB, stuA, stuB, lecA;
