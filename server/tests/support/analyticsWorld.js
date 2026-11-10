@@ -19,20 +19,12 @@ export const installAnalyticsWorld = (world) => {
   mock.method(analyticsRepo, 'attemptsForStudents', async (inst, ids, { since = null, kinds = null } = {}) => db.attempts
     .filter((a) => same(a.institutionId, inst) && inIds(ids, a.userId) && (!since || new Date(a.createdAt) >= since) && (!kinds || kinds.includes(a.runKind)))
     .map((a) => { const c = clone(a); delete c.source; delete c.answer; return c; }));
-  mock.method(analyticsRepo, 'questionsByIds', async (inst, ids) => db.questions
-    .filter((d) => inIds(ids, d._id) && (d.institutionId == null || same(d.institutionId, inst))).map(clone));
-  mock.method(analyticsRepo, 'testsByQuestion', async (qids) => {
-    const out = {};
-    for (const t of db.tests.filter((x) => inIds(qids, x.questionId)).sort((a, b) => a.order - b.order)) (out[String(t.questionId)] ||= []).push(clone(t));
-    return out;
-  });
   mock.method(analyticsRepo, 'interviewsForStudents', async (inst, ids) => db.interviews.filter((i) => same(i.institutionId, inst) && inIds(ids, i.userId)).map(clone));
   mock.method(analyticsRepo, 'cvCounts', async (inst, ids) => {
     const m = {};
     for (const c of db.cv.filter((x) => same(x.institutionId, inst) && inIds(ids, x.userId))) m[String(c.userId)] = (m[String(c.userId)] || 0) + 1;
     return Object.entries(m).map(([userId, count]) => ({ userId, count }));
   });
-  mock.method(analyticsRepo, 'skillAssessments', async (inst, ids) => db.skills.filter((x) => same(x.institutionId, inst) && inIds(ids, x.userId)).map(clone));
   mock.method(analyticsRepo, 'activeUserIds', async (inst, ids, since) => {
     const out = new Set();
     for (const a of db.attempts) if (same(a.institutionId, inst) && inIds(ids, a.userId) && ['run', 'submit'].includes(a.runKind) && new Date(a.createdAt) >= since) out.add(String(a.userId));
