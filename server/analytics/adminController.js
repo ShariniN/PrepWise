@@ -1,11 +1,10 @@
 // University admin view: adoption and renewal evidence. Counts only, unless includeStudents=1 (which is audited).
-import courseRepo from '../repositories/courseRepo.js';
 import peopleRepo from '../repositories/peopleRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';
 import { usageRepo, currentMonth, DEFAULT_MONTHLY_CAP } from '../services/aiUsage.js';
 import analyticsRepo from './repo.js';
-import { fail, studentsOf } from './access.js';
+import { fail } from './access.js';
 import * as agg from './aggregate.js';
 
 const days = (n) => new Date(Date.now() - n * agg.DAY_MS);
@@ -21,13 +20,7 @@ const gather = async (req) => {
     analyticsRepo.activeUserIds(institutionId, ids, days(30)),
     usageRepo.getCalls(institutionId, month),
   ]);
-  const courses = await courseRepo.listCourses(institutionId);
-  const cohorts = courses.length ? await courseRepo.listCohorts(institutionId, courses.map((c) => c._id)) : [];
-  const { enrolments } = await studentsOf(institutionId, { courseIds: courses.map((c) => c._id) });
-  const idSet = new Set(ids);
-  const members = (cohortId) => [...new Set(enrolments.filter((e) => String(e.cohortId) === String(cohortId)).map((e) => String(e.userId)))]
-    .filter((id) => idSet.has(id));
-  return { institutionId, institution, users, ids, month, active7, active30, calls, courses, cohorts, members };
+  return { institutionId, institution, users, ids, month, active7, active30, calls };
 };
 
 const aiBlock = (g) => {
@@ -41,11 +34,6 @@ export const overview = async (req, res) => {
   const limit = g.institution.contractedStudentLimit ?? 0;
   const attempts = await analyticsRepo.attemptsForStudents(g.institutionId, g.ids, { kinds: ['submit'] });
   const { excluded } = agg.partitionAttempts(attempts);
-  const cohortImprovement = g.cohorts.map((h) => {
-    const course = g.courses.find((c) => String(c._id) === String(h.courseId));
-    const m = g.members(h._id);
-    return { cohortId: String(h._id), cohort: h.name, courseCode: course?.code || null, students: m.length, ...agg.improvement({ studentIds: m, attempts }) };
-  }).sort((a, b) => (a.courseCode || '').localeCompare(b.courseCode || '') || a.cohort.localeCompare(b.cohort));
   res.json({
     success: true,
     adoption: {
@@ -54,16 +42,13 @@ export const overview = async (req, res) => {
       percentOfLimitActive30d: limit ? Math.round((g.active30.length / limit) * 1000) / 10 : null,
       contractEnd: g.institution.contractEnd || null,
     },
-    improvement: { cohorts: cohortImprovement, excludedAttempts: excluded, definition: 'Mean first vs mean latest eligible submission score per student per question, for questions attempted at least twice. Cohorts with fewer than 5 students showing improvement return a notice.' },
+    improvement: {
+      ...agg.improvement({ studentIds: g.ids, attempts }),
+      excludedAttempts: excluded,
+      definition: 'Mean first vs mean latest eligible practice submission score per student per question, for questions attempted at least twice, across the whole university. Fewer than 5 students showing improvement returns a notice.',
+    },
     aiUsage: aiBlock(g),
   });
-};
-
-const csvOf = (summary, rows) => {
-  const out = [['metric', 'value'], ...summary];
-  let text = agg.toCsv(out[0], out.slice(1));
-  if (rows) text += `\r\n${agg.toCsv(rows.header, rows.lines)}`;
-  return text;
 };
 
 export const evidence = async (req, res) => {
@@ -82,20 +67,10 @@ export const evidence = async (req, res) => {
     institution: g.institution.name, generatedAt: new Date().toISOString(), month: g.month,
     registeredActiveStudents: g.ids.length, contractedStudentLimit: g.institution.contractedStudentLimit ?? 0,
     activeStudents7d: g.active7.length, activeStudents30d: g.active30.length,
-    courses: g.courses.length, cohorts: g.cohorts.length,
     practiceSubmissionsTotal: attempts.length, practiceSubmissionsLast30d: subs30,
     mockInterviewsCompleted: completed, cvAnalysesTotal: cv.reduce((n, r) => n + r.count, 0),
     aiCallsThisMonth: g.calls, aiMonthlyCap: g.institution.monthlyAiCallCap ?? DEFAULT_MONTHLY_CAP,
   };
-  const cohortRows = g.cohorts.map((h) => {
-    const m = new Set(g.members(h._id));
-    const course = g.courses.find((c) => String(c._id) === String(h.courseId));
-    return {
-      course: course?.code || '', cohort: h.name, students: m.size,
-      active30d: g.active30.filter((id) => m.has(id)).length,
-      practiceSubmissions: attempts.filter((a) => m.has(String(a.userId))).length,
-    };
-  }).sort((a, b) => a.course.localeCompare(b.course) || a.cohort.localeCompare(b.cohort));
   let students = null;
   if (includeStudents) {
     const active = new Set(g.active30);
@@ -110,12 +85,11 @@ export const evidence = async (req, res) => {
     await audit({ actor: req.user.id, action: 'analytics.export.evidence_students', institutionId: g.institutionId, meta: { rows: students.length, format } });
   }
   if (format === 'csv') {
-    const rows = [{ header: ['course', 'cohort', 'students', 'active_30d', 'practice_submissions'], lines: cohortRows.map((r) => [r.course, r.cohort, r.students, r.active30d, r.practiceSubmissions]) }];
-    let text = csvOf(Object.entries(summary), rows[0]);
+    let text = agg.toCsv(['metric', 'value'], Object.entries(summary));
     if (students) text += `\r\n${agg.toCsv(['student', 'email', 'active_30d', 'practice_submissions', 'mock_interviews_completed'], students.map((s) => [s.name, s.email, s.active30d, s.practiceSubmissions, s.mockInterviewsCompleted]))}`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="evidence-summary.csv"');
     return res.send(text);
   }
-  res.json({ success: true, summary, cohorts: cohortRows, ...(students ? { students } : {}), includesStudents: includeStudents });
+  res.json({ success: true, summary, ...(students ? { students } : {}), includesStudents: includeStudents });
 };

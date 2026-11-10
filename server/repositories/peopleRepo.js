@@ -40,6 +40,9 @@ const peopleRepo = {
   countActiveAdmins: (institutionId) =>
     userModel.countDocuments({ institutionId, role: 'university_admin', status: 'active' }),
 
+  findUsersByIds: (institutionId, ids) =>
+    userModel.find({ institutionId, _id: { $in: ids } }).select('name email role status group').lean(),
+
   findByEmail: (email) => userModel.findOne({ email }),
   findByIdInInstitution: (id, institutionId) => userModel.findOne({ _id: id, institutionId }),
   createUser: (data) => userModel.create(data),

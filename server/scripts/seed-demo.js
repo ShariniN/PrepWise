@@ -35,9 +35,8 @@ export const main = async () => {
     return;
   }
   await connect();
-  const [{ default: Institution }, { default: userModel }, { default: Course }, { default: Cohort }, { default: Enrollment }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'), import('../models/Course.js'),
-    import('../models/Cohort.js'), import('../models/Enrollment.js'),
+  const [{ default: Institution }, { default: userModel }] = await Promise.all([
+    import('../models/Institution.js'), import('../models/userModel.js'),
   ]);
 
   const reset = process.argv.includes('--reset');
@@ -46,8 +45,7 @@ export const main = async () => {
     if (existing && !reset) throw new Error(`${d.slug} already exists. Re-run with --reset to replace the demo data.`);
     if (existing) {
       const id = existing._id;
-      await Promise.all([userModel.deleteMany({ institutionId: id }), Course.deleteMany({ institutionId: id }),
-        Cohort.deleteMany({ institutionId: id }), Enrollment.deleteMany({ institutionId: id })]);
+      await userModel.deleteMany({ institutionId: id });
       await Institution.deleteOne({ _id: id });
     }
   }
@@ -87,17 +85,6 @@ export const main = async () => {
     console.log(`student          student@${d.loginDomain}  password: ${studentPassword}`);
     console.log(`student          student02@${d.domain} .. student40@${d.domain}  password (all 39): ${studentPassword}`);
 
-    const course = await Course.create({
-      institutionId: institution._id, code: 'CS101', title: 'Introduction to Programming', ownerId: staff[1]._id,
-    });
-    await Enrollment.create({ institutionId: institution._id, userId: staff[2]._id, kind: 'lecturer', courseId: course._id });
-    for (const [idx, name] of ['Group 1', 'Group 2'].entries()) {
-      const cohort = await Cohort.create({ institutionId: institution._id, courseId: course._id, name });
-      await Enrollment.insertMany(students.filter((_, i) => i % 2 === idx).map((s) => ({
-        institutionId: institution._id, userId: s._id, kind: 'student', courseId: course._id, cohortId: cohort._id,
-      })));
-    }
-    console.log(`course CS101 with cohorts "Group 1" and "Group 2" (20 students each)`);
   }
   console.log('\nDemo data only. These logins are fixed and public: never use them outside local demos.');
 };

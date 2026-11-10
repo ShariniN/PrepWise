@@ -16,12 +16,11 @@ mongoose.set('bufferCommands', false); // an unstubbed model call fails at once 
 
 const { default: userModel } = await import('../models/userModel.js');
 const { default: peopleRepo } = await import('../repositories/peopleRepo.js');
-const { default: courseRepo } = await import('../repositories/courseRepo.js');
 const { default: complianceRepo } = await import('../repositories/complianceRepo.js');
 const { auditRepo } = await import('../services/audit.js');
 const { default: transporter } = await import('../config/nodemailer.js');
 
-export { userModel, peopleRepo, courseRepo, complianceRepo, auditRepo, transporter };
+export { userModel, peopleRepo, complianceRepo, auditRepo, transporter };
 
 export const IDS = {
   instA: 'aaaaaaaaaaaaaaaaaaaaaaaa',
@@ -40,9 +39,6 @@ export const makeWorld = () => {
       [IDS.instB]: { _id: IDS.instB, name: 'University B', slug: 'b', contractedStudentLimit: 3, allowedEmailDomains: [], status: 'active' },
     },
     users: [],
-    courses: [],
-    cohorts: [],
-    enrollments: [],
     interviews: [],
     consents: [],
     audit: [],
@@ -102,33 +98,7 @@ export const makeWorld = () => {
       world.users.find((u) => same(u._id, id) && same(u.institutionId, institutionId)) || null);
     mock.method(peopleRepo, 'createUser', async (data) => world.addUser({ ...data, password: undefined }));
 
-    mock.method(courseRepo, 'createCourse', async (d) => { const c = { _id: newId(), ...d }; world.courses.push(c); return c; });
-    mock.method(courseRepo, 'findCourse', async (institutionId, id) =>
-      world.courses.find((c) => same(c._id, id) && same(c.institutionId, institutionId)) || null);
-    mock.method(courseRepo, 'listCourses', async (institutionId, ids) =>
-      world.courses.filter((c) => same(c.institutionId, institutionId) && (!ids || ids.some((i) => same(i, c._id)))));
-    mock.method(courseRepo, 'listCoursesOwnedBy', async (institutionId, ownerId) =>
-      world.courses.filter((c) => same(c.institutionId, institutionId) && same(c.ownerId, ownerId)));
-    mock.method(courseRepo, 'createCohort', async (d) => { const c = { _id: newId(), ...d }; world.cohorts.push(c); return c; });
-    mock.method(courseRepo, 'findCohort', async (institutionId, courseId, cohortId) =>
-      world.cohorts.find((c) => same(c._id, cohortId) && same(c.courseId, courseId) && same(c.institutionId, institutionId)) || null);
-    mock.method(courseRepo, 'listCohorts', async (institutionId, courseIds) =>
-      world.cohorts.filter((c) => same(c.institutionId, institutionId) && courseIds.some((i) => same(i, c.courseId))));
-    mock.method(courseRepo, 'addEnrollment', async (institutionId, doc) => {
-      const dup = world.enrollments.find((e) => same(e.institutionId, institutionId) && e.kind === doc.kind && same(e.userId, doc.userId)
-        && (doc.kind === 'student' ? same(e.cohortId, doc.cohortId) : same(e.courseId, doc.courseId)));
-      if (dup) return { created: false };
-      world.enrollments.push({ ...doc, institutionId });
-      return { created: true };
-    });
-    mock.method(courseRepo, 'findEnrollments', async (institutionId, kind, extra = {}) =>
-      world.enrollments.filter((e) => same(e.institutionId, institutionId) && e.kind === kind
-        && (!extra.userId || same(e.userId, extra.userId))
-        && (!extra.cohortId || same(e.cohortId, extra.cohortId))
-        && (!extra.courseId || (extra.courseId.$in ? extra.courseId.$in.some((i) => same(i, e.courseId)) : same(e.courseId, extra.courseId)))));
-    mock.method(courseRepo, 'findUsersByEmails', async (institutionId, emails) =>
-      world.users.filter((u) => same(u.institutionId, institutionId) && emails.includes(u.email)));
-    mock.method(courseRepo, 'findUsersByIds', async (institutionId, ids) =>
+    mock.method(peopleRepo, 'findUsersByIds', async (institutionId, ids) =>
       world.users.filter((u) => same(u.institutionId, institutionId) && ids.some((i) => same(i, u._id))));
 
     mock.method(complianceRepo, 'findUser', async (id) => world.users.find((u) => same(u._id, id)) || null);
@@ -136,17 +106,14 @@ export const makeWorld = () => {
       interviews: world.interviews.filter((i) => same(i.userId, userId)),
       analyses: [], skills: [],
       consents: world.consents.filter((c) => same(c.userId, userId)),
-      enrollments: world.enrollments.filter((e) => same(e.userId, userId)),
     }));
     mock.method(complianceRepo, 'deleteAll', async (userId) => {
-      const before = { interviews: world.interviews.length, consents: world.consents.length, enrollments: world.enrollments.length };
+      const before = { interviews: world.interviews.length, consents: world.consents.length };
       world.interviews = world.interviews.filter((i) => !same(i.userId, userId));
       world.consents = world.consents.filter((c) => !same(c.userId, userId));
-      world.enrollments = world.enrollments.filter((e) => !same(e.userId, userId));
       world.users = world.users.filter((u) => !same(u._id, userId));
       return {
         interviews: before.interviews - world.interviews.length, consents: before.consents - world.consents.length,
-        enrollments: before.enrollments - world.enrollments.length,
       };
     });
     mock.method(complianceRepo, 'addConsent', async (d) => { world.consents.push(d); return d; });

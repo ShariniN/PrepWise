@@ -16,7 +16,6 @@ beforeEach(async () => {
   adminA = w.addUser({ email: 'admin@a.edu', role: 'university_admin', institutionId: IDS.instA, password: hash });
   w.interviews.push({ userId: stu._id, jobDescription: 'mine' }, { userId: other._id, jobDescription: 'theirs' });
   w.consents.push({ userId: other._id, type: 'terms', version: '1' });
-  w.enrollments.push({ institutionId: IDS.instA, userId: stu._id, kind: 'student' }, { institutionId: IDS.instA, userId: other._id, kind: 'student' });
 });
 afterEach(() => mock.restoreAll());
 const as = (u) => ({ Cookie: w.cookie(u) });
@@ -30,7 +29,6 @@ test('export returns only the caller\'s data and never secrets', async () => {
   assert.equal(res.status, 200);
   assert.equal(res.body.profile.email, 'stu@a.edu');
   assert.deepEqual(res.body.interviews.map((i) => i.jobDescription), ['mine']);
-  assert.equal(res.body.enrollments.length, 1);
   assert.equal(res.body.consents.length, 0);
   const text = JSON.stringify(res.body);
   for (const secret of ['secret-invite-hash', '123456', '654321', 'theirs', 'other@a.edu']) {
@@ -58,7 +56,6 @@ test('delete removes the caller and their data only, and writes an audit entry',
   assert.equal(w.users.some((u) => u._id === other._id), true);
   assert.deepEqual(w.interviews.map((i) => i.jobDescription), ['theirs']);
   assert.equal(w.consents.length, 1);
-  assert.equal(w.enrollments.length, 1);
   const entry = w.audit.at(-1);
   assert.equal(entry.action, 'user.delete');
   assert.equal(entry.actor, stu._id);
