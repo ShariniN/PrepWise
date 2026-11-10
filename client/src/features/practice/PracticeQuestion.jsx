@@ -10,7 +10,8 @@ import ResultView from './components/ResultView';
 import AnswerInput from '../../components/AnswerInput';
 import VerdictBadge from './components/VerdictBadge';
 import UnavailableNotice from '../../components/UnavailableNotice';
-import { getQuestion, runQuestion, submitQuestion, isUnavailable } from './api';
+import { getQuestion, runQuestion, submitQuestion, recordBrowserRun, isUnavailable } from './api';
+import { runInBrowser, BROWSER_LANGUAGES } from './browserRunner';
 import { errorMessage } from '../../lib/apiClient';
 import usePracticeDraft from './hooks/usePracticeDraft';
 import { isCodeType } from './utils';
@@ -97,9 +98,41 @@ const PracticeQuestion = () => {
     toast.error(msg);
   };
 
+  // Python and JavaScript run on the visible tests in the student's browser. Null means the browser cannot run this
+  // program the way the server would, and the server Run is used instead.
+  const runLocally = async () => {
+    const tests = question.visibleTests || [];
+    if (!BROWSER_LANGUAGES.includes(language) || stdin.trim() || !tests.length) return null;
+    const r = await runInBrowser({
+      language, source, tests, timeLimitMs: question.timeLimitMs,
+      onStatus: (s) => setBusy(s === 'loading' ? 'loading' : 'run'),
+    });
+    if (!r) return null;
+    const rows = r.perTest.map((t, i) => {
+      const test = tests.find((x) => x.id === t.testId) || tests[i];
+      const verdict = t.passed ? 'accepted' : (t.timedOut ? 'time_limit' : (t.stderr ? 'runtime_error' : 'wrong_answer'));
+      return {
+        index: i + 1, testId: t.testId, visible: true, passed: t.passed, verdict, timeMs: null, memoryKb: null,
+        input: test?.input, expectedOutput: test?.expectedOutput, actualOutput: t.stdout, error: t.stderr,
+      };
+    });
+    const failed = rows.find((t) => !t.passed);
+    return {
+      success: true, mode: 'visible_tests', ranIn: 'browser', verdict: failed ? failed.verdict : 'accepted',
+      passed: rows.filter((t) => t.passed).length, total: rows.length, tests: rows,
+    };
+  };
+
   const run = async () => {
     setBusy('run'); setUnavailable(null);
     try {
+      const local = await runLocally();
+      if (local) {
+        setResult(local);
+        record({ kind: 'run', verdict: local.verdict });
+        recordBrowserRun(id, { language, source }).catch(() => {});
+        return;
+      }
       const body = { language, source };
       if (stdin.trim()) body.stdin = stdin;
       const r = await runQuestion(id, body);
@@ -195,7 +228,7 @@ const PracticeQuestion = () => {
         <div className="flex flex-wrap gap-3">
           {code && (
             <Button variant="secondary" disabled={!!busy || !source.trim()} onClick={run}>
-              {busy === 'run' ? 'Running...' : 'Run'}
+              {busy === 'loading' ? 'Loading Python...' : busy === 'run' ? 'Running...' : 'Run'}
             </Button>
           )}
           <Button disabled={!!busy || !canSubmit} onClick={submit}>

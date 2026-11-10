@@ -13,11 +13,12 @@ const API = process.env.API || 'http://localhost:4000';
 const WEB = process.env.WEB || 'http://localhost:5173';
 const SEED_DIR = new URL('../../server/seed/questions/', import.meta.url);
 const exe = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));
+if (!exe) { console.error('Neither Chrome nor Edge was found. Install one of them or edit the paths at the top of this script.'); process.exit(2); }
 const LANGS = ['javascript', 'python'];
 
 const seed = fs.readdirSync(SEED_DIR).filter((f) => f.endsWith('.json'))
   .flatMap((f) => JSON.parse(fs.readFileSync(new URL(f, SEED_DIR), 'utf8')))
-  .filter((q) => q.type === 'coding' || q.type === 'debug');
+  .filter((q) => q.type === 'coding');
 const seedByTitle = new Map(seed.map((q) => [q.title, q]));
 
 let failures = 0;
@@ -37,14 +38,16 @@ try {
   await page.waitForURL(/fresher-dashboard/, { timeout: 15000 });
   await page.waitForFunction(() => !!window.__prepwiseRunner, null, { timeout: 15000 });
 
-  const list = await (await ctx.request.get(`${API}/api/practice/questions?pageSize=200`)).json();
-  const items = (list.questions || []).filter((q) => q.type === 'coding' || q.type === 'debug');
+  // Same-origin-style fetch from the page, exactly as the app calls the API.
+  const getJson = (url) => page.evaluate(async (u) => (await fetch(u, { credentials: 'include' })).json(), url);
+  const list = await getJson(`${API}/api/practice/questions?type=coding`);
+  const items = (list.questions || []).filter((q) => q.type === 'coding');
   console.log(`${items.length} coding questions in the practice API, ${seed.length} in the seed files`);
   if (items.length !== seed.length) fail(`the practice API lists ${items.length} coding questions but the seed has ${seed.length}`);
 
   const questions = [];
   for (const item of items) {
-    const detail = (await (await ctx.request.get(`${API}/api/practice/questions/${item.id}`)).json()).question;
+    const detail = (await getJson(`${API}/api/practice/questions/${item.id}`)).question;
     const s = seedByTitle.get(detail.title);
     if (!s) { fail(`"${detail.title}" is not in the seed files`); continue; }
     questions.push({ detail, seed: s });

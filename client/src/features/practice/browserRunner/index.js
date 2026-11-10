@@ -167,8 +167,9 @@ export const warmUpPython = () => { pythonWorker().catch(() => {}); };
  * tests: [{ id, input, expectedOutput, comparison? }]. Resolves with
  * { perTest: [{ testId, passed, stdout, stderr, timedOut }], ranIn: 'browser' }, or with null when the browser
  * cannot run this program exactly as the server would (the caller then uses the server Run).
+ * `onStatus('loading' | 'running')` is optional and reports Python loading on its first use.
  */
-export const runInBrowser = async ({ language, source, tests, timeLimitMs }) => {
+export const runInBrowser = async ({ language, source, tests, timeLimitMs, onStatus }) => {
   try {
     const blocker = browserRunBlocker(language, source);
     if (blocker || !tests?.length) return null;
@@ -177,7 +178,7 @@ export const runInBrowser = async ({ language, source, tests, timeLimitMs }) => 
     for (const t of tests) {
       const input = String(t.input ?? '');
       const r = language === 'python'
-        ? await runPython({ source, stdin: input, limitMs })
+        ? await runPython({ source, stdin: input, limitMs, onStatus })
         : await runJavaScript({ source, stdin: input, limitMs });
       const ranOk = r.status === 'accepted';
       const timedOut = r.status === 'time_limit';
@@ -190,8 +191,9 @@ export const runInBrowser = async ({ language, source, tests, timeLimitMs }) => 
       });
     }
     return { perTest, ranIn: 'browser' };
-  } catch (e) {
-    if (e instanceof BrowserRunnerUnavailable) return null;
-    throw e;
+  } catch {
+    // Anything but the student's own program failing (a worker crash, a load failure) is not their fault: the
+    // caller falls back to the server. Program errors and timeouts were already returned as results above.
+    return null;
   }
 };

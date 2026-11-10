@@ -25,6 +25,7 @@ const ResultView = ({ result }) => {
         {timeMs != null && <span className="text-xs text-ink-muted">{timeMs} ms</span>}
         {memoryKb != null && <span className="text-xs text-ink-muted">{memoryKb} KB</span>}
       </div>
+      {result.ranIn === 'browser' && <p className="text-xs font-medium text-ink-2">Ran in your browser: not graded. Submit to check on the server.</p>}
       {message && <p className="text-sm text-ink-2">{message}</p>}
       {explanation && <p className="text-sm text-ink-2"><span className="font-semibold">Explanation: </span>{explanation}</p>}
       <Out label="Compile output" text={compileOutput} />
