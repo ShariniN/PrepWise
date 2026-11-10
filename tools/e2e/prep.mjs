@@ -2,7 +2,7 @@ import fs from 'node:fs';
 const log = fs.readFileSync('demo-credentials.log','utf8'); const pw=(s)=>log.split('\n').find(l=>l.includes(s)).trim().split(/\s+/).pop();
 const B='http://localhost:4000'; let cookie='';
 const req=async(m,p,b)=>{const r=await fetch(B+p,{method:m,headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:b?JSON.stringify(b):undefined});for(const c of r.headers.getSetCookie?.()||[])if(c.startsWith('token='))cookie=c.split(';')[0];return{status:r.status,data:await r.json().catch(()=>({}))};};
-await req('POST','/api/auth/login',{email:'lecturer1@demo-a.test',password:pw('lecturer1@demo-a.test')});
+await req('POST','/api/auth/login',{email:'lecturer@email.com',password:pw('lecturer@email.com')});
 const cs=(await req('GET','/api/courses/mine')).data.courses[0]; const courseId=cs.id||cs._id; const cohortId=cs.cohorts[0].id||cs.cohorts[0]._id;
 const mcq=(await req('GET','/api/questions?type=mcq')).data; const list=mcq.questions||mcq.data||[]; const coding=(await req('GET','/api/questions?type=coding')).data.questions||[];
 const ids=[list[0],list[1],coding[0]].filter(Boolean).map(q=>q.id||q._id);

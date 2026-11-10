@@ -14,10 +14,10 @@ const full = args.includes('--full');
 const log = fs.readFileSync(path.join(here, 'demo-credentials.log'), 'utf8');
 const pw = (start) => log.split('\n').find((l) => l.includes(start)).trim().split(/\s+/).pop();
 const ROLES = {
-  admin: ['admin@demo-a.test', pw('admin@demo-a.test')],
-  lecturer: ['lecturer1@demo-a.test', pw('lecturer1@demo-a.test')],
-  careers: ['careers@demo-a.test', pw('careers@demo-a.test')],
-  student: ['student01@demo-a.test', pw('student01@demo-a.test ..')],
+  admin: ['admin@email.com', pw('admin@email.com')],
+  lecturer: ['lecturer@email.com', pw('lecturer@email.com')],
+  careers: ['careers@email.com', pw('careers@email.com')],
+  student: ['student@email.com', pw('student@email.com')],
   adminB: ['admin@demo-b.test', pw('admin@demo-b.test')],
 };
 const exe = ['C:/Program Files/Google/Chrome/Application/chrome.exe', 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));

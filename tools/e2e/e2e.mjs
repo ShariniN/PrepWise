@@ -30,13 +30,13 @@ const signIn = async (p, email, password) => {
 let ctx = await newCtx();
 let p = await ctx.newPage();
 watch(p, 'student');
-await signIn(p, 'student01@demo-a.test', pw('student01@demo-a.test ..'));
+await signIn(p, 'student@email.com', pw('student@email.com'));
 await p.waitForURL(/fresher-dashboard/, { timeout: 15000 }).catch(() => {});
 ok('student login form -> dashboard', /fresher-dashboard/.test(p.url()), p.url());
 
 const ctxBad = await newCtx();
 const pb = await ctxBad.newPage();
-await signIn(pb, 'student01@demo-a.test', 'Wrong1!pass');
+await signIn(pb, 'student@email.com', 'Wrong1!pass');
 await pb.waitForTimeout(1500);
 ok('wrong password stays on login', /login/.test(pb.url()));
 await ctxBad.close();
@@ -140,7 +140,7 @@ await ctx.close();
 ctx = await newCtx();
 const lp = await ctx.newPage();
 watch(lp, 'lecturer');
-await signIn(lp, 'lecturer1@demo-a.test', pw('lecturer1@demo-a.test'));
+await signIn(lp, 'lecturer@email.com', pw('lecturer@email.com'));
 await lp.waitForURL(/staff/, { timeout: 15000 }).catch(() => {});
 ok('lecturer login -> staff dashboard', /staff/.test(lp.url()), lp.url());
 await lp.goto(B + '/integrity', { waitUntil: 'networkidle' });

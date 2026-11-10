@@ -8,10 +8,19 @@ import { connect, isMain, run } from './_db.js';
 const FIRST = ['Amara', 'Ben', 'Chloe', 'Dev', 'Elena', 'Farid', 'Grace', 'Hiro', 'Isla', 'Jonas', 'Kavya', 'Liam', 'Maya', 'Noah', 'Olu', 'Priya', 'Quinn', 'Rosa', 'Sami', 'Tara'];
 const LAST = ['Adams', 'Brooks', 'Chen', 'Dias', 'Evans', 'Fox', 'Gupta', 'Hughes', 'Ito', 'Jones'];
 
+// University A uses short, memorable logins on email.com so demos are easy to run.
+// Demo only: never use these passwords for anything real.
 export const DEMOS = [
-  { name: 'Demo University A', slug: 'demo-a', domain: 'demo-a.test', limit: 60 },
-  { name: 'Demo University B', slug: 'demo-b', domain: 'demo-b.test', limit: 45 },
+  { name: 'Demo University A', slug: 'demo-a', domain: 'demo-a.test', loginDomain: 'email.com', limit: 60 },
+  { name: 'Demo University B', slug: 'demo-b', domain: 'demo-b.test', loginDomain: 'demo-b.test', limit: 45 },
 ];
+
+export const DEMO_PASSWORDS = {
+  university_admin: 'admin@123',
+  lecturer: 'lecturer@123',
+  career_officer: 'careers@123',
+  student: 'student@123',
+};
 
 // Meets the password rule (upper case, digit, symbol). Random, demo only.
 export const randomPassword = () => `Aa1!${crypto.randomBytes(6).toString('base64url')}`;
@@ -45,7 +54,8 @@ export const main = async () => {
 
   for (const d of DEMOS) {
     const institution = await Institution.create({
-      name: d.name, slug: d.slug, contractedStudentLimit: d.limit, allowedEmailDomains: [d.domain],
+      name: d.name, slug: d.slug, contractedStudentLimit: d.limit,
+      allowedEmailDomains: [...new Set([d.domain, d.loginDomain])],
       contractStart: new Date(), contractEnd: new Date(Date.now() + 365 * 24 * 3600 * 1000),
     });
     console.log(`\n=== ${d.name} (slug ${d.slug}, student limit ${d.limit}) ===`);
@@ -56,21 +66,26 @@ export const main = async () => {
     });
 
     const staff = [];
-    for (const [name, local, role] of [
-      ['Dana Admin', 'admin', 'university_admin'], ['Leo Lecturer', 'lecturer1', 'lecturer'],
-      ['Lena Lecturer', 'lecturer2', 'lecturer'], ['Cara Careers', 'careers', 'career_officer'],
+    for (const [name, email, role] of [
+      ['Dana Admin', `admin@${d.loginDomain}`, 'university_admin'],
+      ['Leo Lecturer', `lecturer@${d.loginDomain}`, 'lecturer'],
+      ['Lena Lecturer', `lecturer2@${d.domain}`, 'lecturer'],
+      ['Cara Careers', `careers@${d.loginDomain}`, 'career_officer'],
     ]) {
-      const password = randomPassword();
-      staff.push(await make(name, `${local}@${d.domain}`, role, password));
-      console.log(`${role.padEnd(16)} ${local}@${d.domain}  password: ${password}`);
+      const password = DEMO_PASSWORDS[role];
+      staff.push(await make(name, email, role, password));
+      console.log(`${role.padEnd(16)} ${email}  password: ${password}`);
     }
 
-    const studentPassword = randomPassword();
+    // The first student gets the short login; the other 39 fill the cohorts so dashboards have data.
+    const studentPassword = DEMO_PASSWORDS.student;
     const students = [];
     for (const [i, n] of studentNames(40).entries()) {
-      students.push(await make(`${n.first} ${n.last}`, `student${String(i + 1).padStart(2, '0')}@${d.domain}`, 'student', studentPassword));
+      const email = i === 0 ? `student@${d.loginDomain}` : `student${String(i + 1).padStart(2, '0')}@${d.domain}`;
+      students.push(await make(`${n.first} ${n.last}`, email, 'student', studentPassword));
     }
-    console.log(`student          student01@${d.domain} .. student40@${d.domain}  password (all 40): ${studentPassword}`);
+    console.log(`student          student@${d.loginDomain}  password: ${studentPassword}`);
+    console.log(`student          student02@${d.domain} .. student40@${d.domain}  password (all 39): ${studentPassword}`);
 
     const course = await Course.create({
       institutionId: institution._id, code: 'CS101', title: 'Introduction to Programming', ownerId: staff[1]._id,
@@ -84,7 +99,7 @@ export const main = async () => {
     }
     console.log(`course CS101 with cohorts "Group 1" and "Group 2" (20 students each)`);
   }
-  console.log('\nDemo data only. These passwords are random and printed once.');
+  console.log('\nDemo data only. These logins are fixed and public: never use them outside local demos.');
 };
 
 if (isMain(import.meta.url)) run(main);

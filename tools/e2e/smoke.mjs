@@ -8,12 +8,12 @@ const pw = (label, who) => {
   const m = log.match(re); if (!m) throw new Error('no pw for ' + who); return m[1];
 };
 const creds = {
-  adminA: ['admin@demo-a.test', pw('', 'admin@demo-a.test')],
-  lectA: ['lecturer1@demo-a.test', pw('', 'lecturer1@demo-a.test')],
-  careersA: ['careers@demo-a.test', pw('', 'careers@demo-a.test')],
-  studentA: ['student01@demo-a.test', pw('', 'student01@demo-a.test \\.\\. student40@demo-a.test')],
+  adminA: ['admin@email.com', pw('', 'admin@email.com')],
+  lectA: ['lecturer@email.com', pw('', 'lecturer@email.com')],
+  careersA: ['careers@email.com', pw('', 'careers@email.com')],
+  studentA: ['student@email.com', pw('', 'student@email.com')],
   adminB: ['admin@demo-b.test', pw('', 'admin@demo-b.test')],
-  studentB: ['student01@demo-b.test', pw('', 'student01@demo-b.test \\.\\. student40@demo-b.test')],
+  studentB: ['student@demo-b.test', pw('', 'student@demo-b.test')],
 };
 
 class Client {
@@ -56,7 +56,7 @@ r = await adminA.req('POST', '/api/institution/people/invite', { email: 'x@evil.
 r = await adminA.req('POST', '/api/institution/people/import', { csv: 'email,name,role\nimp1@demo-a.test,Imp One,student\nimp2@demo-a.test,Imp Two,student\n' }); check('csv import', r.status === 200, JSON.stringify(r.data).slice(0, 200));
 
 // ---- tenancy
-r = await adminB.req('GET', '/api/institution/people?search=student01'); const bEmails = JSON.stringify(r.data); check('B admin cannot see A people', !bEmails.includes('demo-a.test'));
+r = await adminB.req('GET', '/api/institution/people?search=student01'); const bEmails = JSON.stringify(r.data); check('B admin cannot see A people', !bEmails.includes('demo-a.test') && !bEmails.includes('@email.com'));
 r = await stuA.req('GET', '/api/institution/people'); check('student blocked from manage-people', r.status === 403);
 r = await stuA.req('GET', '/api/user/freshers'); check('old admin route gone', r.status === 404);
 
@@ -135,7 +135,7 @@ if (courseId && qid) {
 }
 
 // ---- compliance
-r = await stuA.req('GET', '/api/me/export'); check('student data export', r.status === 200 && JSON.stringify(r.data).includes('student01'), String(r.status));
+r = await stuA.req('GET', '/api/me/export'); check('student data export', r.status === 200 && JSON.stringify(r.data).includes('student@email.com'), String(r.status));
 r = await new Client('anon').req('GET', '/api/compliance/subprocessors'); check('subprocessors public', r.status === 200);
 r = await stuB.req('GET', '/api/practice/questions'); check('B student can read global seed bank', r.status === 200 && (r.data.questions || []).length > 0);
 
