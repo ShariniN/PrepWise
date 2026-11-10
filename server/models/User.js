@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { ROLES } from '../config/roles.js';
-import { cleanGroup } from '../modules/people/people.service.js';
+import { cleanGroup } from '../services/groups.js';
 
 const userSchema = new mongoose.Schema({
   name: {

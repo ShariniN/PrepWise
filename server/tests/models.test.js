@@ -85,3 +85,26 @@ test('demo seed: demo-a allows self-signup and lecturers have groups', () => {
   assert.equal(DEMOS.find((d) => d.slug === 'demo-b').selfSignup, undefined);
   assert.deepEqual(LECTURER_GROUPS, { 'Leo Lecturer': ['Group 1'], 'Lena Lecturer': ['Group 2'] });
 });
+
+test('models/User.js does not import from modules/', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../models/User.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /from\s+['"][^'"]*modules\//);
+  const groups = readFileSync(new URL('../services/groups.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(groups, /from\s+['"]/);
+});
+
+test('services/groups cleanGroup: valid, over-long and empty', async () => {
+  const { cleanGroup, InvalidGroupError, MAX_GROUP_CHARS } = await import('../services/groups.js');
+  assert.equal(cleanGroup('  CS   2026 '), 'CS 2026');
+  assert.equal(cleanGroup(undefined), '');
+  assert.equal(cleanGroup(null), '');
+  assert.equal(cleanGroup('   '), '');
+  assert.throws(() => cleanGroup('x'.repeat(MAX_GROUP_CHARS + 1)), (e) => e instanceof InvalidGroupError && e.message === `group must be at most ${MAX_GROUP_CHARS} characters`);
+  assert.throws(() => cleanGroup(5), (e) => e instanceof InvalidGroupError && e.message === 'group must be text');
+});
+
+test('people cleanGroup still reports a 400 PeopleError', async () => {
+  const { cleanGroup, PeopleError } = await import('../modules/people/people.service.js');
+  assert.throws(() => cleanGroup(5), (e) => e instanceof PeopleError && e.status === 400 && e.code === 'INVALID_GROUP');
+});

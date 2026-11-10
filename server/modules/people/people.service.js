@@ -5,6 +5,7 @@ import { createInviteToken, buildInviteLink, exposeInviteLinks } from '../../ser
 import { parseUsersCsv } from './people.csv.js';
 
 import { ROLES } from '../../config/roles.js';
+import { cleanGroup as cleanGroupText, InvalidGroupError, MAX_GROUP_CHARS } from '../../services/groups.js';
 
 export { ROLES };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -31,16 +32,16 @@ export const publicUser = (u) => ({
   inviteExpiresAt: u.status === 'invited' ? (u.inviteExpiresAt || null) : null,
 });
 
-export const MAX_GROUP_CHARS = 60;
+export { MAX_GROUP_CHARS };
 
-// Optional free-text group ('CS 2026'). Returns the trimmed value ('' clears it) or throws a 400.
-// Over-long values are rejected, never silently truncated.
+// Same rules as services/groups.js, reported as a 400 for the people endpoints.
 export const cleanGroup = (group) => {
-  if (group === undefined || group === null) return '';
-  if (typeof group !== 'string') throw new PeopleError(400, 'group must be text', 'INVALID_GROUP');
-  const g = group.trim().replace(/\s+/g, ' ');
-  if (g.length > MAX_GROUP_CHARS) throw new PeopleError(400, `group must be at most ${MAX_GROUP_CHARS} characters`, 'INVALID_GROUP');
-  return g;
+  try {
+    return cleanGroupText(group);
+  } catch (err) {
+    if (err instanceof InvalidGroupError) throw new PeopleError(400, err.message, err.code);
+    throw err;
+  }
 };
 
 export const emailDomainAllowed = (institution, email) => {
