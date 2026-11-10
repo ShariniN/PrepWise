@@ -30,11 +30,16 @@ fallback-scored answers can be left out:
 - `coding`: `coding`;
 - `communication`: `feedback.communicationClarity` (0-10) x 10, over all counted answers that have it.
 
-**CV match.** A CV analysis has one result per job. A result counts only when `scoreBreakdown.aiAvailable !== false` (and it has a
-numeric `matchPercentage`). The **best match** of an analysis is the highest counted `matchPercentage`. A student's
-**latest CV match** = best match of their most recent analysis that has at least one counted result.
+**CV match.** A CV analysis has one result per job. A result counts only when `scoreBreakdown.aiAvailable !== false`, it is not a
+non-tech job (`isNonTechRole !== true`, those are always 0 by design) and it has a numeric `matchPercentage`. The **best match** of an
+analysis is the highest counted `matchPercentage`. A student's **latest CV match** = best match of their most recent analysis that has
+at least one counted result. "Most recent" uses `updatedAt` (falling back to `createdAt`) because re-analysing the same CV updates the
+existing analysis in place; so `cvAnalyses` counts distinct CVs analysed, not analysis runs. (Saving/unsaving an analysis also bumps
+`updatedAt`.)
 
-**Last active** = the latest of: the user's `lastActive`, any interview created/completed, any CV analysis created, any Practice run/submit.
+**Last active** = the latest of: the user's `lastActive`, any interview created/completed, any CV analysis updated, any Practice run/submit.
+(The stored `lastActive` also changes when the user's own record is saved, e.g. profile edits or an admin re-role/reactivate. Setting a
+group does not change it.)
 
 **Practice solved** = number of distinct questions with an accepted submission whose score counts (not `fallback`/`ai`, not an
 unconfirmed AI suggestion; rows from the removed assessment mode are ignored).
@@ -192,13 +197,16 @@ Writes AuditLog `lecturer.export_students`. Errors: as `/students`.
   ],
   "cvAnalyses": [                                  // newest first
     {
-      "id": "...", "date": "ISO", "bestMatch": 63, // best counted match, or null
+      "id": "...", "date": "ISO",                  // last analysed (updatedAt)
+      "firstAnalysedAt": "ISO",                    // createdAt
+      "bestMatch": 63,                             // best counted match, or null
       "results": [
         {
           "jobTitle": "Graduate Software Engineer", "company": "Bluebridge Systems",
           "jobExcerpt": "first 120 chars of that job description",
+          "isNonTechRole": false,
           "matchPercentage": 63,                   // or null
-          "countsTowardAverage": true,             // false when scoreBreakdown.aiAvailable === false
+          "countsTowardAverage": true,             // false when scoreBreakdown.aiAvailable === false or isNonTechRole
           "scoreBreakdown": {                      // or null on older analyses
             "aiAvailable": true, "aiScore": 0.62, "keywordScore": 0.667, "model": "gemini-...",
             "requiredSkills": ["java", "sql"], "matchedSkills": ["java"], "missingSkills": ["sql"]

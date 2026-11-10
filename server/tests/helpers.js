@@ -97,6 +97,13 @@ export const makeWorld = () => {
     mock.method(peopleRepo, 'findByIdInInstitution', async (id, institutionId) =>
       world.users.find((u) => same(u._id, id) && same(u.institutionId, institutionId)) || null);
     mock.method(peopleRepo, 'createUser', async (data) => world.addUser({ ...data, password: undefined }));
+    // Atomic update in the real repo: no save(), so no pre-save hook and no lastActive bump.
+    mock.method(peopleRepo, 'updateGroup', async (institutionId, id, group) => {
+      const u = world.users.find((x) => same(x._id, id) && same(x.institutionId, institutionId));
+      if (!u) return null;
+      u.group = group;
+      return u.toObject();
+    });
 
     mock.method(peopleRepo, 'findUsersByIds', async (institutionId, ids) =>
       world.users.filter((u) => same(u.institutionId, institutionId) && ids.some((i) => same(i, u._id))));

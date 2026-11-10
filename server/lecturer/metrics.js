@@ -117,7 +117,12 @@ export const studentDelivery = (interviews) => {
 };
 
 // ---------------------------------------------------------------- CV analyses
-export const countsTowardMatch = (result) => result?.scoreBreakdown?.aiAvailable !== false && typeof result?.matchPercentage === 'number';
+// Non-tech job ads get matchPercentage 0 by design; they say nothing about the CV, so they do not count either.
+export const countsTowardMatch = (result) => result?.scoreBreakdown?.aiAvailable !== false && result?.isNonTechRole !== true
+  && typeof result?.matchPercentage === 'number';
+
+// The CV controller re-analyses the same CV in place (unique userId + resumeHash), so updatedAt is the last run.
+export const cvDate = (analysis) => analysis?.updatedAt || analysis?.createdAt || null;
 
 // For one analysis: best eligible match and how many results were left out because the AI was unavailable.
 export const bestMatch = (analysis) => {
@@ -154,7 +159,7 @@ export const practiceSummary = (attempts) => {
 // data: { interviews, cvAnalyses, attempts } already limited to this student.
 export const studentRow = (user, data, now) => {
   const interviews = data.interviews || [];
-  const cvAnalyses = [...(data.cvAnalyses || [])].sort(byDate((a) => a.createdAt));
+  const cvAnalyses = [...(data.cvAnalyses || [])].sort(byDate(cvDate));
   const attempts = data.attempts || [];
   const completed = interviews.filter(isCompleted).sort(byDate(ivDate));
   const scored = completed.map((iv) => ({ iv, s: interviewScores(iv) })).filter((x) => x.s.score != null);
@@ -167,7 +172,7 @@ export const studentRow = (user, data, now) => {
   const lastActive = latestDate(
     user.lastActive,
     ...interviews.flatMap((iv) => [iv.createdAt, iv.completedAt]),
-    ...cvAnalyses.map((a) => a.createdAt),
+    ...cvAnalyses.map(cvDate),
     ...attempts.filter((a) => a.runKind !== 'draft').map((a) => a.createdAt),
   );
 

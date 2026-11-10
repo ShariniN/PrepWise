@@ -114,7 +114,7 @@ const cvResultView = (r, analysis) => {
   const b = r.scoreBreakdown && typeof r.scoreBreakdown === 'object' ? r.scoreBreakdown : null;
   const jd = Array.isArray(analysis.jobDescriptions) ? analysis.jobDescriptions[r.jobIndex ?? 0] : '';
   return {
-    jobTitle: r.jobTitle || null, company: r.company || null, jobExcerpt: m.jobExcerpt(jd),
+    jobTitle: r.jobTitle || null, company: r.company || null, jobExcerpt: m.jobExcerpt(jd), isNonTechRole: r.isNonTechRole === true,
     matchPercentage: typeof r.matchPercentage === 'number' ? r.matchPercentage : null,
     countsTowardAverage: m.countsTowardMatch(r),
     scoreBreakdown: b ? {
@@ -168,8 +168,9 @@ export const student = async (req, res) => {
     student: { id, name: u.name || '', email: u.email || '', group: u.group || '' },
     summary: row,
     interviews: [...ivs].sort(newest((x) => x.completedAt || x.createdAt)).map(interviewListItem),
-    cvAnalyses: [...cv].sort(newest((x) => x.createdAt)).map((a) => ({
-      id: sid(a._id), date: iso(a.createdAt), bestMatch: m.bestMatch(a).best, results: (a.results || []).map((r) => cvResultView(r, a)),
+    cvAnalyses: [...cv].sort(newest(m.cvDate)).map((a) => ({
+      id: sid(a._id), date: iso(m.cvDate(a)), firstAnalysedAt: iso(a.createdAt), bestMatch: m.bestMatch(a).best,
+      results: (a.results || []).map((r) => cvResultView(r, a)),
     })),
     skills: skills && sid(skills.userId) === id ? skillsView(skills) : null,
     practice: m.practiceSummary(at),

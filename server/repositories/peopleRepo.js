@@ -47,6 +47,10 @@ const peopleRepo = {
   findByEmail: (email) => userModel.findOne({ email }),
   findByIdInInstitution: (id, institutionId) => userModel.findOne({ _id: id, institutionId }),
   createUser: (data) => userModel.create(data),
+  // Atomic update instead of save(): the user pre-save hook would bump lastActive, and the lecturer dashboard
+  // reads lastActive as student activity, so an admin assigning groups must not make students look active.
+  updateGroup: (institutionId, id, group) =>
+    userModel.findOneAndUpdate({ _id: id, institutionId }, { $set: { group } }, { new: true, runValidators: true }).select(PUBLIC_FIELDS).lean(),
 };
 
 export default peopleRepo;

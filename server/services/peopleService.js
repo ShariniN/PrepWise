@@ -261,10 +261,10 @@ export const setGroup = async ({ institution, actor, id, group }) => {
   const g = cleanGroup(group);
   const user = await loadTarget(institution, id);
   const from = user.group || '';
-  user.group = g;
-  await user.save();
+  const updated = await peopleRepo.updateGroup(institution._id, user._id, g);
+  if (!updated) throw new PeopleError(404, 'Person not found', 'NOT_FOUND');
   await audit({ actor: actor.id, action: 'user.group_change', target: user._id, institutionId: institution._id, meta: { from, to: g } });
-  return { user: publicUser(user) };
+  return { user: publicUser(updated) };
 };
 
 export const changeRole = async ({ institution, actor, id, role }) => {

@@ -113,7 +113,13 @@ export const main = async () => {
         if (err) throw new Error(`Demo interview is invalid: ${err.message}`);
       }
       await Interview.collection.insertMany(activity.interviews);
-      await CVAnalysis.insertMany(activity.cvAnalyses);
+      // Also through the driver: Mongoose timestamps would set updatedAt to now, and the dashboard reads
+      // updatedAt as "last analysed", which would make every seeded student look active today.
+      for (const doc of activity.cvAnalyses) {
+        const err = new CVAnalysis(doc).validateSync();
+        if (err) throw new Error(`Demo CV analysis is invalid: ${err.message}`);
+      }
+      await CVAnalysis.collection.insertMany(activity.cvAnalyses);
       const people = new Set(activity.interviews.map((x) => String(x.userId))).size;
       console.log(`demo activity: ${activity.interviews.length} completed mock interviews and ${activity.cvAnalyses.length} CV analyses for ${people} students (marked "Demo data"); ${planned.length - people} students have none`);
     }

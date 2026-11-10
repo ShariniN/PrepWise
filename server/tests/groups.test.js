@@ -60,6 +60,16 @@ test('PATCH /people/:id/group sets and clears a group, is audited, and is tenant
   assert.equal((await request(app).patch(`/api/institution/people/${stuA._id}/group`).set(as(adminB)).send({ group: 'x' })).status, 404);
 });
 
+test('setting a group does not save() the user, so it never counts as student activity', async () => {
+  const before = w.saves;
+  const old = new Date('2026-01-01T00:00:00Z');
+  stuA.lastActive = old;
+  const res = await request(app).patch(`/api/institution/people/${stuA._id}/group`).set(as(adminA)).send({ group: 'G' });
+  assert.equal(res.status, 200);
+  assert.equal(w.saves, before, 'no save() call (the pre-save hook would bump lastActive)');
+  assert.equal(stuA.lastActive, old);
+});
+
 test('people list shows the group and filters by it', async () => {
   w.addUser({ name: 'Other', email: 'o@a.edu', role: 'student', institutionId: IDS.instA, group: 'Group 9' });
   const res = await request(app).get('/api/institution/people').query({ group: 'CS 2026' }).set(as(adminA));

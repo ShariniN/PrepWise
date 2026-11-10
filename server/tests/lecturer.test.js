@@ -126,6 +126,24 @@ test('CV results with aiAvailable === false are left out of match averages and c
   assert.equal(prof.body.cvAnalyses[0].bestMatch, 60);
 });
 
+test('a CV re-analysed in place counts by updatedAt, and non-tech job results never count', async () => {
+  // Older document re-analysed yesterday (the controller updates in place), newer document first made 5 days ago.
+  db.addCv(studentsA[0], [db.result(80)], { daysAgo: 40, updatedAt: new Date(Date.now() - 86400000) });
+  db.addCv(studentsA[0], [db.result(30)], { daysAgo: 5 });
+  db.addCv(studentsA[1], [{ ...db.result(0), isNonTechRole: true }, db.result(55)]);
+  db.addCv(studentsA[2], [{ ...db.result(0), isNonTechRole: true }]);
+  const rows = byName((await get('/api/lecturer/students', lecA)).body.students);
+  assert.equal(rows.Ann.latestCvMatch, 80, 'the most recently run analysis wins');
+  assert.equal(rows.Bob.latestCvMatch, 55);
+  assert.equal(rows.Cy.latestCvMatch, null);
+  assert.equal(rows.Cy.needsAttention.some((r) => r.code === 'low_cv_match'), false);
+  const prof = await get(`/api/lecturer/students/${studentsA[0]._id}`, lecA);
+  assert.equal(prof.body.cvAnalyses[0].bestMatch, 80);
+  assert.ok(prof.body.cvAnalyses[0].firstAnalysedAt < prof.body.cvAnalyses[0].date);
+  const bob = await get(`/api/lecturer/students/${studentsA[1]._id}`, lecA);
+  assert.deepEqual(bob.body.cvAnalyses[0].results.map((r) => [r.isNonTechRole, r.countsTowardAverage]), [[true, false], [false, true]]);
+});
+
 test('top missing skills come from each student latest CV analysis only', async () => {
   db.addCv(studentsA[0], [db.result(70, { missing: ['docker', 'sql'] })], { daysAgo: 10 });
   db.addCv(studentsA[0], [db.result(70, { missing: ['sql'] }), db.result(60, { missing: ['SQL', 'git'] })], { daysAgo: 1 });
