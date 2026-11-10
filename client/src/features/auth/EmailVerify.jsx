@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 import AuthLayout from './components/AuthLayout';
-import { Button, Field, Input } from '../../components/ui';
+import { Button } from '../../components/ui';
 
 const EmailVerify = () => {
 
@@ -59,7 +59,7 @@ const EmailVerify = () => {
   } 
 
   // Allow users to paste the OTP
-  const handlePaste = (e, index) => {
+  const handlePaste = (e) => {
     const paste = e.clipboardData.getData('text')
     const pasteArray = paste.split('');
     pasteArray.forEach((char, index) => {

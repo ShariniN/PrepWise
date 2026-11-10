@@ -42,7 +42,7 @@ const ResetPassword = () => {
   };
 
   // Handles pasting of OTP digits into inputs
-  const handlePaste = (e, index) => {
+  const handlePaste = (e) => {
     const paste = e.clipboardData.getData('text')
     const pasteArray = paste.split('');
     pasteArray.forEach((char, index) => {

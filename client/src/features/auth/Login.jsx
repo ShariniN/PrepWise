@@ -15,7 +15,7 @@ const Login = () => {
   const { backendUrl, setIsLoggedin, getUserData, setAuth, isLoggedin, role, authLoading } = useContext(AppContext);
 
   // UI button state
-  const [state, setState] = useState("Log in");
+  const state = "Log in";
 
   // Form fields
   const [email, setEmail] = useState("");

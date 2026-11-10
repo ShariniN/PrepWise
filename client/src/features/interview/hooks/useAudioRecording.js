@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 
-export const useAudioRecording = (addDebugLog) => {
+export const useAudioRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioStream, setAudioStream] = useState(null);
@@ -23,7 +23,6 @@ export const useAudioRecording = (addDebugLog) => {
 
   const initializeAudio = useCallback(async () => {
     try {
-      addDebugLog('Initializing audio...');
       
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Media recording not supported');
@@ -43,16 +42,14 @@ export const useAudioRecording = (addDebugLog) => {
       setAudioPermission(true);
       setAudioError('');
       
-      addDebugLog('Audio initialized successfully');
       return stream;
     } catch (err) {
       const error = `Microphone access failed: ${err.message}`;
       setAudioError(error);
       setAudioPermission(false);
-      addDebugLog(error, 'error');
       throw new Error(error);
     }
-  }, [addDebugLog]);
+  }, []);
 
   const transcribeAudio = useCallback(async (blob) => {
     try {
@@ -75,7 +72,6 @@ export const useAudioRecording = (addDebugLog) => {
 
       if (result.success && result.text && result.text.trim()) {
         setTranscription(result.text);
-        addDebugLog('Transcription successful');
       } else if (result.success) {
         throw new Error('No speech was detected. Check your microphone and try again, or type your answer below.');
       } else {
@@ -85,15 +81,13 @@ export const useAudioRecording = (addDebugLog) => {
     } catch (err) {
       const error = `Transcription failed: ${err.message}`;
       setTranscriptionError(error);
-      addDebugLog(error, 'error');
     } finally {
       setIsTranscribing(false);
     }
-  }, [addDebugLog]);
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
-      addDebugLog('Starting recording...');
       setAudioError('');
       setTranscriptionError('');
       
@@ -123,14 +117,12 @@ export const useAudioRecording = (addDebugLog) => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
-        addDebugLog(`Recording stopped, size: ${blob.size} bytes`);
         transcribeAudio(blob);
       };
 
       mediaRecorder.onerror = (event) => {
         const error = `Recording error: ${event.error.message}`;
         setAudioError(error);
-        addDebugLog(error, 'error');
       };
 
       mediaRecorder.start(250);
@@ -143,9 +135,8 @@ export const useAudioRecording = (addDebugLog) => {
 
     } catch (err) {
       setAudioError(err.message);
-      addDebugLog(`Start recording failed: ${err.message}`, 'error');
     }
-  }, [audioStream, initializeAudio, transcribeAudio, addDebugLog]);
+  }, [audioStream, initializeAudio, transcribeAudio]);
 
   const stopRecording = useCallback(() => {
     try {
@@ -158,11 +149,10 @@ export const useAudioRecording = (addDebugLog) => {
           clearInterval(recordingTimerRef.current);
         }
       }
-    } catch (err) {
+    } catch {
       setAudioError('Failed to stop recording');
-      addDebugLog(`Stop recording failed: ${err.message}`, 'error');
     }
-  }, [isRecording, addDebugLog]);
+  }, [isRecording]);
 
 
   const playRecording = useCallback(async () => {
@@ -185,11 +175,10 @@ export const useAudioRecording = (addDebugLog) => {
       
       await audioPlaybackRef.current.play();
       setIsPlaying(true);
-    } catch (err) {
+    } catch {
       setAudioError('Failed to play recording');
-      addDebugLog(`Playback failed: ${err.message}`, 'error');
     }
-  }, [audioBlob, isPlaying, addDebugLog]);
+  }, [audioBlob, isPlaying]);
 
   const cleanup = useCallback(() => {
     if (recordingTimerRef.current) {

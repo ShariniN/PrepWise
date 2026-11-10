@@ -75,22 +75,19 @@ const SWOTAnalysis = (props) => {
   const [step, setStep] = useState('rating');
   const [newTech, setNewTech] = useState({ name: '', category: TECH_CATEGORIES[0] });
   const [technologies, setTechnologies] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Initialize technologies when extractedTechnologies prop changes - ALWAYS DEFAULT TO 5
+  // Every extracted technology starts at a rating of 5 (intermediate).
   useEffect(() => {
-    console.log("SWOT: Received extractedTechnologies:", extractedTechnologies);
     if (extractedTechnologies && extractedTechnologies.length > 0) {
       const initializedTechnologies = extractedTechnologies.map(tech => ({
         name: tech.name,
         category: tech.category,
-        confidenceLevel: 5 // ALWAYS default to 5 (intermediate level)
+        confidenceLevel: 5
       }));
       setTechnologies(initializedTechnologies);
-      console.log("SWOT: All technologies initialized with default rating of 5:", initializedTechnologies);
     }
   }, [extractedTechnologies]);
 
@@ -165,7 +162,7 @@ const SWOTAnalysis = (props) => {
 
       let data;
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
       } else {
@@ -179,7 +176,7 @@ const SWOTAnalysis = (props) => {
 
       setSuccess(data.message || 'Technology ratings saved successfully!');
       setStep('success');
-      
+
     } catch (err) {
       console.error('Error saving ratings:', err);
       if (err.message.includes('404')) {
@@ -292,7 +289,7 @@ const SWOTAnalysis = (props) => {
                   {category}
                 </h3>
                 <div className="space-y-3">
-                  {techs.map((tech, techIndex) => {
+                  {techs.map((tech) => {
                     const globalIndex = technologies.findIndex(t => t.name === tech.name);
                     return (
                       <div key={globalIndex} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-line rounded-2xl bg-surface shadow-soft hover:shadow-card transition-shadow">
@@ -367,8 +364,8 @@ const SWOTAnalysis = (props) => {
   );
 
   const renderSuccessStep = () => {
-    const averageConfidence = technologies.length > 0 
-      ? technologies.reduce((sum, tech) => sum + tech.confidenceLevel, 0) / technologies.length 
+    const averageConfidence = technologies.length > 0
+      ? technologies.reduce((sum, tech) => sum + tech.confidenceLevel, 0) / technologies.length
       : 0;
 
     return (
@@ -376,7 +373,7 @@ const SWOTAnalysis = (props) => {
         <div className="w-20 h-20 bg-success-100 text-success-700 rounded-full flex items-center justify-center mx-auto">
           <CheckCircle />
         </div>
-        
+
         <div>
           <h2 className="font-display text-3xl font-semibold text-success-700 mb-2">Ratings Saved Successfully!</h2>
           <p className="text-ink-2 text-lg">
@@ -518,7 +515,7 @@ const SWOTAnalysis = (props) => {
           animation: spin 1s linear infinite;
         }
       `}</style>
-      
+
       {step === 'rating' && renderRatingStep()}
       {step === 'success' && renderSuccessStep()}
     </AppShell>

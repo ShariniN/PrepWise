@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export const useInterview = (addDebugLog) => {
+export const useInterview = () => {
   const [interview, setInterview] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -26,7 +26,6 @@ export const useInterview = (addDebugLog) => {
       )
     };
 
-    addDebugLog(`Creating interview with endpoint: ${endpoint}`);
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -39,7 +38,7 @@ export const useInterview = (addDebugLog) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      await response.text();
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
@@ -51,13 +50,11 @@ export const useInterview = (addDebugLog) => {
 
     setInterview(result.interview);
     setQuestions(result.interview.questions);
-    addDebugLog(`Interview created with ${result.interview.questions.length} questions`);
     
     return result.interview;
-  }, [addDebugLog]);
+  }, []);
 
-  const startInterview = useCallback(async (interviewId, language, supportedLanguages) => {
-    addDebugLog(`Starting interview: ${interviewId}`);
+  const startInterview = useCallback(async (interviewId) => {
     
     const response = await fetch(`/api/interviews/${interviewId}/start`, {
       method: 'PUT',
@@ -83,13 +80,11 @@ export const useInterview = (addDebugLog) => {
     setCurrentQuestion(firstQuestion);
     setQuestionIndex(0);
     
-    addDebugLog(`Interview started with question: ${firstQuestion.question.substring(0, 50)}...`);
     
     return firstQuestion;
-  }, [questions, addDebugLog]);
+  }, [questions]);
 
   const submitAnswer = useCallback(async (interviewId, submitData) => {
-    addDebugLog('Submitting answer...');
     
     const response = await fetch(`/api/interviews/${interviewId}/submit-answer`, {
       method: 'POST',
@@ -120,7 +115,7 @@ export const useInterview = (addDebugLog) => {
     }
     if (result.feedback && typeof result.feedback === 'object') return { ...result.feedback, ...delivery };
     return result.feedback;
-  }, [addDebugLog]);
+  }, []);
 
   const skipQuestion = useCallback(async (interviewId, currentQuestion, language) => {
     const isCodingQuestion = ['coding', 'technical_coding', 'problem-solving'].includes(currentQuestion?.type);
@@ -166,7 +161,6 @@ export const useInterview = (addDebugLog) => {
   }, []);
 
   const completeInterview = useCallback(async (interviewId) => {
-    addDebugLog('Completing interview...');
     
     const response = await fetch(`/api/interviews/${interviewId}/complete`, {
       method: 'PUT',
@@ -204,7 +198,7 @@ export const useInterview = (addDebugLog) => {
     }
 
     return null;
-  }, [addDebugLog]);
+  }, []);
 
   const getNextQuestion = useCallback(async (interviewId) => {
     const response = await fetch(`/api/interviews/${interviewId}/next-question`, {

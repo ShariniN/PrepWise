@@ -1,6 +1,5 @@
-// UserProfile.jsx - Enhanced version with CV management and reorganized tabs
 import React, { useState, useEffect, useContext } from 'react';
-import { User, Mail, Lock, FileText, Brain, Settings, Save, Eye, EyeOff, Download, Trash2, ChevronDown, ChevronUp, Star, TrendingUp, Target, Award, Upload, File, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { User, Lock, FileText, Brain, Settings, Save, Eye, EyeOff, Download, Trash2, ChevronDown, ChevronUp, Star, TrendingUp, Target, Award, Upload, File, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { AppContext } from '../../app/AppContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +10,7 @@ import { PASSWORD_RULES, passwordProblems } from "../../utils/roles";
 
 const PHONE_OK = (v) => /^[\d\s\-.()]+$/.test(String(v).trim()) && /^\d{10,15}$/.test(String(v).replace(/\D/g, ''));
 
-const UserProfile = () => {
+const ProfileSettings = () => {
   const navigate = useNavigate();
   const { backendUrl, userData, getUserData, isLoggedin, setIsLoggedin, setUserData } = useContext(AppContext);
 
@@ -26,11 +25,9 @@ const UserProfile = () => {
   const [skillsAssessments, setSkillsAssessments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
-  const [expandedAnalysis, setExpandedAnalysis] = useState(null);
   const [expandedAssessment, setExpandedAssessment] = useState(null);
-  const [downloadingAnalysis, setDownloadingAnalysis] = useState(null);
 
-  // NEW: CV Management State
+  // CV management
   const [cvData, setCvData] = useState(null);
   const [cvLoading, setCvLoading] = useState(false);
   const [uploadingCV, setUploadingCV] = useState(false);
@@ -46,13 +43,13 @@ const UserProfile = () => {
       (config) => {
         // Ensure credentials are included
         config.withCredentials = true;
-        
+
         // Add token from localStorage if it exists
         const token = localStorage.getItem('token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
         return config;
       },
       (error) => {
@@ -69,7 +66,7 @@ const UserProfile = () => {
           setIsLoggedin(false);
           setUserData(null);
           localStorage.removeItem('token');
-          
+
           // Only show toast if not already on login page
           if (window.location.pathname !== '/login') {
             toast.error('Please log in to continue');
@@ -108,7 +105,7 @@ const UserProfile = () => {
         await Promise.all([
           fetchSavedAnalyses(),
           fetchSkillsAssessments(),
-          fetchCurrentCV() 
+          fetchCurrentCV()
         ]);
       } catch (error) {
         console.error('Error initializing profile:', error);
@@ -130,37 +127,25 @@ const UserProfile = () => {
 
   const fetchSavedAnalyses = async () => {
     try {
-      console.log('🔍 Fetching saved analyses from:', `${backendUrl}/api/user/saved-analyses`);
-      
       const { data } = await axios.get(`${backendUrl}/api/user/saved-analyses`);
-      
-      console.log('📊 Raw response data:', data);
-      
+
       if (data.success) {
         const analyses = data.data || [];
-        console.log('📊 Analyses count:', analyses.length);
-        
+
         // Transform the data to match what the UI expects
         const formattedAnalyses = analyses.map((analysis) => {
-          console.log('📊 Processing analysis:', {
-            id: analysis._id,
-            results: analysis.results?.length || 0,
-            jobDescriptions: analysis.jobDescriptions?.length || 0,
-            createdAt: analysis.createdAt
-          });
-          
           const results = analysis.results || [];
           const softwareRoles = results.filter(r => !r.isNonTechRole);
-          
+
           // Calculate average match percentage using actual field names from model
-          const avgMatch = softwareRoles.length > 0 
+          const avgMatch = softwareRoles.length > 0
             ? Math.round(softwareRoles.reduce((sum, r) => sum + (r.matchPercentage || 0), 0) / softwareRoles.length)
             : 0;
 
           // Get the best matching job (highest percentage)
-          const bestMatch = softwareRoles.length > 0 
-            ? softwareRoles.reduce((best, current) => 
-                (current.matchPercentage || 0) > (best.matchPercentage || 0) ? current : best, 
+          const bestMatch = softwareRoles.length > 0
+            ? softwareRoles.reduce((best, current) =>
+                (current.matchPercentage || 0) > (best.matchPercentage || 0) ? current : best,
                 { matchPercentage: 0 }
               )
             : { matchPercentage: 0 };
@@ -175,7 +160,7 @@ const UserProfile = () => {
             ...(bestMatch.structureRecommendations || [])
           ].slice(0, 5);
 
-          const formatted = {
+          return {
             id: analysis._id,
             jobTitle,
             company,
@@ -191,24 +176,18 @@ const UserProfile = () => {
             // Store full analysis data for PDF generation
             fullAnalysis: analysis
           };
-          
-          console.log(`📊 Formatted analysis:`, formatted);
-          return formatted;
         });
-        
-        console.log('📊 Final formatted analyses:', formattedAnalyses);
+
         setSavedAnalyses(formattedAnalyses);
       } else {
-        console.log('❌ API returned success: false', data.message);
         setSavedAnalyses([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching saved analyses:', error);
-      
+      // 404: none saved yet, a normal state. 401 is handled by the interceptor.
       if (error.response?.status === 404) {
-        console.log('📊 No saved analyses found (404)');
         setSavedAnalyses([]);
       } else if (error.response?.status !== 401) {
+        console.error('Error fetching saved analyses:', error);
         toast.error('Failed to fetch saved analyses');
         setSavedAnalyses([]);
       }
@@ -217,34 +196,21 @@ const UserProfile = () => {
 
   const fetchSkillsAssessments = async () => {
     try {
-      console.log('🧠 Fetching skills assessments from:', `${backendUrl}/api/user/skills-assessments`);
-      
       const { data } = await axios.get(`${backendUrl}/api/user/skills-assessments`);
-      
-      console.log('🧠 Raw skills response:', data);
-      
+
       if (data.success) {
         const assessments = data.data || [];
-        console.log('🧠 Assessments count:', assessments.length);
-        
-        // Transform the data to match what your UI expects
+
         const formattedAssessments = assessments.map((assessment) => {
-          console.log('🧠 Processing assessment:', {
-            id: assessment._id,
-            skills: assessment.skills?.length || 0,
-            assessmentType: assessment.assessmentType,
-            overallScore: assessment.overallScore
-          });
-          
-          // Your model uses 'skills' array with 'proficiencyLevel' field
+          // Each skill carries a 'proficiencyLevel' from 1 to 10
           const skills = assessment.skills || [];
-          
+
           // Calculate overall metrics
           const totalTechnologies = skills.length;
-          const avgConfidence = totalTechnologies > 0 
+          const avgConfidence = totalTechnologies > 0
             ? skills.reduce((sum, skill) => sum + (skill.proficiencyLevel || 0), 0) / totalTechnologies
             : 0;
-          
+
           // Count by proficiency levels based on model structure
           const expertCount = skills.filter(s => (s.proficiencyLevel || 0) >= 8).length;
           const proficientCount = skills.filter(s => {
@@ -255,13 +221,13 @@ const UserProfile = () => {
 
           const score = assessment.overallScore || Math.round((avgConfidence / 10) * 100);
           let assessmentType = assessment.assessmentType || 'SWOT Analysis';
-          
+
           let level = 'Beginner';
           if (avgConfidence >= 8) level = 'Expert';
           else if (avgConfidence >= 6) level = 'Advanced';
           else if (avgConfidence >= 4) level = 'Intermediate';
 
-          const formatted = {
+          return {
             id: assessment._id,
             assessmentType,
             level,
@@ -276,8 +242,8 @@ const UserProfile = () => {
             topTechnologies: skills
               .sort((a, b) => (b.proficiencyLevel || 0) - (a.proficiencyLevel || 0))
               .slice(0, 10)
-              .map(skill => ({ 
-                name: skill.name, 
+              .map(skill => ({
+                name: skill.name,
                 confidence: skill.proficiencyLevel || 0,
                 category: skill.category || 'General'
               })),
@@ -290,51 +256,35 @@ const UserProfile = () => {
             threats: assessment.threats || [],
             recommendations: assessment.recommendations || []
           };
-          
-          console.log(`🧠 Formatted assessment:`, formatted);
-          return formatted;
         });
-        
-        console.log('🧠 Final formatted assessments:', formattedAssessments);
+
         setSkillsAssessments(formattedAssessments);
       } else {
-        console.log('❌ Skills API returned success: false', data.message);
         setSkillsAssessments([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching skills assessments:', error);
-      
+      // 404: none yet, a normal state. 401 is handled by the interceptor.
       if (error.response?.status === 404) {
-        console.log('🧠 No assessments found (404)');
         setSkillsAssessments([]);
       } else if (error.response?.status !== 401) {
-        // Don't show error for 401 as it's handled by interceptor
+        console.error('Error fetching skills assessments:', error);
         toast.error('Failed to fetch skills assessments');
         setSkillsAssessments([]);
       }
     }
   };
 
-  // NEW: CV Management Functions
   const fetchCurrentCV = async () => {
     try {
       setCvLoading(true);
-      console.log('📄 Fetching current CV from:', `${backendUrl}/api/user/cv`);
-      
       const { data } = await axios.get(`${backendUrl}/api/user/cv`);
-      
-      if (data.success) {
-        setCvData(data.data);
-        console.log('📄 CV data loaded:', data.data);
-      } else {
-        setCvData(null);
-        console.log('📄 No CV found:', data.message);
-      }
+      setCvData(data.success ? data.data : null);
     } catch (error) {
-      console.error('❌ Error fetching CV:', error);
+      // 404: no CV uploaded yet, a normal state. 401 is handled by the interceptor.
       if (error.response?.status === 404) {
-        setCvData(null); // No CV uploaded yet
+        setCvData(null);
       } else if (error.response?.status !== 401) {
+        console.error('Error fetching CV:', error);
         toast.error('Failed to fetch CV information');
       }
     } finally {
@@ -365,12 +315,10 @@ const UserProfile = () => {
 
     try {
       setUploadingCV(true);
-      
+
       const formData = new FormData();
       formData.append('cv', selectedFile);
 
-      console.log('📄 Uploading CV:', selectedFile.name);
-      
       const { data } = await axios.put(`${backendUrl}/api/user/upload-cv`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -384,14 +332,13 @@ const UserProfile = () => {
         // Clear file input
         const fileInput = document.getElementById('cv-upload');
         if (fileInput) fileInput.value = '';
-        
+
         // Refresh user data to update hasCV status
         await getUserData();
       } else {
         toast.error(data.message || 'Failed to upload CV');
       }
     } catch (error) {
-      console.error('❌ CV upload error:', error);
       const msg = error.response?.data?.message || error.message || 'Failed to upload CV';
       toast.error(msg);
     } finally {
@@ -406,7 +353,7 @@ const UserProfile = () => {
 
     try {
       setCvLoading(true);
-      
+
       const { data } = await axios.delete(`${backendUrl}/api/user/cv`);
 
       if (data.success) {
@@ -418,7 +365,6 @@ const UserProfile = () => {
         toast.error(data.message || 'Failed to delete CV');
       }
     } catch (error) {
-      console.error('❌ CV delete error:', error);
       const msg = error.response?.data?.message || error.message || 'Failed to delete CV';
       toast.error(msg);
     } finally {
@@ -430,7 +376,7 @@ const UserProfile = () => {
     await fetchCurrentCV();
   };
 
-  // PDF Generation Functions (keeping existing code)
+  // PDF report of a saved CV analysis (jsPDF is loaded from a CDN on first use).
   const generateAnalysisPDF = (analysis) => {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) {
@@ -445,11 +391,11 @@ const UserProfile = () => {
     // Premium Header with Logo Space
     doc.setFillColor(40, 116, 166);
     doc.rect(0, 0, 210, 30, 'F');
-    
+
     doc.setTextColor(255);
     doc.setFontSize(24);
     doc.text('CV Analysis Report', 20, 20);
-    
+
     doc.setFontSize(12);
     doc.text('Detailed Analysis', 20, 25);
     yPos = 45;
@@ -496,9 +442,9 @@ const UserProfile = () => {
     } else {
       doc.setFillColor(239, 68, 68); // Red
     }
-    
+
     doc.rect(20, yPos, fillWidth, barHeight, 'F');
-    
+
     // Score text
     doc.setFontSize(12);
     doc.setTextColor(0);
@@ -534,7 +480,7 @@ const UserProfile = () => {
           doc.addPage();
           yPos = 20;
         }
-        
+
         const lines = doc.splitTextToSize(`${index + 1}. ${strength}`, 170);
         lines.forEach(line => {
           doc.text(line, 25, yPos);
@@ -564,7 +510,7 @@ const UserProfile = () => {
           doc.addPage();
           yPos = 20;
         }
-        
+
         const lines = doc.splitTextToSize(`${index + 1}. ${rec}`, 170);
         lines.forEach(line => {
           doc.text(line, 25, yPos);
@@ -593,19 +539,19 @@ const UserProfile = () => {
       `Your CV shows a ${analysis.matchPercentage}% compatibility with this role.`,
       'Focus on highlighting the strengths mentioned above in your application.',
       'Address the improvement areas to increase your match score.',
-      analysis.hasMultipleJobs ? 
+      analysis.hasMultipleJobs ?
         `Out of ${analysis.totalJobs} positions analyzed, ${analysis.softwareJobs} are software roles.` :
         'Consider analyzing your CV against multiple similar positions for better insights.',
       'Tailor your CV keywords to better match the job requirements.',
       'Consider preparing specific examples that demonstrate your key strengths.'
     ];
 
-    premiumInsights.forEach((insight, index) => {
+    premiumInsights.forEach((insight) => {
       if (yPos > 270) {
         doc.addPage();
         yPos = 20;
       }
-      
+
       const lines = doc.splitTextToSize(`• ${insight}`, 170);
       lines.forEach(line => {
         doc.text(line, 25, yPos);
@@ -659,8 +605,6 @@ const UserProfile = () => {
 
   const downloadAnalysis = async (analysisId) => {
     try {
-      setDownloadingAnalysis(analysisId);
-      
       // Find the analysis data
       const analysis = savedAnalyses.find(a => a.id === analysisId);
       if (!analysis) {
@@ -677,7 +621,6 @@ const UserProfile = () => {
         };
         script.onerror = () => {
           toast.error('Failed to load PDF library');
-          setDownloadingAnalysis(null);
         };
         document.head.appendChild(script);
       } else {
@@ -686,25 +629,22 @@ const UserProfile = () => {
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to generate PDF report');
-      setDownloadingAnalysis(null);
     }
   };
 
   const generateAndDownloadPDF = (analysis) => {
     try {
       const doc = generateAnalysisPDF(analysis);
-      
+
       if (doc) {
         const fileName = `CV_Analysis_${analysis.jobTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${analysis.id.slice(-6)}.pdf`;
         doc.save(fileName);
-        
+
         toast.success('PDF report downloaded successfully!');
       }
     } catch (error) {
       console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF. Please try again.');
-    } finally {
-      setDownloadingAnalysis(null);
     }
   };
 
@@ -747,7 +687,7 @@ const UserProfile = () => {
       toast.error('Passwords do not match');
       return;
     }
-    
+
     const problems = passwordProblems(passwords.newPassword);
     if (problems.length) {
       toast.error('New password needs: ' + problems.join(', ').toLowerCase());
@@ -772,26 +712,6 @@ const UserProfile = () => {
       toast.error(msg);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const deleteAnalysis = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this CV analysis?')) {
-      return;
-    }
-
-    try {
-      const { data } = await axios.delete(`${backendUrl}/api/user/analysis/${id}`);
-
-      if (data.success) {
-        setSavedAnalyses(prev => prev.filter(analysis => analysis.id !== id));
-        toast.success('Analysis deleted successfully');
-      } else {
-        toast.error(data.message || 'Failed to delete analysis');
-      }
-    } catch (error) {
-      const msg = error.response?.data?.message || error.message || 'Failed to delete analysis';
-      toast.error(msg);
     }
   };
 
@@ -831,13 +751,6 @@ const UserProfile = () => {
       localStorage.removeItem('token'); // Clear token
       navigate('/login');
     }
-  };
-
-  const getMatchScoreColor = (percentage) => {
-    if (percentage >= 80) return 'text-success-700 bg-success-100';
-    if (percentage >= 60) return 'text-sun-700 bg-sun-100';
-    if (percentage >= 40) return 'text-sun-700 bg-sun-100';
-    return 'text-danger-700 bg-danger-100';
   };
 
   const getScoreColor = (score) => {
@@ -914,7 +827,7 @@ const UserProfile = () => {
             </div>
           </div>
         </div>
-        <button 
+        <button
           onClick={updateProfile}
           disabled={loading}
           className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 flex items-center"
@@ -991,8 +904,6 @@ const UserProfile = () => {
     </div>
   );
 
-  // NEW: CV Management Tab
-  // Simplified CV Management Tab - Replace the renderCVTab() function in your UserProfile.jsx
 const renderCVTab = () => (
   <div className="space-y-6">
     {/* CV Upload/Management Section */}
@@ -1001,7 +912,7 @@ const renderCVTab = () => (
         <FileText className="mr-2" size={20} />
         CV Management
       </h3>
-      
+
       {cvLoading ? (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
@@ -1138,7 +1049,7 @@ const renderCVTab = () => (
             <File className="mx-auto h-16 w-16 text-primary-400 mb-4" />
             <h4 className="text-lg font-medium text-ink mb-2">No CV Uploaded</h4>
             <p className="text-ink-2 mb-6">Upload your CV to start analyzing it against job descriptions</p>
-            
+
             <div className="max-w-md mx-auto">
               <input
                 type="file"
@@ -1188,7 +1099,7 @@ const renderCVTab = () => (
       </div>
       <div className="mt-4 p-3 bg-primary-100 rounded-xl">
         <p className="text-xs text-primary-800">
-          <strong>Privacy:</strong> Your CV data is stored securely and only used for analysis purposes. 
+          <strong>Privacy:</strong> Your CV data is stored securely and only used for analysis purposes.
           You can delete your CV at any time, and it will be permanently removed from our servers.
         </p>
       </div>
@@ -1207,7 +1118,7 @@ const renderCVTab = () => (
           <Brain className="mx-auto h-12 w-12 text-ink-muted mb-4" />
           <p className="text-ink-2 mb-2">No skills assessments completed yet.</p>
           <p className="text-sm text-ink-muted">Complete a SWOT analysis to see your technology proficiency results here.</p>
-          <button 
+          <button
             onClick={() => navigate('/swot')}
             className="mt-3 px-4 py-2 bg-success-600 text-white rounded-full hover:bg-success-700"
           >
@@ -1232,7 +1143,7 @@ const renderCVTab = () => (
                         {assessment.level}
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                       <div className="text-center">
                         <div className={`text-lg font-semibold px-2 py-1 rounded ${getScoreColor(assessment.score)}`}>
@@ -1273,10 +1184,10 @@ const renderCVTab = () => (
                               <span className="text-sm font-medium">{tech.name}</span>
                               <div className="flex">
                                 {[...Array(10)].map((_, i) => (
-                                  <Star 
+                                  <Star
                                     key={`star-preview-${assessment.id}-${tech.name}-${i}`}
-                                    size={10} 
-                                    className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'} 
+                                    size={10}
+                                    className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'}
                                   />
                                 ))}
                               </div>
@@ -1287,23 +1198,23 @@ const renderCVTab = () => (
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex space-x-2 ml-4">
-                    <button 
+                    <button
                       onClick={() => setExpandedAssessment(expandedAssessment === assessment.id ? null : assessment.id)}
                       className="p-2 text-ink-2 hover:bg-sand rounded-xl"
                       title="View Details"
                     >
                       {expandedAssessment === assessment.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
-                    <button 
+                    <button
                       onClick={() => downloadAnalysis(assessment.id)}
                       className="p-2 text-primary-600 hover:bg-primary-50 rounded-xl"
                       title="Download Report"
                     >
                       <Download size={16} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => deleteAssessment(assessment.id)}
                       className="p-2 text-danger-600 hover:bg-danger-50 rounded-xl"
                       title="Delete Assessment"
@@ -1363,10 +1274,10 @@ const renderCVTab = () => (
                               <div className="flex items-center space-x-2">
                                 <div className="flex">
                                   {[...Array(10)].map((_, i) => (
-                                    <Star 
+                                    <Star
                                       key={`detail-star-${assessment.id}-${tech.name}-${i}`}
-                                      size={12} 
-                                      className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'} 
+                                      size={12}
+                                      className={i < tech.confidence ? 'text-sun-400 fill-current' : 'text-ink-muted'}
                                     />
                                   ))}
                                 </div>
@@ -1379,7 +1290,7 @@ const renderCVTab = () => (
                     )}
 
                     {/* SWOT Analysis Details if available */}
-                    {(assessment.strengths?.length > 0 || assessment.weaknesses?.length > 0 || 
+                    {(assessment.strengths?.length > 0 || assessment.weaknesses?.length > 0 ||
                       assessment.opportunities?.length > 0 || assessment.threats?.length > 0) && (
                       <div className="col-span-2">
                         <h5 className="font-medium text-ink mb-3 flex items-center">
@@ -1466,12 +1377,12 @@ const renderCVTab = () => (
         <Settings className="mr-2" size={20} />
         Account Settings
       </h3>
-      
+
       <div className="space-y-6">
         <div className="border border-line rounded-xl p-4">
           <h4 className="font-medium text-ink mb-2">Account Actions</h4>
           <p className="text-sm text-ink-2 mb-4">Manage your account access and session.</p>
-          <button 
+          <button
             onClick={handleLogout}
             className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700"
           >
@@ -1484,7 +1395,7 @@ const renderCVTab = () => (
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'cv', label: 'CV Management', icon: FileText }, // NEW: CV Management tab
+    { id: 'cv', label: 'CV Management', icon: FileText },
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'skills', label: 'Skills Assessment', icon: Brain },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -1506,7 +1417,6 @@ const renderCVTab = () => (
                 <h2 className="font-display text-2xl font-semibold text-ink">{localUser.name}</h2>
                 <p className="text-ink-2">{localUser.email}</p>
                 <div className="flex items-center space-x-2 mt-1">
-                  {/* NEW: CV Status indicator */}
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     cvData ? 'bg-success-100 text-success-700' : 'bg-sun-100 text-sun-700'
                   }`}>
@@ -1515,18 +1425,18 @@ const renderCVTab = () => (
                 </div>
               </div>
             </div>
-            
+
             {/* Quick Actions */}
             <div className="flex space-x-2">
               {cvData ? (
                 <>
-                  <button 
+                  <button
                     onClick={() => navigate('/cv-analyzer')}
                     className="px-3 py-2 text-sm bg-primary-600 text-white rounded-xl hover:bg-primary-700"
                   >
                     CV Analyzer
                   </button>
-                  <button 
+                  <button
                     onClick={() => navigate('/swot')}
                     className="px-3 py-2 text-sm bg-success-600 text-white rounded-xl hover:bg-success-700"
                   >
@@ -1534,7 +1444,7 @@ const renderCVTab = () => (
                   </button>
                 </>
               ) : (
-                <button 
+                <button
                   onClick={() => setActiveTab('cv')}
                   className="px-3 py-2 text-sm bg-sun-600 text-white rounded-xl hover:bg-sun-700 flex items-center"
                 >
@@ -1558,14 +1468,13 @@ const renderCVTab = () => (
                       <button
                         onClick={() => setActiveTab(tab.id)}
                         className={`w-full text-left px-4 py-2.5 rounded-full flex items-center space-x-3 transition-colors ${
-                          activeTab === tab.id 
-                            ? 'bg-primary-100 text-primary-800 font-semibold' 
+                          activeTab === tab.id
+                            ? 'bg-primary-100 text-primary-800 font-semibold'
                             : 'text-ink-2 hover:bg-sand'
                         }`}
                       >
                         <Icon size={18} />
                         <span>{tab.label}</span>
-                        {/* NEW: Add indicator badges */}
                         {tab.id === 'cv' && !cvData && (
                           <AlertCircle className="text-sun-500" size={14} />
                         )}
@@ -1586,12 +1495,12 @@ const renderCVTab = () => (
               </ul>
             </nav>
           </div>
-      
+
 
           {/* Main Content */}
           <div className="lg:col-span-3">
             {activeTab === 'profile' && renderProfileTab()}
-            {activeTab === 'cv' && renderCVTab()} {/* NEW: CV Management tab */}
+            {activeTab === 'cv' && renderCVTab()}
             {activeTab === 'security' && renderSecurityTab()}
             {activeTab === 'skills' && renderSkillsTab()}
             {activeTab === 'settings' && renderSettingsTab()}
@@ -1604,4 +1513,4 @@ const renderCVTab = () => (
   );
 };
 
-export default UserProfile;
+export default ProfileSettings;

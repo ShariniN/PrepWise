@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 
-export const useCV = (addDebugLog) => {
+export const useCV = () => {
   const [cvMode, setCvMode] = useState('profile');
   const [profileCV, setProfileCV] = useState(null);
   const [cvLoading, setCvLoading] = useState(false);
@@ -12,7 +12,6 @@ export const useCV = (addDebugLog) => {
     try {
       setCvLoading(true);
       setCvError('');
-      addDebugLog('Loading profile CV...');
       
       const response = await fetch('/api/user/cv', {
         method: 'GET',
@@ -28,7 +27,6 @@ export const useCV = (addDebugLog) => {
       if (result.success && result.data?.hasText && result.data?.textLength > 0) {
         await loadCVText(result.data);
       } else {
-        addDebugLog('No CV found, switching to upload mode');
         setCvMode('upload');
         setProfileCV(null);
       }
@@ -36,11 +34,10 @@ export const useCV = (addDebugLog) => {
     } catch (err) {
       setCvError(err.message);
       setCvMode('upload');
-      addDebugLog(`Failed to load CV: ${err.message}`, 'error');
     } finally {
       setCvLoading(false);
     }
-  }, [addDebugLog]);
+  }, []);
 
   const loadCVText = useCallback(async (cvMetadata) => {
     try {
@@ -67,19 +64,17 @@ export const useCV = (addDebugLog) => {
           };
           setProfileCV(cvData);
           setCvMode('profile');
-          addDebugLog(`Profile CV loaded: ${cvData.text.length} characters`);
           return cvData;
         }
       }
 
       throw new Error('Could not load CV text');
-    } catch (err) {
-      addDebugLog(`Failed to load CV text: ${err.message}`, 'error');
+    } catch {
       setCvError('Could not load CV text. Please upload a new file.');
       setCvMode('upload');
       return null;
     }
-  }, [addDebugLog]);
+  }, []);
 
   const handleFileUpload = useCallback(async (event) => {
     const file = event.target.files[0];
@@ -105,7 +100,6 @@ export const useCV = (addDebugLog) => {
     setUploadedFile(file);
     setCvLoading(true);
     setCvError('');
-    addDebugLog(`Processing file: ${file.name}`);
 
     try {
       const formData = new FormData();
@@ -126,18 +120,16 @@ export const useCV = (addDebugLog) => {
         throw new Error(result.error || 'Failed to process CV');
       }
 
-      addDebugLog(`CV processed: ${result.data.text.length} characters`);
       return result.data.text;
       
     } catch (err) {
       setCvError(`Failed to process CV: ${err.message}`);
       setUploadedFile(null);
-      addDebugLog(`CV processing failed: ${err.message}`, 'error');
       return null;
     } finally {
       setCvLoading(false);
     }
-  }, [addDebugLog]);
+  }, []);
 
   const changeCvMode = useCallback((mode, setInterviewData) => {
     setCvMode(mode);

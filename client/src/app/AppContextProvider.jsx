@@ -51,10 +51,9 @@ export const AppContextProvider = (props) => {
 
     const getUserData = async () => {
         try {
-            // FIXED: Changed from '/api/user/data' to '/api/user/profile'
             const { data } = await axios.get(backendUrl + '/api/user/profile');
             if (data.success) {
-                setUserData(data.data); // FIXED: Use data.data instead of data.userData
+                setUserData(data.data);
             } else {
                 toast.error(data.message);
                 setUserData(null);

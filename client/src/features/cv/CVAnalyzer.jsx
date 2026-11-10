@@ -6,22 +6,18 @@ import { useNavigate } from "react-router-dom";
 import { backendUrl } from '../../api/client';
 
 
-// Enhanced Skills Assessment Component
-const SkillsAssessment = ({ 
-  resumeHash = null, 
-  resumeText = null,
-  jobDescriptions = [],
+// Skills self-rating step, opened from an analysis result
+const SkillsAssessment = ({
+  resumeHash = null,
   extractedTechnologies = [],
   onBack = null,
-  userId = null
 }) => {
   const [step, setStep] = useState('rating');
   const [technologies, setTechnologies] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
 
   // Simple icon components
   const AlertCircle = () => (
@@ -117,7 +113,7 @@ const SkillsAssessment = ({
 
       setSuccess(data.message || 'Skill assessments saved successfully!');
       setStep('success');
-      
+
     } catch (err) {
       console.error('Error saving ratings:', err);
       setError(err.message || 'Failed to save skill assessments. Please try again.');
@@ -191,7 +187,7 @@ const SkillsAssessment = ({
     <div className="space-y-6 md:space-y-8">
       {/* Header */}
       <div className="text-center">
-        
+
         <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-800 px-4 py-2 rounded-full text-sm font-medium mb-4 shadow-sm">
           <Star className="w-4 h-4" />
           Skills Assessment
@@ -256,7 +252,7 @@ const SkillsAssessment = ({
               <h2 className="text-xl md:text-2xl font-bold text-ink">Technology Skills</h2>
               <p className="text-ink-2 mt-1">Use the sliders to rate your confidence level for each technology</p>
             </div>
-            
+
             <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
               {Object.entries(groupedTechnologies).map(([category, techs]) => (
                 <div key={category} className="border-b border-line last:border-0">
@@ -264,7 +260,7 @@ const SkillsAssessment = ({
                     <h3 className="text-lg font-bold text-ink">{category}</h3>
                   </div>
                   <div className="p-4 md:p-6 space-y-6">
-                    {techs.map((tech, techIndex) => {
+                    {techs.map((tech) => {
                       const globalIndex = technologies.findIndex(t => t.name === tech.name);
                       return (
                         <div key={globalIndex} className="group">
@@ -279,7 +275,7 @@ const SkillsAssessment = ({
                               {tech.confidenceLevel}
                             </div>
                           </div>
-                          
+
                           <div className="flex items-center gap-2 md:gap-4">
                             <span className="text-sm text-ink-muted font-medium w-6 md:w-8">1</span>
                             <div className="flex-1 relative">
@@ -308,7 +304,7 @@ const SkillsAssessment = ({
               ))}
             </div>
           </div>
-          
+
           {/* Action Bar */}
           <div className="bg-surface border border-line rounded-3xl p-4 md:p-6 shadow-soft">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
@@ -371,7 +367,7 @@ const SkillsAssessment = ({
       <div className="w-24 h-24 bg-success-100 rounded-3xl flex items-center justify-center mx-auto shadow-soft">
         <CheckCircle className="w-12 h-12 text-success-600" />
       </div>
-      
+
       <div>
         <h1 className="text-3xl md:text-4xl font-bold text-success-600 mb-4">Skills Assessment Complete!</h1>
         <p className="text-xl text-ink-2 px-4">
@@ -432,7 +428,7 @@ const SkillsAssessment = ({
         </div>
       </div>
 
-      
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
         <button
@@ -456,14 +452,13 @@ const SkillsAssessment = ({
           className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface text-primary-600 border-2 border-primary-600 rounded-full hover:bg-primary-50 transition-all shadow-soft hover:shadow-card"
           >
           <ArrowRight className="w-4 h-4" />
-          Proceed to Mock Interview 
+          Proceed to Mock Interview
       </button>
       </div>
     </div>
     </div>
   );
 
-  // Enhanced validation check
   if (!resumeHash || !extractedTechnologies || extractedTechnologies.length === 0) {
     return (
       <div className="min-h-screen bg-sand flex items-center justify-center p-4">
@@ -476,7 +471,7 @@ const SkillsAssessment = ({
               {!resumeHash ? "Resume Analysis Required" : "No Technologies Found"}
             </h2>
             <p className="text-danger-600 mb-6">
-              {!resumeHash 
+              {!resumeHash
                 ? "Please analyze your resume first to extract technologies for assessment."
                 : "No technologies were extracted from your resume. Please ensure your resume contains technical skills and try analyzing again."
               }
@@ -546,7 +541,7 @@ const SkillsAssessment = ({
             animation: spin 1s linear infinite;
           }
         `}</style>
-        
+
         {step === 'rating' && renderRatingStep()}
         {step === 'success' && renderSuccessStep()}
       </div>
@@ -560,14 +555,10 @@ const API_BASE_URL = backendUrl;
 const API_ENDPOINTS = {
   analyzeResume: `${API_BASE_URL}/api/analyze/analyze-resume`,
   saveAnalysis: `${API_BASE_URL}/api/analyze/save`,
-  saveSWOTRatings: `${API_BASE_URL}/api/swot/save-ratings`,
-  getUserProfile: `${API_BASE_URL}/api/user/profile`,
   getCurrentCV: `${API_BASE_URL}/api/user/cv`,
-  uploadCV: `${API_BASE_URL}/api/user/upload-cv`,
-  deleteCV: `${API_BASE_URL}/api/user/cv`,
 };
 
-// Enhanced Circular Progress Component
+// Circular Progress Component
 const CircularProgress = ({ percentage, label, colorIndex = 0, unavailable = false }) => {
   const colors = [
     { primary: "#4f46e5", secondary: "#e0e7ff", gradient: "from-primary-500 to-primary-600" },
@@ -617,7 +608,7 @@ const CircularProgress = ({ percentage, label, colorIndex = 0, unavailable = fal
   );
 };
 
-// Enhanced Structured Recommendations Component
+// Structured Recommendations Component
 const StructuredRecommendations = ({ result, index }) => {
   const [activeTab, setActiveTab] = useState('strengths');
 
@@ -662,8 +653,6 @@ const StructuredRecommendations = ({ result, index }) => {
   };
 
   const renderTabContent = () => {
-    const activeTabData = tabs.find(tab => tab.id === activeTab);
-    
     switch (activeTab) {
       case 'strengths':
         return renderList(result.strengths, CheckCircle, 'text-success-600', 'bg-success-50');
@@ -671,7 +660,7 @@ const StructuredRecommendations = ({ result, index }) => {
         return renderList(result.contentWeaknesses, FileText, 'text-sun-600', 'bg-sun-50');
       case 'structure':
         return renderList(result.structureWeaknesses, Layout, 'text-danger-600', 'bg-danger-50');
-      case 'recommendations':
+      case 'recommendations': {
         const allRecommendations = [
           ...(result.contentRecommendations || []).map(rec => ({ text: rec, type: 'content' })),
           ...(result.structureRecommendations || []).map(rec => ({ text: rec, type: 'structure' }))
@@ -688,8 +677,8 @@ const StructuredRecommendations = ({ result, index }) => {
                   <div className="flex items-center gap-2">
                     <Lightbulb className="w-5 h-5 text-primary-600 flex-shrink-0" />
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      rec.type === 'content' 
-                        ? 'bg-sun-100 text-sun-700 border border-sun-200' 
+                      rec.type === 'content'
+                        ? 'bg-sun-100 text-sun-700 border border-sun-200'
                         : 'bg-primary-100 text-primary-700 border border-primary-200'
                     }`}>
                       {rec.type}
@@ -701,6 +690,7 @@ const StructuredRecommendations = ({ result, index }) => {
             )}
           </div>
         );
+      }
       default:
         return null;
     }
@@ -782,13 +772,12 @@ const CVAnalyzer = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(''); // Added missing success state
   const [dragActive, setDragActive] = useState(false);
   const [resumeData, setResumeData] = useState(null);
   const [currentView, setCurrentView] = useState('analysis');
   const [savedIndices, setSavedIndices] = useState([]);
-  
-  // NEW: Profile CV state
+
+  // Profile CV state
   const [profileCV, setProfileCV] = useState(null);
   const [loadingProfileCV, setLoadingProfileCV] = useState(false);
   const [useProfileCV, setUseProfileCV] = useState(false);
@@ -942,7 +931,6 @@ const CVAnalyzer = () => {
     return true;
   };
 
-  // Enhanced analyze function
   const handleAnalyze = async () => {
     setError(null);
 
@@ -953,10 +941,10 @@ const CVAnalyzer = () => {
 
     try {
       const formData = new FormData();
-      
+
       // Add job descriptions
       formData.append('jobDescriptions', JSON.stringify(jobDescriptions.filter(jd => jd.trim())));
-      
+
       // Add CV source information
       if (useProfileCV) {
         formData.append('useProfileCV', 'true');
@@ -972,7 +960,7 @@ const CVAnalyzer = () => {
 
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        
+
         try {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
@@ -987,7 +975,7 @@ const CVAnalyzer = () => {
         } catch (parseError) {
           console.warn("Could not parse error response:", parseError);
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -1005,16 +993,16 @@ const CVAnalyzer = () => {
       let data;
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch {
         throw new Error('Invalid JSON response from server');
       }
-      
+
       if (!data || !data.analysis) {
         throw new Error('Invalid response format: missing analysis data');
       }
-      
+
       const resumeHash = data.resumeHash || `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       setResumeData({
         resumeText: data.resumeText || (useProfileCV ? 'Profile CV' : `Resume: ${resumeFile?.name}`),
         resumeHash: resumeHash,
@@ -1034,9 +1022,9 @@ const CVAnalyzer = () => {
 
     } catch (err) {
       console.error("Analyze Error:", err);
-      
+
       let userMessage = "Failed to analyze resume. ";
-      
+
       if (err.message.includes('404')) {
         userMessage += "The analysis service is not available. Please check if the backend server is running on the correct port.";
       } else if (err.message.includes('401') || err.message.includes('403')) {
@@ -1048,14 +1036,13 @@ const CVAnalyzer = () => {
       } else {
         userMessage += err.message;
       }
-      
+
       setError(userMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fixed handleSaveIndividualAnalysis function
 const handleSaveIndividualAnalysis = async (index) => {
   if ((!resumeFile && !useProfileCV) || !results[index] || savedIndices.includes(index)) return;
 
@@ -1070,8 +1057,6 @@ const handleSaveIndividualAnalysis = async (index) => {
       extractedTechnologies: resumeData?.extractedTechnologies || [] // Include extracted technologies
     };
 
-    console.log('Saving analysis data:', saveData); // Debug log
-
     const response = await fetch(API_ENDPOINTS.saveAnalysis, {
       method: 'POST',
       headers: {
@@ -1083,7 +1068,7 @@ const handleSaveIndividualAnalysis = async (index) => {
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       try {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
@@ -1093,18 +1078,13 @@ const handleSaveIndividualAnalysis = async (index) => {
       } catch (parseError) {
         console.warn("Could not parse save error response:", parseError);
       }
-      
+
       throw new Error(errorMessage);
     }
 
-    const responseData = await response.json();
-    console.log('Save response:', responseData); // Debug log
+    await response.json();
 
     setSavedIndices((prev) => [...prev, index]);
-    
-    // Show success message
-    setSuccess(`Analysis ${index + 1} saved successfully!`);
-    setTimeout(() => setSuccess(''), 3000);
 
   } catch (err) {
     console.error("Save error:", err);
@@ -1168,11 +1148,11 @@ const handleSaveIndividualAnalysis = async (index) => {
           <label className="block font-bold mb-4 text-ink">
             Choose CV Source
           </label>
-          
+
           {/* Profile CV Option */}
           <div className={`p-4 rounded-2xl border-2 cursor-pointer transition-all mb-4 ${
-            useProfileCV 
-              ? 'border-success-500 bg-success-50 shadow-soft' 
+            useProfileCV
+              ? 'border-success-500 bg-success-50 shadow-soft'
               : 'border-line bg-surface hover:border-line hover:shadow-md'
           }`} onClick={handleUseProfileCV}>
             <div className="flex items-center gap-4">
@@ -1199,16 +1179,16 @@ const handleSaveIndividualAnalysis = async (index) => {
 
           {/* Upload New CV Option */}
           <div className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-            !useProfileCV && !resumeFile 
-              ? 'border-line bg-surface hover:border-line hover:shadow-md' 
+            !useProfileCV && !resumeFile
+              ? 'border-line bg-surface hover:border-line hover:shadow-md'
               : !useProfileCV && resumeFile
               ? 'border-success-500 bg-success-50 shadow-soft'
               : 'border-line bg-surface hover:border-line hover:shadow-md'
           }`} onClick={handleUploadNewCV}>
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-soft ${
-                !useProfileCV && resumeFile 
-                  ? 'bg-success-500 text-white' 
+                !useProfileCV && resumeFile
+                  ? 'bg-success-500 text-white'
                   : 'bg-sand text-ink-2'
               }`}>
                 <Upload className="w-6 h-6" />
@@ -1348,10 +1328,8 @@ const handleSaveIndividualAnalysis = async (index) => {
   // Render Skills Assessment view
   if (currentView === 'skills') {
     return (
-      <SkillsAssessment 
+      <SkillsAssessment
         resumeHash={resumeData?.resumeHash}
-        resumeText={resumeData?.resumeText}
-        jobDescriptions={resumeData?.jobDescriptions || []}
         extractedTechnologies={resumeData?.extractedTechnologies || []}
         onBack={handleBackFromSkills}
       />
@@ -1414,8 +1392,8 @@ const handleSaveIndividualAnalysis = async (index) => {
                             </span>
                             <span
                               className={`text-xs font-medium px-2 py-1 rounded ${
-                                jd.length < 50 
-                                  ? "text-sun-600 bg-sun-100" 
+                                jd.length < 50
+                                  ? "text-sun-600 bg-sun-100"
                                   : "text-success-600 bg-success-100"
                               }`}
                             >
@@ -1494,7 +1472,7 @@ const handleSaveIndividualAnalysis = async (index) => {
             </div>
           </div>
         </div>
-      
+
 
         {/* Right Content Area - 50% width on desktop */}
         <div className="min-w-0">
@@ -1521,7 +1499,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                     </h2>
                     <div className={`grid gap-4 md:gap-6 ${
                       results.length === 1 ? "grid-cols-1 max-w-sm mx-auto" :
-                      results.length === 2 ? "grid-cols-1 md:grid-cols-2" : 
+                      results.length === 2 ? "grid-cols-1 md:grid-cols-2" :
                       "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
                     }`}>
                       {results.map((res, idx) => (
@@ -1545,8 +1523,8 @@ const handleSaveIndividualAnalysis = async (index) => {
                       <div>
                         <h3 className="font-bold text-ink">CV Source</h3>
                         <p className="text-sm text-ink-2">
-                          {useProfileCV 
-                            ? `Using profile CV: ${profileCV?.fileName || 'Unknown'}` 
+                          {useProfileCV
+                            ? `Using profile CV: ${profileCV?.fileName || 'Unknown'}`
                             : `Uploaded file: ${resumeFile?.name || 'Unknown'}`
                           }
                         </p>
@@ -1660,7 +1638,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                     Ready to Analyze Your Resume
                   </h3>
                   <p className="text-ink-muted max-w-md mx-auto leading-relaxed px-4">
-                    {cvUploadMode === 'profile' && profileCV 
+                    {cvUploadMode === 'profile' && profileCV
                       ? "Use your profile CV or upload a new one, then add job descriptions to get started."
                       : "Upload your resume and add job descriptions to get started with our comprehensive analysis."
                     }
@@ -1683,18 +1661,18 @@ const handleSaveIndividualAnalysis = async (index) => {
         .custom-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-track {
           background: #f1ece1;
           border-radius: 4px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #d6cfbc;
           border-radius: 4px;
           border: 1px solid #f1ece1;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #94a3b8;
         }
@@ -1705,7 +1683,7 @@ const handleSaveIndividualAnalysis = async (index) => {
             width: 100% !important;
           }
         }
-        
+
         /* Enhanced animations */
         @keyframes slideInUp {
           from {
@@ -1771,13 +1749,13 @@ const handleSaveIndividualAnalysis = async (index) => {
           box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
           transition: all 0.2s ease;
         }
-        
+
         .slider::-webkit-slider-thumb:hover {
           background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
           transform: scale(1.1);
           box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
         }
-        
+
         .slider::-moz-range-thumb {
           width: 24px;
           height: 24px;
@@ -1787,19 +1765,19 @@ const handleSaveIndividualAnalysis = async (index) => {
           border: 3px solid #ffffff;
           box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         }
-        
+
         .slider::-webkit-slider-track {
           height: 12px;
           border-radius: 6px;
           background: #ebe7dc;
         }
-        
+
         .slider::-moz-range-track {
           height: 12px;
           border-radius: 6px;
           background: #ebe7dc;
         }
-        
+
         .slider:focus::-webkit-slider-track {
           background: #d6cfbc;
         }

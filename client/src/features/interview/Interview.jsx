@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Mic, MicOff, Play, Pause, ChevronRight, Clock, User, FileText, Brain, 
-  AlertCircle, Volume2, Code, Terminal, CheckCircle, SkipForward, RefreshCw, 
-  Trophy, Download, Type, Headphones, Upload, FileCheck, Target, TrendingUp,
+import { Mic, MicOff, Play, Pause, ChevronRight, Clock, User, FileText,
+  AlertCircle, Volume2, Code, Terminal, CheckCircle, SkipForward, RefreshCw,
+  Download, Type, Headphones, Upload, FileCheck, Target, TrendingUp,
   Zap, MessageCircle } from 'lucide-react';
 import AppShell from "../../components/AppShell";
 import CodeEditor from '../../components/CodeEditor';
@@ -22,10 +22,10 @@ import DeliverySummary from './components/DeliverySummary';
 import { buildDeliveryMetrics, countFillerWords } from '../../utils/coachingMetrics';
 
 // Utilities
-import { 
-  isValidAnswer, 
-  isCodingQuestionType, 
-  isSetupValid, 
+import {
+  isValidAnswer,
+  isCodingQuestionType,
+  isSetupValid,
   processFeedback,
   createFallbackFeedback,
   isFallbackScored,
@@ -33,7 +33,10 @@ import {
   SUPPORTED_LANGUAGES
 } from './utils';
 
-const MockInterviewSystem = () => {
+// useCodeEditor takes a logger; the interview page does not log.
+const noLog = () => {};
+
+const Interview = () => {
   // Core state
   const [currentStep, setCurrentStep] = useState('setup');
   const [user, setUser] = useState(null);
@@ -55,25 +58,11 @@ const MockInterviewSystem = () => {
   const [textAnswer, setTextAnswer] = useState('');
   const [showCodeEditor, setShowCodeEditor] = useState(false);
 
-  // Debug
-  const [debugMode] = useState(false);
-  const [debugLogs, setDebugLogs] = useState([]);
-
-  const addDebugLog = useCallback((message, type = 'info') => {
-    const log = {
-      timestamp: new Date().toLocaleTimeString(),
-      message,
-      type
-    };
-    setDebugLogs(prev => [...prev.slice(-50), log]);
-    console.log(`[${type.toUpperCase()}] ${message}`);
-  }, []);
-
   // Custom hooks
-  const interview = useInterview(addDebugLog);
-  const audio = useAudioRecording(addDebugLog);
-  const codeEditor = useCodeEditor(SUPPORTED_LANGUAGES, addDebugLog);
-  const cv = useCV(addDebugLog);
+  const interview = useInterview();
+  const audio = useAudioRecording();
+  const codeEditor = useCodeEditor(SUPPORTED_LANGUAGES, noLog);
+  const cv = useCV();
   // Optional camera delivery coaching (off until the student turns it on; runs in the browser only).
   // The hook releases the camera itself on unmount.
   const coaching = useFaceCoaching();
@@ -86,8 +75,7 @@ const MockInterviewSystem = () => {
 
   const checkAuthentication = async () => {
     try {
-      addDebugLog('Checking authentication...');
-      
+
       const response = await fetch('/api/auth/is-auth', {
         method: 'GET',
         credentials: 'include',
@@ -100,18 +88,16 @@ const MockInterviewSystem = () => {
       }
 
       const result = await response.json();
-      
+
       if (result.success && result.user) {
         setUser(result.user);
         setError('');
-        addDebugLog(`User authenticated: ${result.user.name}`);
         cv.loadProfileCV();
       } else {
         setError('Please log in to access the mock interview system');
       }
     } catch (err) {
       setError(`Authentication failed: ${err.message}`);
-      addDebugLog(`Authentication failed: ${err.message}`, 'error');
     }
   };
 
@@ -158,18 +144,14 @@ const MockInterviewSystem = () => {
 
     try {
       const createdInterview = await interview.createInterview(
-        interviewData, 
-        cv.cvMode, 
-        cv.profileCV, 
+        interviewData,
+        cv.cvMode,
+        cv.profileCV,
         user
       );
-      
-      const firstQuestion = await interview.startInterview(
-        createdInterview.id, 
-        codeEditor.language, 
-        SUPPORTED_LANGUAGES
-      );
-      
+
+      const firstQuestion = await interview.startInterview(createdInterview.id);
+
       codeEditor.resetCodeEditor(firstQuestion, codeEditor.language);
       setShowCodeEditor(isCodingQuestionType(firstQuestion.type));
       // A camera problem already shown on the setup screen should not follow the student into the interview.
@@ -178,18 +160,17 @@ const MockInterviewSystem = () => {
 
     } catch (err) {
       setError(`Failed to create interview: ${err.message}`);
-      addDebugLog(`Interview creation failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, addDebugLog, coachingStatus, stopCoaching]);
+  }, [user, interviewData, cv.cvMode, cv.profileCV, interview, codeEditor, coachingStatus, stopCoaching]);
 
   // Answer submission
   const handleSubmitAnswer = useCallback(async () => {
-    const responseText = isCodingQuestion 
+    const responseText = isCodingQuestion
       ? codeEditor.code || 'No code provided'
       : answerMode === 'audio' ? audio.transcription : textAnswer;
-    
+
     if (!isValidAnswer(responseText, interview.currentQuestion?.type, isCodingQuestion ? codeEditor.code : null)) {
       setError('Please provide a meaningful response before submitting');
       return;
@@ -262,11 +243,10 @@ const MockInterviewSystem = () => {
 
     } catch (err) {
       setError(`Failed to submit answer: ${err.message}`);
-      addDebugLog(`Submit answer failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [isCodingQuestion, codeEditor, answerMode, audio, textAnswer, interview, timer, addDebugLog, getSamples, resetSamples]);
+  }, [isCodingQuestion, codeEditor, answerMode, audio, textAnswer, interview, timer, getSamples, resetSamples]);
 
   // Skip question
   const handleSkipQuestion = useCallback(async () => {
@@ -304,40 +284,38 @@ const MockInterviewSystem = () => {
       } else {
         await handleCompleteInterview();
       }
-          
+
     } catch (err) {
       setError(`Failed to skip question: ${err.message}`);
-      addDebugLog(`Skip question failed: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  }, [interview, codeEditor.language, addDebugLog]);
+  }, [interview, codeEditor.language]);
 
   // Move to next question
   const moveToNextQuestion = useCallback(async () => {
     try {
       const nextQuestion = await interview.getNextQuestion(interview.interview.id);
-      
+
       if (nextQuestion) {
         resetQuestionState(nextQuestion);
       } else {
         await handleCompleteInterview();
       }
-    } catch (err) {
-      addDebugLog(`Next question failed: ${err.message}`, 'error');
+    } catch {
       await handleCompleteInterview();
     }
-  }, [interview, addDebugLog]);
+  }, [interview]);
 
   // Reset state for next question
   const resetQuestionState = useCallback((nextQuestion) => {
     audio.setTranscription('');
     setTextAnswer('');
     setError('');
-    
+
     const isNextCoding = isCodingQuestionType(nextQuestion.type);
     setShowCodeEditor(isNextCoding);
-    
+
     if (isNextCoding) {
       codeEditor.resetCodeEditor(nextQuestion, codeEditor.language);
     }
@@ -349,17 +327,16 @@ const MockInterviewSystem = () => {
     stopCoaching();
     try {
       const overallFeedback = await interview.completeInterview(interview.interview.id);
-      
+
       setFeedback(overallFeedback || createFallbackFeedback(interview.responses));
       setCurrentStep('feedback');
-      
+
     } catch (err) {
       setError(`Failed to complete interview: ${err.message}`);
       setFeedback(createFallbackFeedback(interview.responses));
       setCurrentStep('feedback');
-      addDebugLog(`Complete interview failed: ${err.message}`, 'error');
     }
-  }, [interview, addDebugLog, stopCoaching]);
+  }, [interview, stopCoaching]);
 
   // Reset interview
   const resetInterview = useCallback(() => {
@@ -378,7 +355,7 @@ const MockInterviewSystem = () => {
     codeEditor.setCode('');
     codeEditor.setCodeOutput('');
     codeEditor.setCodeInput('');
-    
+
     if (cv.profileCV) {
       cv.changeCvMode('profile', setInterviewData);
     } else {
@@ -412,11 +389,11 @@ const MockInterviewSystem = () => {
   const handleManualCvChange = useCallback((e) => {
     const text = e.target.value;
     setInterviewData(prev => ({ ...prev, resumeText: text }));
-    
+
     if (cv.uploadedFile && text !== '') {
       cv.setUploadedFile(null);
     }
-    
+
     if (text.length > 0 && text.length < 50) {
       cv.setCvError('Please provide more detailed CV information (at least 50 characters)');
     } else {
@@ -435,14 +412,14 @@ const MockInterviewSystem = () => {
   const CVSection = useMemo(() => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-ink-2 mb-2">Resume/CV *</label>
-      
+
       <div className="flex gap-2 mb-3 flex-wrap">
         <button
           onClick={() => cv.changeCvMode('profile', setInterviewData)}
           disabled={!cv.profileCV}
           className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
-            cv.cvMode === 'profile' 
-              ? 'bg-primary-100 border-primary-500 text-primary-700' 
+            cv.cvMode === 'profile'
+              ? 'bg-primary-100 border-primary-500 text-primary-700'
               : cv.profileCV
                 ? 'bg-sand border-line text-ink-2 hover:bg-sand'
                 : 'bg-sand border-line text-ink-muted cursor-not-allowed'
@@ -452,12 +429,12 @@ const MockInterviewSystem = () => {
           Profile CV
           {cv.profileCV && <CheckCircle className="w-4 h-4 text-success-500" />}
         </button>
-        
+
         <button
           onClick={() => cv.changeCvMode('upload', setInterviewData)}
           className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
-            cv.cvMode === 'upload' 
-              ? 'bg-primary-100 border-primary-500 text-primary-700' 
+            cv.cvMode === 'upload'
+              ? 'bg-primary-100 border-primary-500 text-primary-700'
               : 'bg-sand border-line text-ink-2 hover:bg-sand'
           }`}
         >
@@ -468,8 +445,8 @@ const MockInterviewSystem = () => {
         <button
           onClick={() => cv.changeCvMode('manual', setInterviewData)}
           className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors ${
-            cv.cvMode === 'manual' 
-              ? 'bg-success-100 border-success-500 text-success-700' 
+            cv.cvMode === 'manual'
+              ? 'bg-success-100 border-success-500 text-success-700'
               : 'bg-sand border-line text-ink-2 hover:bg-sand'
           }`}
         >
@@ -626,8 +603,8 @@ const MockInterviewSystem = () => {
                 onClick={audio.initializeAudio}
                 disabled={audio.audioPermission}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
-                  audio.audioPermission 
-                    ? 'bg-success-100 text-success-700 border border-success-100' 
+                  audio.audioPermission
+                    ? 'bg-success-100 text-success-700 border border-success-100'
                     : 'bg-primary-600 hover:bg-primary-700 text-white'
                 }`}
               >
@@ -764,8 +741,8 @@ const MockInterviewSystem = () => {
                   <button
                     onClick={() => setAnswerMode('audio')}
                     className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 ${
-                      answerMode === 'audio' 
-                        ? 'bg-primary-50 border-primary-500 text-primary-700 shadow-lg' 
+                      answerMode === 'audio'
+                        ? 'bg-primary-50 border-primary-500 text-primary-700 shadow-lg'
                         : 'bg-sand border-line text-ink-2 hover:bg-sand'
                     }`}
                   >
@@ -780,8 +757,8 @@ const MockInterviewSystem = () => {
                   <button
                     onClick={() => setAnswerMode('text')}
                     className={`flex items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 ${
-                      answerMode === 'text' 
-                        ? 'bg-success-50 border-success-500 text-success-700 shadow-lg' 
+                      answerMode === 'text'
+                        ? 'bg-success-50 border-success-500 text-success-700 shadow-lg'
                         : 'bg-sand border-line text-ink-2 hover:bg-sand'
                     }`}
                   >
@@ -805,14 +782,14 @@ const MockInterviewSystem = () => {
                       onClick={audio.isRecording ? audio.stopRecording : audio.startRecording}
                       disabled={loading}
                       className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
-                        audio.isRecording 
-                          ? 'bg-danger-500 hover:bg-danger-600 text-white animate-pulse' 
+                        audio.isRecording
+                          ? 'bg-danger-500 hover:bg-danger-600 text-white animate-pulse'
                           : 'bg-primary-500 hover:bg-primary-600 text-white'
                       }`}
                     >
                       {audio.isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
                     </button>
-                    
+
                     {audio.audioBlob && (
                       <button
                         onClick={audio.playRecording}
@@ -836,7 +813,7 @@ const MockInterviewSystem = () => {
                         'Click microphone to record'
                       )}
                     </p>
-                    
+
                     {audio.audioBlob && (
                       <div className="bg-success-100 border border-success-100 rounded-xl p-2">
                         <p className="text-success-700 text-sm font-medium flex items-center justify-center gap-2">
@@ -845,7 +822,7 @@ const MockInterviewSystem = () => {
                         </p>
                       </div>
                     )}
-                    
+
                     {audio.isTranscribing && (
                       <div className="bg-primary-100 border border-primary-200 rounded-xl p-2">
                         <p className="text-primary-800 text-sm flex items-center justify-center gap-2">
@@ -917,9 +894,9 @@ const MockInterviewSystem = () => {
                   </>
                 )}
               </button>
-              
-              {((isCodingQuestion && codeEditor.code.trim()) || 
-                (!isCodingQuestion && ((answerMode === 'audio' && audio.transcription) || 
+
+              {((isCodingQuestion && codeEditor.code.trim()) ||
+                (!isCodingQuestion && ((answerMode === 'audio' && audio.transcription) ||
                 (answerMode === 'text' && textAnswer.trim())))) && (
                 <button
                   onClick={handleSubmitAnswer}
@@ -1122,7 +1099,7 @@ const MockInterviewSystem = () => {
                   if (!fb) return null;
                   // Scored by the server's basic estimate because the AI was unavailable: not an AI result.
                   const estimate = !response.skipped && isFallbackScored(fb);
-                  
+
                   return (
                     <div key={index} className="border border-line rounded-2xl p-4 hover:shadow-lg transition-shadow">
                       <div className="flex justify-between items-start mb-3">
@@ -1158,7 +1135,7 @@ const MockInterviewSystem = () => {
                           {estimate && <div className="text-[11px] font-medium text-ink-muted">basic estimate</div>}
                         </div>
                       </div>
-                      
+
                       <p className="text-ink-2 text-xs mb-3">{interview.questions[index]?.question}</p>
                       {estimate && (
                         <p role="note" className="mb-3 rounded-xl bg-sun-100 px-3 py-2 text-xs text-ink">
@@ -1166,7 +1143,7 @@ const MockInterviewSystem = () => {
                         </p>
                       )}
                       <ExecutionInfo execution={fb.execution} source={fb.executionSource} />
-                      
+
                       {!estimate && fb.strengths?.length > 0 && (
                         <div className="mb-2">
                           <h5 className="text-xs font-semibold text-success-700 mb-1">Strengths</h5>
@@ -1177,7 +1154,7 @@ const MockInterviewSystem = () => {
                           </ul>
                         </div>
                       )}
-                      
+
                       {!estimate && fb.improvements?.length > 0 && (
                         <div>
                           <h5 className="text-xs font-semibold text-sun-700 mb-1">Improvements</h5>
@@ -1272,33 +1249,8 @@ const MockInterviewSystem = () => {
       {currentStep === 'setup' && SetupPhase}
       {currentStep === 'interview' && InterviewPhase}
       {currentStep === 'feedback' && FeedbackPhase}
-      
-      {debugMode && (
-        <div className="fixed bottom-4 right-4 bg-ink-deep rounded-2xl shadow-2xl p-4 max-w-md">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-sm font-semibold text-success-500">Debug Console</h3>
-            <button 
-              onClick={() => setDebugLogs([])}
-              className="text-xs bg-danger-600 hover:bg-danger-700 text-white px-2 py-1 rounded"
-            >
-              Clear
-            </button>
-          </div>
-          <div className="max-h-48 overflow-y-auto text-xs font-mono space-y-1">
-            {debugLogs.slice(-10).map((log, index) => (
-              <div key={index} className={
-                log.type === 'error' ? 'text-danger-500' : 
-                log.type === 'warn' ? 'text-sun-400' : 
-                'text-success-500'
-              }>
-                <span className="text-ink-muted">[{log.timestamp}]</span> {log.message}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default MockInterviewSystem;
+export default Interview;
