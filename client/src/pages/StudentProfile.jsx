@@ -101,7 +101,7 @@ const CvAnalyses = ({ analyses }) => {
                   )}
                 </div>
               </div>
-              <ScoreBreakdown breakdown={r.scoreBreakdown} />
+              <ScoreBreakdown breakdown={r.scoreBreakdown} audience="lecturer" />
               <div className="grid gap-4 sm:grid-cols-2">
                 <List title="Strengths" items={r.strengths} />
                 <List title="Weaknesses" items={r.weaknesses} />
