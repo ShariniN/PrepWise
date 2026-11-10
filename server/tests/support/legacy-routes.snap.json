@@ -405,6 +405,7 @@
           "results": [
             {
               "jobIndex": 0,
+              "kind": "job_description",
               "matchPercentage": 72,
               "isNonTechRole": false,
               "recommendationsUnavailable": false,
@@ -432,6 +433,7 @@
             },
             {
               "jobIndex": 0,
+              "kind": "job_description",
               "matchPercentage": 0,
               "isNonTechRole": true,
               "recommendationsUnavailable": false,
@@ -448,6 +450,7 @@
             },
             {
               "jobIndex": 0,
+              "kind": "job_description",
               "matchPercentage": 40,
               "isNonTechRole": false,
               "recommendationsUnavailable": false,
@@ -498,6 +501,7 @@
           "averageMatch": 56,
           "bestMatch": {
             "jobIndex": 0,
+            "kind": "job_description",
             "matchPercentage": 72,
             "isNonTechRole": false,
             "recommendationsUnavailable": false,
@@ -948,6 +952,7 @@
       "interview": {
         "userId": "<id>",
         "institutionId": "<id>",
+        "targetRoleId": null,
         "jobDescription": "JD",
         "resumeText": "CV",
         "questions": [
@@ -985,6 +990,9 @@
           }
         ],
         "totalQuestions": 2,
+        "startLevel": null,
+        "levelReached": null,
+        "readiness": null,
         "currentQuestionIndex": 0,
         "status": "in_progress",
         "usedProfileCV": false,
@@ -1015,6 +1023,7 @@
         {
           "userId": "<id>",
           "institutionId": "<id>",
+          "targetRoleId": null,
           "jobDescription": "JD",
           "resumeText": "CV",
           "questions": [
@@ -1052,6 +1061,9 @@
             }
           ],
           "totalQuestions": 2,
+          "startLevel": null,
+          "levelReached": null,
+          "readiness": null,
           "currentQuestionIndex": 0,
           "status": "in_progress",
           "usedProfileCV": false,

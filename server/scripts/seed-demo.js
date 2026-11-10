@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { connect, isMain, run } from './_db.js';
 import { demoPlan, buildDemoActivity } from './demoActivity.js';
+import { DEFAULT_TARGET_ROLES } from '../config/defaultTargetRoles.js';
 
 // Which demo universities get fake interview and CV activity.
 export const ACTIVITY_SLUGS = ['demo-a'];
@@ -18,9 +19,12 @@ const LAST = ['Adams', 'Brooks', 'Chen', 'Dias', 'Evans', 'Fox', 'Gupta', 'Hughe
 // University A uses short, memorable logins on email.com so demos are easy to run.
 // Demo only: never use these passwords for anything real.
 export const DEMOS = [
-  { name: 'Demo University A', slug: 'demo-a', domain: 'demo-a.test', loginDomain: 'email.com', limit: 60 },
+  { name: 'Demo University A', slug: 'demo-a', domain: 'demo-a.test', loginDomain: 'email.com', limit: 60, selfSignup: true },
   { name: 'Demo University B', slug: 'demo-b', domain: 'demo-b.test', loginDomain: 'demo-b.test', limit: 45 },
 ];
+
+// Each demo lecturer sees one group.
+export const LECTURER_GROUPS = { 'Leo Lecturer': ['Group 1'], 'Lena Lecturer': ['Group 2'] };
 
 export const DEMO_PASSWORDS = {
   university_admin: 'admin@123',
@@ -67,6 +71,7 @@ export const main = async () => {
     const institution = await Institution.create({
       name: d.name, slug: d.slug, contractedStudentLimit: d.limit,
       allowedEmailDomains: [...new Set([d.domain, d.loginDomain])],
+      selfSignup: Boolean(d.selfSignup), targetRoles: DEFAULT_TARGET_ROLES,
       contractStart: new Date(), contractEnd: new Date(Date.now() + 365 * 24 * 3600 * 1000),
     });
     console.log(`\n=== ${d.name} (slug ${d.slug}, student limit ${d.limit}) ===`);
@@ -83,7 +88,7 @@ export const main = async () => {
       ['Lena Lecturer', `lecturer2@${d.domain}`, 'lecturer'],
     ]) {
       const password = DEMO_PASSWORDS[role];
-      staff.push(await make(name, email, role, password));
+      staff.push(await make(name, email, role, password, LECTURER_GROUPS[name] ? { assignedGroups: LECTURER_GROUPS[name] } : {}));
       console.log(`${role.padEnd(16)} ${email}  password: ${password}`);
     }
 

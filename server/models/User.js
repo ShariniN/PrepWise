@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ROLES } from '../config/roles.js';
+import { cleanGroup } from '../modules/people/people.service.js';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -58,9 +59,23 @@ const userSchema = new mongoose.Schema({
   // New documents are created explicitly as 'invited'; the default keeps pre-existing users active.
   status: {
     type: String,
-    enum: ['invited', 'active', 'deactivated'],
+    enum: ['invited', 'unverified', 'active', 'deactivated'],
     default: 'active'
   },
+  // The role this student is practising for (an _id in the institution's targetRoles). Null when not chosen.
+  targetRoleId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  // Lecturers only: the groups whose students this lecturer can see. Each value is cleaned like `group`.
+  assignedGroups: {
+    type: [String],
+    default: [],
+    set: (groups) => (Array.isArray(groups)
+      ? [...new Set(groups.map((g) => cleanGroup(g)).filter(Boolean))]
+      : groups),
+    validate: { validator: (arr) => arr.length <= 20, message: 'A lecturer can have at most 20 assigned groups' }
+  },
+  // Self-signup email verification. An 'unverified' account has no seat and cannot log in.
+  emailVerifyTokenHash: { type: String, default: '', index: true },
+  emailVerifyExpiresAt: { type: Date, default: null },
   inviteTokenHash: { type: String, default: '', index: true },
   inviteExpiresAt: { type: Date, default: null },
   isAccountVerified: {
@@ -182,6 +197,8 @@ userSchema.methods.toJSON = function() {
   delete userObject.resetOtpExpireAt;
   delete userObject.inviteTokenHash;
   delete userObject.inviteExpiresAt;
+  delete userObject.emailVerifyTokenHash;
+  delete userObject.emailVerifyExpiresAt;
   return userObject;
 };
 

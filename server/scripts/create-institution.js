@@ -3,6 +3,7 @@
 // Optional: --slug, --ai-cap (monthly AI calls, default 20000), --contract-start/--contract-end (YYYY-MM-DD)
 import { parseArgs } from 'node:util';
 import { connect, isMain, run, slugify } from './_db.js';
+import { DEFAULT_TARGET_ROLES } from '../config/defaultTargetRoles.js';
 
 export const parseCreateArgs = (argv) => {
   const { values } = parseArgs({
@@ -47,7 +48,7 @@ const main = async () => {
 
   const { adminEmail, adminName, ...institutionFields } = args;
   if (institutionFields.monthlyAiCallCap === undefined) delete institutionFields.monthlyAiCallCap;
-  const institution = await Institution.create(institutionFields);
+  const institution = await Institution.create({ ...institutionFields, targetRoles: DEFAULT_TARGET_ROLES });
 
   const invite = tokens.createInviteToken();
   const admin = await userModel.create({
