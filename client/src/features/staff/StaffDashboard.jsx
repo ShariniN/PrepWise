@@ -9,7 +9,7 @@ import OverviewPanel, { OverviewSkeleton } from './components/OverviewPanel';
 import StudentTable from './components/StudentTable';
 import useApiData from '../../hooks/useApiData';
 import { getOverview, listStudents, downloadStudentsCsv } from './api';
-import { saveBlob } from '../../api/analytics';
+import { saveBlob } from '../../utils/download';
 import { errorMessage } from '../../api/client';
 import { AppContext } from '../../app/AppContext';
 import { ROLES } from '../../utils/roles';

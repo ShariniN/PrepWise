@@ -10,7 +10,8 @@ import { ErrorState, LoadingState } from '../../components/DataStates';
 import InsufficientData from './components/InsufficientData';
 import StatCard from './components/StatCard';
 import useApiData from '../../hooks/useApiData';
-import { admin, saveBlob } from '../../api/analytics';
+import { admin } from './api';
+import { saveBlob } from '../../utils/download';
 import { errorMessage } from '../../api/client';
 
 const Evidence = () => {

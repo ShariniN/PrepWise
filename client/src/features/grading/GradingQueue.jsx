@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import AppShell from '../../components/AppShell';
-import { grading } from '../../api/analytics';
+import { grading } from './api';
 import { errorMessage } from '../../api/client';
 import useApiData from '../../hooks/useApiData';
 import GradingDetail from './components/GradingDetail';

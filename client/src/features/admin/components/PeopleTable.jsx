@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api, { errorMessage } from '../../../api/client';
 import { ROLE_LABELS } from '../../../utils/roles';
 import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../../../components/ui';
-import ConfirmDialog from './PeopleConfirmDialog';
+import ConfirmDialog from '../../../components/ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';
 
 const STATUS_TONE = { active: 'success', invited: 'primary', deactivated: 'neutral' };

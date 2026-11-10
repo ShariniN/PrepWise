@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { grading } from '../../../api/analytics';
+import { grading } from '../api';
 import { errorCode, errorMessage } from '../../../api/client';
 import { ErrorState, LoadingState } from '../../../components/DataStates';
 import { Button, Input, Textarea } from '../../../components/ui';

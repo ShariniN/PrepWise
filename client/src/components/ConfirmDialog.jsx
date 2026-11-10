@@ -2,7 +2,10 @@ import React from 'react';
 import { Modal, Button } from './ui';
 
 // Small modal confirmation. Escape or Cancel closes it.
-const ConfirmDialog = ({ title, children, confirmLabel = 'Confirm', busy = false, onConfirm, onCancel }) => (
+// The body is either `children` (spaced blocks) or a single `message`.
+const ConfirmDialog = ({
+  title, message, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', confirmDisabled = false, danger, busy = false, onConfirm, onCancel,
+}) => (
   <Modal
     open
     onClose={onCancel}
@@ -10,12 +13,14 @@ const ConfirmDialog = ({ title, children, confirmLabel = 'Confirm', busy = false
     size="sm"
     footer={(
       <>
-        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button loading={busy} onClick={onConfirm}>{busy ? 'Working...' : confirmLabel}</Button>
+        <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
+        <Button variant={danger ? 'danger' : 'primary'} loading={busy} disabled={confirmDisabled || busy} onClick={onConfirm}>{busy ? 'Working...' : confirmLabel}</Button>
       </>
     )}
   >
-    <div className="space-y-2 text-sm text-ink-2">{children}</div>
+    {children
+      ? <div className="space-y-2 text-sm text-ink-2">{children}</div>
+      : <div className="text-sm text-ink-2">{message}</div>}
   </Modal>
 );
 
