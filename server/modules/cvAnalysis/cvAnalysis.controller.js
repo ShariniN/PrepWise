@@ -1,10 +1,10 @@
-import pdfParse from "pdf-parse";
 import crypto from 'crypto';
 import CVAnalysis from "../../models/CvAnalysis.js";
 import userModel from '../../models/User.js';
 import { GEMINI_MODEL, CV_MODELS, AI_MODELS } from '../../config/ai.js';
 import { generateWithFallback } from '../../services/geminiClient.js';
 import { scoreResume } from './cvAnalysis.scoring.js';
+import { pdfText } from '../../services/pdfText.js';
 
 
 // Utility functions
@@ -459,8 +459,7 @@ export const analyzeResume = async (req, res) => {
 
       try {
         // Parse PDF file
-        const pdfData = await pdfParse(req.file.buffer);
-        resumeText = pdfData.text.trim();
+        resumeText = (await pdfText(req.file.buffer)).trim();
         
         if (!resumeText || resumeText.length < 100) {
           return res.status(400).json({

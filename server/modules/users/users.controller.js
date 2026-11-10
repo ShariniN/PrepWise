@@ -1,7 +1,7 @@
 import userModel from "../../models/User.js";
 import bcrypt from "bcryptjs";
 import crypto from 'crypto';
-import pdf from 'pdf-parse';
+import { pdfText } from '../../services/pdfText.js';
 import { NOT_PDF_MESSAGE } from '../../middleware/pdfUpload.js';
 import { passwordOk, PASSWORD_MESSAGE, normalizePhone, PHONE_MESSAGE } from '../../services/accountRules.js';
 
@@ -10,8 +10,7 @@ class NotPdfError extends Error {}
 
 const extractTextFromPDF = async (buffer) => {
   try {
-    const data = await pdf(buffer);
-    return data.text;
+    return await pdfText(buffer);
   } catch (error) {
     console.error('PDF extraction error:', error.message);
     throw new NotPdfError(NOT_PDF_MESSAGE);

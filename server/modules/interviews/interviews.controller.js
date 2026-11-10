@@ -1,7 +1,7 @@
 import InterviewModel from '../../models/Interview.js';
 import userModel from '../../models/User.js';
 import pdfUpload, { NOT_PDF_MESSAGE } from '../../middleware/pdfUpload.js';
-import pdfParse from 'pdf-parse';
+import { pdfText } from '../../services/pdfText.js';
 import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from '../../services/aiService.js';
 import { generateStarterCode, selectBestLanguage } from './interviews.starterCode.js';
 import { verifyCodeServerSide } from '../../services/interviewExecution.js';
@@ -86,8 +86,7 @@ export const processCV = async (req, res) => {
       }
 
       try {
-        const pdfData = await pdfParse(req.file.buffer);
-        const extractedText = pdfData.text;
+        const extractedText = await pdfText(req.file.buffer);
         
         if (!extractedText || extractedText.trim().length === 0) {
           return res.status(400).json({
