@@ -2,6 +2,7 @@
 // Usage: npm run dev:local            (data persists in server/.local-db between runs)
 //        npm run dev:local -- --fresh (wipe the local database first)
 // Demo data only: fake universities, fake users, fake questions.
+// To run a second copy side by side (e.g. for testing), set PORT, LOCAL_DB_DIR, LOCAL_MONGO_PORT and CLIENT_URL.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -9,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(here, '..', '.local-db');
+const dbPath = process.env.LOCAL_DB_DIR ? path.resolve(process.env.LOCAL_DB_DIR) : path.join(here, '..', '.local-db');
+const mongoPort = Number(process.env.LOCAL_MONGO_PORT) || 27111;
 
 if (process.argv.includes('--fresh')) fs.rmSync(dbPath, { recursive: true, force: true });
 fs.mkdirSync(dbPath, { recursive: true });
@@ -17,7 +19,7 @@ fs.mkdirSync(dbPath, { recursive: true });
 const secretFile = path.join(dbPath, 'jwt-secret.txt');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'));
 
-const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: 'wiredTiger', port: 27111 } });
+const mongod = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: 'wiredTiger', port: mongoPort } });
 
 // Set before importing anything that reads the environment (dotenv never overrides existing values).
 process.env.MONGODB_URI = mongod.getUri();
