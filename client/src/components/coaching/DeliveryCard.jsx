@@ -96,12 +96,6 @@ export default function DeliveryCard({ metrics, fillerBreakdown }) {
 
       <DeliveryMetricsGrid m={m} fillerBreakdown={fillerBreakdown} cameraUsed={m.cameraUsed} />
 
-      {m.cameraUsed && m.faceVisiblePct === 0 && (
-        <p className="mt-2 text-xs text-ink-2">
-          No face was detected during this answer, so there are no eye contact numbers. Check that your face is in
-          the picture and well lit.
-        </p>
-      )}
       {!m.cameraUsed && <p className="mt-2 text-xs text-ink-2">Camera coaching was off for this answer.</p>}
 
       {tips.length > 0 && (

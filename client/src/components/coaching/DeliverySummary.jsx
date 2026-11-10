@@ -9,7 +9,6 @@ export default function DeliverySummary({ metricsList }) {
   const s = summariseDelivery(metricsList);
   if (s.answersWithCamera === 0 && s.answersWithSpeech === 0 && s.fillerWordCount === null) return null;
   const tips = deliveryTips(s, { max: 4 });
-  const noFaceAtAll = s.answersWithCamera > 0 && s.faceVisiblePct === 0;
 
   return (
     <section className="mb-8 rounded-3xl border border-line bg-surface p-6 shadow-soft" aria-labelledby="delivery-summary-title" data-testid="delivery-summary">
@@ -28,13 +27,6 @@ export default function DeliverySummary({ metricsList }) {
       </p>
 
       <DeliveryMetricsGrid m={s} cameraUsed={s.answersWithCamera > 0} />
-
-      {noFaceAtAll && (
-        <p className="mt-3 text-sm text-ink-2">
-          Your face was not detected in any answer. Next time, sit facing the camera with light in front of you and
-          check the preview on the setup screen.
-        </p>
-      )}
 
       {tips.length > 0 && (
         <div className="mt-4 rounded-2xl bg-primary-50 p-4">

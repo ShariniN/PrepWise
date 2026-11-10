@@ -17,6 +17,8 @@ const SAMPLE_INTERVAL_MS = 200; // about 5 frames a second
 const RECENT_WINDOW_MS = 5000; // samples kept for the live hint
 const MAX_SAMPLES = 5 * 60 * 30; // 30 minutes at 5 fps, a safety cap per answer
 const HINT_CLEAR_DELAY_MS = 1000; // keep a hint up briefly so it does not flicker
+const GPU_TIMEOUT_MS = 10000; // then fall back to the CPU
+const CPU_TIMEOUT_MS = 30000; // then give up and say so (the interview carries on without coaching)
 
 async function createLandmarker() {
   const vision = await import('@mediapipe/tasks-vision');
@@ -30,12 +32,27 @@ async function createLandmarker() {
     outputFaceBlendshapes: true,
     outputFacialTransformationMatrixes: true,
   });
+  const gpu = vision.FaceLandmarker.createFromOptions(WASM_FILESET, options('GPU'));
   try {
-    return await vision.FaceLandmarker.createFromOptions(WASM_FILESET, options('GPU'));
+    return await withTimeout(gpu, GPU_TIMEOUT_MS, 'GPU start timed out');
   } catch {
     // No usable GPU (common on older laptops and in automated browsers): the CPU path is fine at 5 fps.
-    return vision.FaceLandmarker.createFromOptions(WASM_FILESET, options('CPU'));
+    // If the GPU attempt finishes late, free it.
+    gpu.then((late) => late.close()).catch(() => {});
+    return withTimeout(
+      vision.FaceLandmarker.createFromOptions(WASM_FILESET, options('CPU')),
+      CPU_TIMEOUT_MS,
+      'loading the face model took too long',
+    );
   }
+}
+
+function withTimeout(promise, ms, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), ms); }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 function cameraErrorMessage(err) {
@@ -216,7 +233,8 @@ export function useFaceCoaching() {
       releaseCamera();
       setStream(null);
       setStatus('error');
-      setError(`Camera coaching could not start${err?.message ? ` (${err.message})` : ''}. Your interview works as normal without it.`);
+      console.warn('Camera coaching could not start:', err?.message || err);
+      setError('Camera coaching could not start on this device. Your interview works as normal without it.');
       return;
     }
     if (run !== runRef.current) return;
