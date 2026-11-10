@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useId, useRef, useState } from 'react';
 import { EDITOR_LANGUAGES } from '../utils/practice';
 
 const Editor = React.lazy(async () => {
@@ -36,6 +36,9 @@ const CodeEditor = ({
   value, onChange, language = 'javascript', onLanguageChange, languages,
   recorder, readOnly = false, height = '380px', ariaLabel = 'Code editor',
 }) => {
+  // Each editor needs its own Monaco model. A shared path (one per language) made every editor on a
+  // page share one text buffer, e.g. the starter code silently became the reference solution.
+  const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const [prefs, setPrefs] = useState(readPrefs);
   const [failed, setFailed] = useState(false);
   const prev = useRef(value || '');
@@ -118,7 +121,7 @@ const CodeEditor = ({
               <Editor
                 height={height}
                 language={language}
-                path={`prepwise-${language}`}
+                path={`prepwise-${instanceId}-${language}`}
                 value={value}
                 theme={prefs.theme === 'dark' ? 'vs-dark' : 'light'}
                 onChange={handleChange}
