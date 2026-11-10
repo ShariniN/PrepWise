@@ -149,9 +149,23 @@ test('top missing skills come from each student latest CV analysis only', async 
   db.addCv(studentsA[0], [db.result(70, { missing: ['sql'] }), db.result(60, { missing: ['SQL', 'git'] })], { daysAgo: 1 });
   db.addCv(studentsA[1], [db.result(70, { missing: ['git'] })]);
   db.addCv(studentsA[2], [db.result(70, { missing: ['git', 'rest'], aiAvailable: false })]);
+  db.addCv(studentsA[3], [db.result(80, { missing: [] })]);
+  db.addCv(studentsA[4], [db.result(75, { missing: ['docker'] })]);
   const ov = await get('/api/lecturer/overview', lecA);
-  assert.deepEqual(ov.body.cv.topMissingSkills, [{ skill: 'git', students: 3 }, { skill: 'rest', students: 1 }, { skill: 'sql', students: 1 }]);
-  assert.equal(ov.body.cv.studentsWithAnalysis, 3);
+  assert.deepEqual(ov.body.cv.topMissingSkills, [{ skill: 'git', students: 3 }, { skill: 'docker', students: 1 }, { skill: 'rest', students: 1 }, { skill: 'sql', students: 1 }]);
+  assert.equal(ov.body.cv.studentsWithAnalysis, 5);
+  assert.equal(ov.body.cv.topMissingSkillsInsufficientData, false);
+});
+
+// Same 5-student rule as every other aggregate: with fewer contributing students the chips would point at individuals.
+test('top missing skills are held back when fewer than 5 students have a CV analysis', async () => {
+  for (const s of studentsA.slice(0, 4)) db.addCv(s, [db.result(70, { missing: ['docker'] })]);
+  const ov = await get('/api/lecturer/overview', lecA);
+  assert.deepEqual(ov.body.cv.topMissingSkills, []);
+  assert.equal(ov.body.cv.topMissingSkillsInsufficientData, true);
+  assert.equal(ov.body.cv.studentsWithAnalysis, 4);
+  const g = await get('/api/lecturer/overview', lecA, { group: 'Group 1' });
+  assert.deepEqual(g.body.cv.topMissingSkills, [], 'also inside a small group');
 });
 
 test('averages need at least 5 students; fewer gives null with a notice', async () => {

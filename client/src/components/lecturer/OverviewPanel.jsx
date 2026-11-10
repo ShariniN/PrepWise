@@ -82,7 +82,9 @@ const OverviewPanel = ({ data }) => {
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-sm text-ink-2">No missing skills recorded yet.</p>}
+            ) : cv.topMissingSkillsInsufficientData
+              ? <p className="text-sm text-ink-2">Not enough data: shown once at least {cv.minimum || 5} students have analysed a CV.</p>
+              : <p className="text-sm text-ink-2">No missing skills recorded yet.</p>}
             <p className="mt-2 text-xs text-ink-2">Number = students whose latest CV misses the skill for at least one job ({cv.studentsWithAnalysis} students analysed a CV).</p>
           </div>
           <FootNote>
