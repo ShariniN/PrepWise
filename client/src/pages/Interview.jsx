@@ -28,6 +28,7 @@ import {
   isSetupValid, 
   processFeedback,
   createFallbackFeedback,
+  isFallbackScored,
   formatTime,
   SUPPORTED_LANGUAGES
 } from '../utils/interviewUtils';
@@ -40,7 +41,9 @@ const MockInterviewSystem = () => {
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(0);
   const [feedback, setFeedback] = useState(null);
-  
+  // The server used its generic practice questions because the AI could not tailor them (QA-05).
+  const [fallbackNoticeDismissed, setFallbackNoticeDismissed] = useState(false);
+
   // Interview data
   const [interviewData, setInterviewData] = useState({
     jobDescription: '',
@@ -366,6 +369,7 @@ const MockInterviewSystem = () => {
     setAnswerMode('audio');
     setShowCodeEditor(false);
     setFeedback(null);
+    setFallbackNoticeDismissed(false);
     setTimer(0);
     stopCoaching();
     resetSamples();
@@ -381,6 +385,13 @@ const MockInterviewSystem = () => {
       cv.changeCvMode('upload', setInterviewData);
     }
   }, [interview, codeEditor, cv, stopCoaching, resetSamples]);
+
+  // Back to the setup screen with the same job description, to try for tailored questions again.
+  const retryTailoredQuestions = useCallback(() => {
+    const jobDescription = interviewData.jobDescription;
+    resetInterview();
+    setInterviewData(prev => ({ ...prev, jobDescription }));
+  }, [interviewData.jobDescription, resetInterview]);
 
   // Event handlers
   const handleJobDescriptionChange = useCallback((e) => {
@@ -685,6 +696,28 @@ const MockInterviewSystem = () => {
           </div>
         </div>
       </div>
+
+      {interview.interview?.usedFallbackQuestions && !fallbackNoticeDismissed && (
+        <div role="status" className="mb-6 flex flex-col gap-3 rounded-3xl border border-sun-200 bg-sun-100 p-4 text-sm text-ink sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <p className="font-semibold">These are generic practice questions</p>
+            <p className="mt-1 text-ink-2">
+              The AI is unavailable right now, so the questions are not tailored to your CV and this job description.
+              You can practise with them, or go back and try again later for tailored questions.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button type="button" onClick={retryTailoredQuestions}
+              className="rounded-full bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700">
+              Go back and try again
+            </button>
+            <button type="button" onClick={() => setFallbackNoticeDismissed(true)}
+              className="rounded-full border border-line bg-surface px-4 py-2 font-semibold text-ink-2 hover:bg-sand">
+              Continue with these
+            </button>
+          </div>
+        </div>
+      )}
 
       <div>
         <div className={`grid gap-6 ${showCodeEditor && isCodingQuestion ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-4xl mx-auto'}`}>
@@ -997,7 +1030,7 @@ const MockInterviewSystem = () => {
       <audio ref={audio.audioPlaybackRef} className="hidden" />
       <CameraSelfView coaching={coaching} measuring={answeringNow} />
     </AppShell>
-  ), [interview, timer, isCodingQuestion, answerMode, audio, textAnswer, codeEditor, showCodeEditor, loading, error, handleSubmitAnswer, handleSkipQuestion, coaching, answeringNow]);
+  ), [interview, timer, isCodingQuestion, answerMode, audio, textAnswer, codeEditor, showCodeEditor, loading, error, handleSubmitAnswer, handleSkipQuestion, coaching, answeringNow, fallbackNoticeDismissed, retryTailoredQuestions]);
 
   // Feedback Phase Component
   const FeedbackPhase = useMemo(() => (
@@ -1006,21 +1039,42 @@ const MockInterviewSystem = () => {
         <div>
           {feedback && (
             <div className="bg-surface rounded-3xl shadow-soft border border-line p-6 mb-8">
-              <div className="text-center mb-6">
-                <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full text-3xl font-bold text-white mb-4 ${
-                  feedback.score >= 80 ? 'bg-success-500' :
-                  feedback.score >= 60 ? 'bg-sun-500' :
-                  'bg-danger-500'
-                }`}>
-                  {feedback.score}%
+              {typeof feedback.score === 'number' ? (
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full text-3xl font-bold text-white mb-4 ${
+                    feedback.score >= 80 ? 'bg-success-500' :
+                    feedback.score >= 60 ? 'bg-sun-500' :
+                    'bg-danger-500'
+                  }`}>
+                    {feedback.score}%
+                  </div>
+                  <h2 className="text-2xl font-bold text-ink">{feedback.scoreIsPartial ? 'Overall Score (partial)' : 'Overall Score'}</h2>
+                  <p className="text-ink-2">
+                    {feedback.score >= 80 ? 'Excellent Performance!' :
+                     feedback.score >= 60 ? 'Good Performance!' :
+                     'Room for Improvement'}
+                  </p>
+                  {feedback.excludedFallbackAnswers > 0 && (
+                    <p className="mx-auto mt-3 max-w-xl rounded-2xl bg-sun-100 px-4 py-2 text-sm text-ink">
+                      Based on {feedback.scoredAnswers} AI-scored {feedback.scoredAnswers === 1 ? 'answer' : 'answers'}.{' '}
+                      {feedback.excludedFallbackAnswers} {feedback.excludedFallbackAnswers === 1 ? 'answer has' : 'answers have'} only
+                      a basic automatic estimate because AI feedback was unavailable, so {feedback.excludedFallbackAnswers === 1 ? 'it is' : 'they are'} not counted.
+                    </p>
+                  )}
                 </div>
-                <h2 className="text-2xl font-bold text-ink">Overall Score</h2>
-                <p className="text-ink-2">
-                  {feedback.score >= 80 ? 'Excellent Performance!' :
-                   feedback.score >= 60 ? 'Good Performance!' :
-                   'Room for Improvement'}
-                </p>
-              </div>
+              ) : (
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full text-3xl font-bold text-ink-2 bg-sand border border-line mb-4" aria-hidden="true">
+                    -
+                  </div>
+                  <h2 className="text-2xl font-bold text-ink">No overall score</h2>
+                  <p className="mx-auto mt-1 max-w-xl text-ink-2">
+                    {feedback.excludedFallbackAnswers > 0
+                      ? 'AI feedback was unavailable for your answers, so they only have a basic automatic estimate and no overall score was calculated. Try another interview later for AI feedback.'
+                      : 'No answers were scored in this interview.'}
+                  </p>
+                </div>
+              )}
 
               {feedback.feedback?.recommendations && feedback.feedback.recommendations.length > 0 && (
                 <div className="bg-primary-50 p-4 rounded-xl border border-primary-100">
@@ -1055,12 +1109,15 @@ const MockInterviewSystem = () => {
                 {interview.responses.map((response, index) => {
                   const fb = interview.questionFeedbacks[response.questionId];
                   if (!fb) return null;
+                  // Scored by the server's basic estimate because the AI was unavailable: not an AI result.
+                  const estimate = !response.skipped && isFallbackScored(fb);
                   
                   return (
                     <div key={index} className="border border-line rounded-2xl p-4 hover:shadow-lg transition-shadow">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm ${
+                            estimate ? 'bg-ink-muted' :
                             fb.score >= 80 ? 'bg-success-500' :
                             fb.score >= 60 ? 'bg-sun-500' :
                             'bg-danger-500'
@@ -1080,19 +1137,26 @@ const MockInterviewSystem = () => {
                         </div>
                         <div className="text-right">
                           <div className={`text-lg font-bold ${
+                            estimate ? 'text-ink-muted' :
                             fb.score >= 80 ? 'text-success-600' :
                             fb.score >= 60 ? 'text-sun-600' :
                             'text-danger-600'
                           }`}>
-                            {response.skipped ? 'SKIP' : `${fb.score}%`}
+                            {response.skipped ? 'SKIP' : estimate ? `~${fb.score}%` : `${fb.score}%`}
                           </div>
+                          {estimate && <div className="text-[11px] font-medium text-ink-muted">basic estimate</div>}
                         </div>
                       </div>
                       
                       <p className="text-ink-2 text-xs mb-3">{interview.questions[index]?.question}</p>
+                      {estimate && (
+                        <p role="note" className="mb-3 rounded-xl bg-sun-100 px-3 py-2 text-xs text-ink">
+                          AI feedback was unavailable for this answer; this is a basic automatic estimate. It is not counted in your overall score.
+                        </p>
+                      )}
                       <ExecutionInfo execution={fb.execution} source={fb.executionSource} />
                       
-                      {fb.strengths?.length > 0 && (
+                      {!estimate && fb.strengths?.length > 0 && (
                         <div className="mb-2">
                           <h5 className="text-xs font-semibold text-success-700 mb-1">Strengths</h5>
                           <ul className="text-xs text-success-600 space-y-0.5">
@@ -1103,7 +1167,7 @@ const MockInterviewSystem = () => {
                         </div>
                       )}
                       
-                      {fb.improvements?.length > 0 && (
+                      {!estimate && fb.improvements?.length > 0 && (
                         <div>
                           <h5 className="text-xs font-semibold text-sun-700 mb-1">Improvements</h5>
                           <ul className="text-xs text-sun-600 space-y-0.5">

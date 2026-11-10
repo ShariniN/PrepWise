@@ -87,7 +87,9 @@ export const processFeedback = (rawFeedback, isCodingQuestion) => {
     questionRelevance: feedback.questionRelevance || 5,
     responseType: feedback.responseType || 'submitted',
     execution: feedback.execution,
-    executionSource: feedback.executionSource
+    executionSource: feedback.executionSource,
+    // 'ai', or 'fallback' when the AI was unavailable and the server used its basic estimate.
+    source: feedback.source || null
   };
 
   if (!isCodingQuestion) {
@@ -120,14 +122,25 @@ export const processFeedback = (rawFeedback, isCodingQuestion) => {
   };
 };
 
+// True when this answer was scored by the server's basic estimate because the AI was unavailable.
+export const isFallbackScored = (fb) => fb?.source === 'fallback';
+
+// Used only when the server's summary could not be loaded. Like the server, it leaves out answers that were
+// scored by the basic estimate; the score is null when no answer had an AI score.
 export const createFallbackFeedback = (responses) => {
-  const validResponses = responses.filter(r => !r.skipped);
-  const averageScore = validResponses.length > 0 
-    ? Math.round(validResponses.reduce((sum, r) => sum + (r.score || 50), 0) / validResponses.length)
-    : 50;
+  const answered = responses.filter(r => !r.skipped);
+  const validResponses = answered.filter(r => !isFallbackScored(r.feedback));
+  const excludedFallbackAnswers = answered.length - validResponses.length;
+  if (validResponses.length === 0) {
+    return { score: null, excludedFallbackAnswers, scoredAnswers: 0, scoreIsPartial: false, feedback: { recommendations: [] } };
+  }
+  const averageScore = Math.round(validResponses.reduce((sum, r) => sum + (r.score || 50), 0) / validResponses.length);
 
   return {
     score: averageScore,
+    excludedFallbackAnswers,
+    scoredAnswers: validResponses.length,
+    scoreIsPartial: excludedFallbackAnswers > 0,
     feedback: {
       technicalSkills: {
         score: Math.max(averageScore - 10, 0),
