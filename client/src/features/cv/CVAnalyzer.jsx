@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
 import ScoreBreakdown from './components/ScoreBreakdown';
-import SkillsAssessment from './components/SkillsAssessment';
 import CircularProgress from './components/CircularProgress';
 import StructuredRecommendations from './components/StructuredRecommendations';
 import { CheckCircle, XCircle, FileText, Target, BarChart3, Star, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
@@ -25,7 +24,6 @@ const CVAnalyzer = () => {
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [resumeData, setResumeData] = useState(null);
-  const [currentView, setCurrentView] = useState('analysis');
   const [savedIndices, setSavedIndices] = useState([]);
 
   // Profile CV state
@@ -344,21 +342,6 @@ const handleSaveIndividualAnalysis = async (index) => {
   }
 };
 
-  // Navigate to Skills Assessment
-  const handleNavigateToSkillsAssessment = () => {
-    if (!resumeData) {
-      setError("No resume analysis available for skills assessment. Please analyze your resume first.");
-      return;
-    }
-
-    if (!resumeData.extractedTechnologies || resumeData.extractedTechnologies.length === 0) {
-      setError("No technologies were extracted from your resume. Please ensure your resume contains technical skills and try analyzing again.");
-      return;
-    }
-
-    setCurrentView('skills');
-  };
-
   // Clear all data
   const handleClear = () => {
     setResumeFile(null);
@@ -367,13 +350,7 @@ const handleSaveIndividualAnalysis = async (index) => {
     setError(null);
     setResumeData(null);
     setSavedIndices([]);
-    setCurrentView('analysis');
     setUseProfileCV(false);
-  };
-
-  // Handle back navigation
-  const handleBackFromSkills = () => {
-    setCurrentView('analysis');
   };
 
   // Render CV source selection
@@ -576,17 +553,6 @@ const handleSaveIndividualAnalysis = async (index) => {
     );
   };
 
-  // Render Skills Assessment view
-  if (currentView === 'skills') {
-    return (
-      <SkillsAssessment
-        resumeHash={resumeData?.resumeHash}
-        extractedTechnologies={resumeData?.extractedTechnologies || []}
-        onBack={handleBackFromSkills}
-      />
-    );
-  }
-
   return (
     <AppShell
       width="wide"
@@ -788,48 +754,13 @@ const handleSaveIndividualAnalysis = async (index) => {
                     )}
                   </div>
 
-                  {/* Skills Assessment Navigation */}
-                  <div className="bg-primary-50 border border-primary-200 p-6 md:p-8 rounded-3xl shadow-card">
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-primary-500 rounded-2xl shadow-soft">
-                          <BarChart3 className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-xl md:text-2xl font-bold text-ink">Skills Assessment</h3>
-                          <p className="text-ink-2 mt-1">
-                            Rate your confidence level for each extracted technology
-                            {resumeData?.extractedTechnologies?.length > 0 && (
-                              <span className="ml-1 text-primary-600 font-semibold">
-                                ({resumeData.extractedTechnologies.length} technologies found)
-                              </span>
-                            )}
-                          </p>
-                          {resumeData && !resumeData.extractedTechnologies?.length && (
-                            <p role="status" className="mt-2 rounded-xl bg-sun-100 px-3 py-2 text-sm text-ink">
-                              {resumeData.technologiesUnavailable
-                                ? 'Could not extract technologies from your CV right now. Try again in a moment.'
-                                : 'No technologies were found on your CV.'}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleNavigateToSkillsAssessment}
-                        disabled={!resumeData || !resumeData.extractedTechnologies?.length}
-                        className={`px-6 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all shadow-soft ${
-                          !resumeData || !resumeData.extractedTechnologies?.length
-                            ? "bg-line text-ink-muted cursor-not-allowed"
-                            : "bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95 shadow-card hover:shadow-float"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Star className="w-5 h-5" />
-                          Start Assessment
-                        </div>
-                      </button>
-                    </div>
-                  </div>
+                  {resumeData && !resumeData.extractedTechnologies?.length && (
+                    <p role="status" className="rounded-xl bg-sun-100 px-3 py-2 text-sm text-ink">
+                      {resumeData.technologiesUnavailable
+                        ? 'Could not extract technologies from your CV right now. Try again in a moment.'
+                        : 'No technologies were found on your CV.'}
+                    </p>
+                  )}
 
                   {/* Detailed Analysis */}
                   <div className="space-y-6">
