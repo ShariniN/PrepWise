@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from '../components/AuthLayout';
 import { Button, Field, Input } from '../components/ui';
 import { Mail, Lock } from 'lucide-react';
@@ -12,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   // Destructure values from context
-  const { backendUrl, setIsLoggedin, getUserData, setAuth } = useContext(AppContext);
+  const { backendUrl, setIsLoggedin, getUserData, setAuth, isLoggedin, role, authLoading } = useContext(AppContext);
 
   // UI button state
   const [state, setState] = useState("Log in");
@@ -20,6 +20,9 @@ const Login = () => {
   // Form fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Already signed in: go to your own home instead of seeing the login form again.
+  if (!authLoading && isLoggedin && role) return <Navigate to={homeForRole(role)} replace />;
 
   // Handle form submission for logging in
   const onSubmitHandler = async (e) => {
