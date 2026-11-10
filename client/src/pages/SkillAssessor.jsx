@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { backendUrl } from '../api/client';
 import { Button, Card, EmptyState } from '../components/ui';
@@ -60,16 +61,19 @@ const TrendingUp = () => (
   </svg>
 );
 
-const SWOTAnalysis = ({ 
-  resumeHash = null, 
-  resumeText = null,
-  jobDescriptions = [],
-  extractedTechnologies = [],
-  onBack = null,
-  onGoToInterview = null,
-  userId = null
-}) => {
+const TECH_CATEGORIES = ['Programming Languages', 'Web Frameworks', 'Development Tools', 'Databases', 'CS Concepts', 'Other Technical'];
+const NO_TECHNOLOGIES = [];
+
+// Opened from the CV analyzer (props, or router state { resumeHash, extractedTechnologies, technologiesUnavailable })
+// or straight from the navigation, in which case it asks for a CV analysis first.
+const SWOTAnalysis = (props) => {
+  const navState = useLocation().state || {};
+  const resumeHash = props.resumeHash ?? navState.resumeHash ?? null;
+  const extractedTechnologies = props.extractedTechnologies ?? navState.extractedTechnologies ?? NO_TECHNOLOGIES;
+  const technologiesUnavailable = !!(props.technologiesUnavailable ?? navState.technologiesUnavailable);
+  const { onBack = null, onGoToInterview = null } = props;
   const [step, setStep] = useState('rating');
+  const [newTech, setNewTech] = useState({ name: '', category: TECH_CATEGORIES[0] });
   const [technologies, setTechnologies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -89,6 +93,39 @@ const SWOTAnalysis = ({
       console.log("SWOT: All technologies initialized with default rating of 5:", initializedTechnologies);
     }
   }, [extractedTechnologies]);
+
+  // Add a technology by hand (when extraction failed, or one is missing from the list)
+  const handleAddTechnology = (e) => {
+    e.preventDefault();
+    const name = newTech.name.trim().slice(0, 60);
+    if (!name) return;
+    if (technologies.some((t) => t.name.toLowerCase() === name.toLowerCase())) {
+      setError(`${name} is already in the list.`);
+      return;
+    }
+    setError('');
+    setTechnologies((list) => [...list, { name, category: newTech.category, confidenceLevel: 5 }]);
+    setNewTech((t) => ({ ...t, name: '' }));
+  };
+
+  const addTechnologyForm = (
+    <form onSubmit={handleAddTechnology} aria-label="Add a technology" className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-end">
+      <div className="flex-1">
+        <label htmlFor="sk-new-name" className="mb-1 block text-sm font-medium text-ink-2">Technology</label>
+        <input id="sk-new-name" value={newTech.name} maxLength={60} placeholder="e.g. Python"
+          onChange={(e) => setNewTech((t) => ({ ...t, name: e.target.value }))}
+          className="w-full rounded-xl border border-line p-2 focus:border-transparent focus:ring-2 focus:ring-primary-500" />
+      </div>
+      <div>
+        <label htmlFor="sk-new-cat" className="mb-1 block text-sm font-medium text-ink-2">Category</label>
+        <select id="sk-new-cat" value={newTech.category} onChange={(e) => setNewTech((t) => ({ ...t, category: e.target.value }))}
+          className="w-full rounded-xl border border-line bg-surface p-2 focus:ring-2 focus:ring-primary-500">
+          {TECH_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <Button type="submit" variant="secondary" disabled={!newTech.name.trim()}>Add</Button>
+    </form>
+  );
 
   // Handle confidence rating changes
   const handleRatingChange = (techIndex, newRating) => {
@@ -232,13 +269,18 @@ const SWOTAnalysis = ({
       )}
 
       {technologies.length === 0 ? (
-        <EmptyState
-          title="No Technologies Found"
-          description="No technologies were extracted from your resume. Please go back and analyze your CV first."
-          action={onBack && (
-            <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
-          )}
-        />
+        <div className="space-y-4">
+          <EmptyState
+            title={technologiesUnavailable ? 'Technologies could not be extracted' : 'No technologies found'}
+            description={technologiesUnavailable
+              ? 'Could not extract technologies from your CV right now; add them manually or try again.'
+              : 'No technologies were found on your CV. Add the ones you use below, or check that your CV lists your technical skills.'}
+            action={onBack
+              ? <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
+              : <Button as={Link} to="/cv-analyzer" variant="secondary" icon={<ArrowLeft />}>Try again in the CV Analyzer</Button>}
+          />
+          {addTechnologyForm}
+        </div>
       ) : (
         <>
           <div className="max-h-[32rem] overflow-y-auto bg-sand p-4 rounded-3xl">
@@ -282,7 +324,9 @@ const SWOTAnalysis = ({
               </div>
             ))}
           </div>
-          
+
+          {addTechnologyForm}
+
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             {onBack && (
               <Button variant="secondary" onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
@@ -411,29 +455,22 @@ const SWOTAnalysis = ({
     );
   };
 
-  if (!resumeHash || !extractedTechnologies || extractedTechnologies.length === 0) {
+  // Ratings belong to an analysed CV, so without one there is nothing to rate yet.
+  if (!resumeHash) {
     return (
       <AppShell width="narrow" title="Skills" subtitle="Rate your confidence in the technologies found on your CV.">
         <Card tone="sand" className="text-center !p-8 sm:!p-10">
-          <div className="w-16 h-16 text-danger-600 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-danger-100">
+          <div className="w-16 h-16 text-primary-700 mx-auto mb-4 flex items-center justify-center rounded-2xl bg-primary-100">
             <AlertCircle />
           </div>
-          <h2 className="font-display text-2xl font-semibold text-ink mb-3">
-            {!resumeHash ? "Resume Analysis Required" : "No Technologies Found"}
-          </h2>
+          <h2 className="font-display text-2xl font-semibold text-ink mb-3">Analyse your CV first</h2>
           <p className="text-ink-2 mb-6">
-            {!resumeHash
-              ? "Please analyze your resume first to extract technologies for rating."
-              : "No technologies were extracted from your resume. Please ensure your resume contains technical skills and try analyzing again."
-            }
+            The skills self-assessment uses the technologies found on your CV. Analyse your CV against a job description,
+            then choose Start Assessment on the results.
           </p>
-          <div className="text-sm text-ink-muted mb-4">
-            Debug info: resumeHash={resumeHash ? 'present' : 'missing'},
-            extractedTechnologies={extractedTechnologies?.length || 0} items
-          </div>
-          {onBack && (
-            <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
-          )}
+          {onBack
+            ? <Button onClick={onBack} icon={<ArrowLeft />}>Back to CV Analysis</Button>
+            : <Button as={Link} to="/cv-analyzer" iconRight={<ArrowRight />}>Go to the CV Analyzer</Button>}
         </Card>
       </AppShell>
     );
