@@ -27,7 +27,8 @@ export const studentQuestion = (q, tests = []) => ({
   version: q.version,
   isSeed: q.source === 'seed',
   ...(q.type === 'mcq' ? { options: q.options || [], multi: !!q.multi } : {}),
-  visibleTests: tests.filter((t) => t.visible).map((t) => ({ id: idOf(t), input: t.input, expectedOutput: t.expectedOutput })),
+  // comparison lets the in-browser Run compare output exactly the way the server does
+  visibleTests: tests.filter((t) => t.visible).map((t) => ({ id: idOf(t), input: t.input, expectedOutput: t.expectedOutput, comparison: t.comparison || 'trim' })),
   hiddenTestCount: tests.filter((t) => !t.visible).length,
 });
 

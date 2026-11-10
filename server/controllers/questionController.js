@@ -3,7 +3,7 @@
 import questionRepo from '../repositories/questionRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';
-import { gradeTests } from '../services/grading.js';
+import { gradeTests, gradeUntilFirstFailure } from '../services/grading.js';
 import { ExecutionUnavailableError, UnsupportedLanguageError, MAX_SOURCE_CHARS } from '../services/execution/index.js';
 import { normalizeLanguage } from '../services/execution/languages.js';
 import { friendlyUnavailable, unavailableReason } from '../services/execution/errors.js';
@@ -242,20 +242,30 @@ export const validateQuestion = async (req, res) => {
   if (!tests.length) return fail(res, 400, 'Add at least one test case first');
   const limits = { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb };
   try {
+    // The reference solution runs every test: it must pass all of them.
     const ref = await gradeTests({ language: q.referenceSolution.language, source: q.referenceSolution.source, tests, limits });
     const referencePassed = ref.perTest.every((t) => t.passed);
+    // The wrong solution only has to fail one test, so it runs one test at a time and stops at its first failure.
+    // When the reference already failed, validation fails anyway, so the wrong solution is not run at all.
     let wrongFailed = null;
     let wrongPerTest = null;
-    if (wrongSolution) {
-      const wrong = await gradeTests({ language: wrongSolution.language, source: wrongSolution.source, tests, limits });
-      wrongFailed = wrong.perTest.some((t) => !t.passed);
+    let wrongNote = '';
+    if (wrongSolution && referencePassed) {
+      const wrong = await gradeUntilFirstFailure({ language: wrongSolution.language, source: wrongSolution.source, tests, limits });
+      wrongFailed = wrong.failed;
       wrongPerTest = wrong.perTest;
+      if (wrong.failed && wrong.notRun) {
+        wrongNote = ` The wrong solution failed test ${wrong.perTest.length} of ${tests.length}, so its remaining ${wrong.notRun} test${wrong.notRun === 1 ? ' was' : 's were'} not run.`;
+      }
+    } else if (wrongSolution) {
+      wrongNote = ' The wrong solution was not run because the reference solution has to pass first.';
     }
-    const passed = referencePassed && (wrongSolution ? wrongFailed : true);
+    const wrongChecked = wrongFailed !== null;
+    const passed = referencePassed && (wrongSolution ? wrongFailed === true : true);
     const withWrong = { ...q, wrongSolution };
     const validation = {
       passed, contentHash: contentHash(withWrong, tests), version: q.version, referencePassed,
-      wrongSolutionChecked: !!wrongSolution, wrongSolutionFailed: wrongFailed, testsRun: tests.length, at: new Date(), byUserId: req.user.id,
+      wrongSolutionChecked: wrongChecked, wrongSolutionFailed: wrongFailed, testsRun: tests.length, at: new Date(), byUserId: req.user.id,
     };
     const patch = { validation };
     if (body.wrongSolution !== undefined) patch.wrongSolution = wrongSolution;
@@ -265,11 +275,11 @@ export const validateQuestion = async (req, res) => {
       ...(t.passed ? {} : { stdout: t.stdout, stderr: t.compileOutput || t.stderr }),
     }));
     return res.json({
-      success: true, passed, referencePassed, wrongSolutionChecked: !!wrongSolution, wrongSolutionFailed: wrongFailed,
-      reference: summarize(ref.perTest), ...(wrongPerTest ? { wrong: summarize(wrongPerTest) } : {}),
-      message: passed ? 'Validation passed. The question can now be published.' : (!referencePassed
+      success: true, passed, referencePassed, wrongSolutionChecked: wrongChecked, wrongSolutionFailed: wrongFailed,
+      reference: summarize(ref.perTest), ...(wrongPerTest ? { wrong: summarize(wrongPerTest), wrongTestsRun: wrongPerTest.length } : {}),
+      message: (passed ? 'Validation passed. The question can now be published.' : (!referencePassed
         ? 'The reference solution fails some tests, so the tests or the solution are wrong.'
-        : 'The wrong solution passes every test, so the tests are too weak.'),
+        : 'The wrong solution passes every test, so the tests are too weak.')) + wrongNote,
     });
   } catch (error) {
     if (error instanceof ExecutionUnavailableError) return fail(res, 503, `${friendlyUnavailable(error)} Nothing was validated.`, { verdict: 'unavailable', reason: unavailableReason(error) });
