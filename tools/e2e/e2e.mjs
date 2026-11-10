@@ -102,7 +102,7 @@ const cancel = ap.getByRole('button', { name: 'Cancel invite' });
 ok('invited person has a "Cancel invite" action', await cancel.count() === 1);
 if (await cancel.count()) {
   await cancel.click();
-  await ap.getByRole('button', { name: 'Cancel invitation' }).click(); await ap.waitForTimeout(1500);
+  await ap.getByRole('dialog').getByRole('button', { name: 'Cancel invite' }).click(); await ap.waitForTimeout(1500);
   ok('the invitation is cancelled (status deactivated)', /deactivated/.test(await body(ap)));
   await ap.screenshot({ path: 'e2e/admin-cancel-invite.png' });
 }

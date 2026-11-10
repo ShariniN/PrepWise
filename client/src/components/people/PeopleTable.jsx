@@ -92,7 +92,7 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
     if (kind === 'deactivate')
       return <ConfirmDialog {...common} danger title="Deactivate this person?" confirmLabel="Deactivate" message={`${who} will be signed out immediately and cannot log in. Their data is kept.`} />;
     if (kind === 'cancel')
-      return <ConfirmDialog {...common} danger title="Cancel this invitation?" confirmLabel="Cancel invitation" cancelLabel="Keep invitation" message={`The invitation link sent to ${person.email} stops working${person.role === 'student' ? ' and the student seat is freed' : ''}. You can reactivate ${who} later to send a new invitation.`} />;
+      return <ConfirmDialog {...common} danger title="Cancel this invitation?" confirmLabel="Cancel invite" cancelLabel="Keep it" message={`The invitation link sent to ${person.email} stops working${person.role === 'student' ? ' and the student seat is freed' : ''}. You can reactivate ${who} later to send a new invitation.`} />;
     if (kind === 'reactivate')
       return <ConfirmDialog {...common} title="Reactivate this person?" confirmLabel="Reactivate" message={`${who} will be able to log in again. Students count toward your limit.`} />;
     if (kind === 'resend')
