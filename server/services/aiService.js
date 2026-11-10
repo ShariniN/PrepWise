@@ -1,7 +1,7 @@
-import { GEMINI_MODEL, AI_MODELS } from '../../config/ai.js';
-import { generateWithFallback } from '../../services/geminiClient.js';
+import { GEMINI_MODEL, AI_MODELS } from '../config/ai.js';
+import { generateWithFallback } from './geminiClient.js';
 import axios from 'axios';
-import { consumeAi } from '../../services/aiUsage.js';
+import { consumeAi } from './aiUsage.js';
 
 
 const questionCache = new Map();

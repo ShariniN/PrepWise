@@ -4,7 +4,7 @@ import peopleRepo from '../repositories/peopleRepo.js';
 import questionRepo from '../repositories/questionRepo.js';
 import { institutionOf } from '../middleware/tenancy.js';
 import { audit } from '../services/audit.js';
-import aiService from '../controllers/services/aiService.js';
+import aiService from '../services/aiService.js';
 import { fail, isId } from '../analytics/access.js';
 import gradingRepo from './repo.js';
 

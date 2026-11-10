@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { makeWorld, IDS, newId } from './helpers.js';
 import { installAnalyticsWorld } from './support/analyticsWorld.js';
-import aiService from '../controllers/services/aiService.js';
+import aiService from '../services/aiService.js';
 import * as agg from '../analytics/aggregate.js';
 import app from '../app.js';
 

@@ -10,7 +10,7 @@ import authRouter from './modules/auth/auth.routes.js';
 import skillAssessor from './modules/skills/skills.routes.js';
 import userRouter from './modules/users/users.routes.js';
 import analysisRouter from './modules/cvAnalysis/cvAnalysis.routes.js';
-import interviewRouter from './routes/InterviewRoutes.js';
+import interviewRouter from './modules/interviews/interviews.routes.js';
 import codeRouter from './routes/codeRoutes.js';
 import institutionRouter from './routes/InstitutionRoutes.js';
 import meRouter from './routes/MeRoutes.js';

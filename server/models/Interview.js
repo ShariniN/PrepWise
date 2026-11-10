@@ -46,7 +46,7 @@ const executionResultsSchema = new mongoose.Schema({
 
 // Delivery coaching, measured in the student's browser (camera + transcript). Numbers only:
 // no video or images are ever uploaded or stored. Coaching only: never feeds into the score.
-// Sanitised by sanitizeDeliveryMetrics in controllers/interviewController.js before it is stored.
+// Sanitised by sanitizeDeliveryMetrics (modules/interviews) before it is stored.
 const deliveryMetricsSchema = new mongoose.Schema({
   cameraUsed: { type: Boolean, default: false },
   faceVisiblePct: { type: Number, min: 0, max: 100, default: null },

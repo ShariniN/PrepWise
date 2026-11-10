@@ -1,18 +1,18 @@
-import InterviewModel from '../models/Interview.js';
-import userModel from '../models/User.js';
-import pdfUpload, { NOT_PDF_MESSAGE } from '../middleware/pdfUpload.js';
+import InterviewModel from '../../models/Interview.js';
+import userModel from '../../models/User.js';
+import pdfUpload, { NOT_PDF_MESSAGE } from '../../middleware/pdfUpload.js';
 import pdfParse from 'pdf-parse';
-import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from './services/aiService.js';
-import { generateStarterCode, selectBestLanguage } from './services/codeGenerationService.js';
-import { verifyCodeServerSide } from '../services/interviewExecution.js';
-import { generateFallbackFeedback } from './services/fallbackFeedbackService.js';
+import { generateInterviewQuestions, generateAIFeedback, generateOverallInterviewFeedback } from '../../services/aiService.js';
+import { generateStarterCode, selectBestLanguage } from './interviews.starterCode.js';
+import { verifyCodeServerSide } from '../../services/interviewExecution.js';
+import { generateFallbackFeedback } from './interviews.fallbackFeedback.js';
 import { 
   validateAndSanitizeInput, 
   validateLanguage, 
   normalizeQuestionType,
   calculateFinalResults,
   getFallbackQuestions
-} from './services/utilityService.js';
+} from './interviews.questions.js';
 
 // Delivery coaching metrics (camera + speech), measured in the browser. Numbers only, never video.
 // Strict: wrong types become null, numbers are clamped, unknown keys are dropped, nothing is rejected.

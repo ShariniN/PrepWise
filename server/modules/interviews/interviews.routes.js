@@ -3,8 +3,8 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
-import userAuth from '../middleware/userAuth.js';
-import { executeCode } from '../controllers/codeController.js';
+import userAuth from '../../middleware/userAuth.js';
+import { executeCode } from '../../controllers/codeController.js';
 import rateLimit from 'express-rate-limit';
 
 import { 
@@ -18,7 +18,7 @@ import {
   createInterviewWithProfileCV,
   createInterview,
   processCV
-} from '../controllers/interviewController.js';
+} from './interviews.controller.js';
 
 const interviewRouter = express.Router();
 
