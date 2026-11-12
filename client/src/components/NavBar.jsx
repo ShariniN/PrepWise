@@ -46,9 +46,8 @@ const NavBar = () => {
   // Student-only tools (CV analyzer, practice, interview) are hidden from staff.
   const links = role === ROLES.ADMIN
     ? [
-        { to: '/manage-people', label: 'Manage people' },
-        { to: '/staff', label: 'Students' },
-        { to: '/admin-overview', label: 'Overview' },
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/manage-people', label: 'People' },
         { to: '/settings', label: 'Settings' },
       ]
     : role === ROLES.STUDENT
@@ -60,7 +59,7 @@ const NavBar = () => {
         ]
       : role === ROLES.LECTURER
         ? [
-            { to: '/staff', label: 'Dashboard' },
+            { to: '/dashboard', label: 'Dashboard' },
           ]
         : [];
 

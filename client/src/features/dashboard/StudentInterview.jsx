@@ -11,7 +11,7 @@ import DeliverySummary from './components/DeliverySummary';
 import { FootNote, PrivacyNote } from './components/Notice';
 import useApiData from '../../hooks/useApiData';
 import { getStudentInterview } from './api';
-import { CATEGORIES, FEEDBACK_SOURCE_LABELS, QUESTION_TYPE_LABELS, fmtDateTime, fmtDuration, fmtNum, isNum } from './utils';
+import { CATEGORIES, FEEDBACK_SOURCE_LABELS, LEVEL_LABELS, QUESTION_TYPE_LABELS, fmtDateTime, fmtDuration, fmtNum, isNum } from './utils';
 
 // Rubric parts of the AI feedback, each 0-10.
 const SUB_SCORES = [
@@ -134,7 +134,9 @@ const Question = ({ q, n }) => (
       <span className="font-display text-base font-semibold text-ink">Question {n}</span>
       {q.type && <Badge tone="neutral">{QUESTION_TYPE_LABELS[q.type] || q.type}</Badge>}
       {q.category && q.category !== (QUESTION_TYPE_LABELS[q.type] || q.type) && <Badge tone="neutral">{q.category}</Badge>}
-      {q.difficulty && <Badge tone="neutral">{q.difficulty}</Badge>}
+      {LEVEL_LABELS[q.level]
+        ? <Badge tone="primary">Level: {LEVEL_LABELS[q.level]}</Badge>
+        : q.difficulty && <Badge tone="neutral">{q.difficulty}</Badge>}
       {q.feedbackSource && (
         <Badge tone={SOURCE_TONE[q.feedbackSource] || 'neutral'}>{FEEDBACK_SOURCE_LABELS[q.feedbackSource] || q.feedbackSource}</Badge>
       )}
@@ -162,7 +164,7 @@ const StudentInterview = () => {
   const { data, error, loading } = useApiData(() => getStudentInterview(id, interviewId), `${id}|${interviewId}`);
   useEffect(() => { window.scrollTo(0, 0); }, [id, interviewId]);
   const back = (
-    <Button as={Link} to={`/staff/students/${id}`} state={{ from: location.state?.from }} variant="secondary" size="sm" icon={<ArrowLeft size={15} aria-hidden="true" />}>
+    <Button as={Link} to={`/dashboard/students/${id}`} state={{ from: location.state?.from }} variant="secondary" size="sm" icon={<ArrowLeft size={15} aria-hidden="true" />}>
       {data ? data.student.name : 'Student'}
     </Button>
   );
@@ -199,7 +201,7 @@ const StudentInterview = () => {
         <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
           <div className="grid grid-cols-2 gap-3">
             <MetricTile label="Interview score" value={iv.score} hint="Counted answers only" />
-            <MetricTile label="Readiness" value={iv.readinessLevel || '-'} />
+            <MetricTile label="Level reached" value={LEVEL_LABELS[iv.levelReached] || '-'} hint={iv.readinessLevel ? `Readiness: ${iv.readinessLevel}` : undefined} />
             <MetricTile label="Answers" value={`${answered} of ${iv.questions.length}`} hint={skipped ? `${skipped} skipped` : undefined} />
             <MetricTile label="Stored score" value={iv.storedOverallScore} hint="Includes fallback answers; for reference" />
           </div>

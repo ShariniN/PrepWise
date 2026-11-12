@@ -16,8 +16,7 @@ import institutionSettingsRouter from './modules/institution/institution.routes.
 import meRouter from './modules/compliance/me.routes.js';
 import complianceRouter from './modules/compliance/compliance.routes.js';
 import practiceRouter from './modules/practice/practice.routes.js';
-import analyticsRouter from './modules/analytics/analytics.routes.js';
-import lecturerRouter from './modules/lecturer/lecturer.routes.js';
+import dashboardRouter from './modules/dashboard/dashboard.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -58,8 +57,7 @@ app.use('/api/institution', institutionRouter);
 app.use('/api/me', meRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/practice', practiceRouter);
-app.use('/api/analytics', analyticsRouter);
-app.use('/api/lecturer', lecturerRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {

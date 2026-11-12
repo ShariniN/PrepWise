@@ -1,20 +1,51 @@
-// Pure functions behind the lecturer dashboard. Plain objects in, plain JSON-safe objects out; no database and
+// Pure functions behind the dashboard. Plain objects in, plain JSON-safe objects out; no database and
 // no clock (callers pass `now`), so every rule here is unit-testable.
 //
-// Rules (documented in API_LECTURER.md):
+// Rules:
 // - Interview scores are computed from the stored answers, not from the stored overall score, so that answers
 //   scored by the basic fallback scorer (feedback.source === 'fallback') can be left out. Skipped answers are left
 //   out too (the interview's own score ignores them). Only completed interviews count.
 // - Categories come from each answer's questionType: behavioral -> behavioural; technical, system_design and
 //   problem-solving -> technical; coding -> coding. Communication is feedback.communicationClarity (0-10) x 10.
-// - A CV result counts only when its scoreBreakdown.aiAvailable !== false.
+// - The CV score is the latest result scored against the student's target role (kind 'target_role') whose
+//   scoreBreakdown.aiAvailable !== false. Results checked against a pasted job description never count.
 // - Averages across students are means of per-student values, so a student with many interviews does not dominate.
-//   A value is shown only when at least MIN_N students have it; otherwise it is null with a notice.
-import { partitionAttempts, MIN_N, DAY_MS, round, mean } from '../analytics/analytics.aggregate.js';
+// - The most common missing skills are shown only when at least MIN_GROUP students have a CV score: with fewer,
+//   a skill chip points at an individual.
+import { findTargetRole } from '../../services/targetRoles.js';
 
-export { MIN_N };
+export const DAY_MS = 24 * 60 * 60 * 1000;
+export const round = (n, p = 1) => (n == null || Number.isNaN(n) ? null : Math.round(n * 10 ** p) / 10 ** p);
+export const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+export const MIN_GROUP = 5;
+export const INACTIVE_DAYS = 14;
+export const SCORE_DROP = 15;
+export const ATTENTION_CODES = ['no_cv', 'no_interview', 'inactive_14_days', 'score_drop_15'];
+export const ATTENTION_LABELS = {
+  no_cv: 'No CV yet',
+  no_interview: 'No interview yet',
+  inactive_14_days: 'Inactive 14+ days',
+  score_drop_15: 'Score dropped 15+ points',
+};
+export const LEVELS = ['easy', 'medium', 'hard'];
+
+// Practice score eligibility: only submitted attempts with a numeric score whose scoreSource is not 'ai' or 'fallback'.
+const isScored = (a) => a.runKind === 'submit' && typeof a.score === 'number';
+const isExcluded = (a) => isScored(a) && (a.scoreSource === 'ai' || a.scoreSource === 'fallback');
+export const partitionAttempts = (attempts) => {
+  const eligible = [];
+  let excluded = 0;
+  for (const a of attempts) {
+    if (isExcluded(a)) excluded += 1;
+    else if (isScored(a)) eligible.push(a);
+  }
+  return { eligible, excluded };
+};
+
 const sid = (v) => String(v);
 const t = (d) => (d ? new Date(d).getTime() : NaN);
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const latestDate = (...ds) => {
   const ms = ds.map(t).filter((x) => Number.isFinite(x));
   return ms.length ? new Date(Math.max(...ms)) : null;
@@ -23,16 +54,12 @@ const latestDate = (...ds) => {
 export const CATEGORIES = ['behavioural', 'technical', 'coding', 'communication'];
 const TYPE_TO_CATEGORY = { behavioral: 'behavioural', technical: 'technical', system_design: 'technical', 'problem-solving': 'technical', coding: 'coding' };
 
-export const LOW_SCORE = 50;
-export const INACTIVE_DAYS = 30;
-export const ATTENTION_CODES = ['no_interview', 'no_cv', 'low_interview_score', 'low_cv_match', 'inactive_30_days'];
-
 // ---------------------------------------------------------------- interviews
 const isAnswered = (r) => r && !r.skipped && r.feedback && typeof r.feedback.score === 'number';
 export const isFallbackAnswer = (r) => r && !r.skipped && r.feedback?.source === 'fallback';
 const isEligibleAnswer = (r) => isAnswered(r) && r.feedback.source !== 'fallback';
 
-// Per-answer pools for one or more interviews: { all: [scores], behavioural: [...], ..., communication: [...] }
+// Per-answer pools for one interview: { all: [scores], behavioural: [...], ..., communication: [...] }
 const answerPools = (responses) => {
   const pools = { all: [], behavioural: [], technical: [], coding: [], communication: [] };
   let excluded = 0;
@@ -64,6 +91,7 @@ export const interviewScores = (iv) => {
 };
 
 export const isCompleted = (iv) => iv?.status === 'completed';
+export const levelOf = (v) => (LEVELS.includes(v) ? v : null);
 const ivDate = (iv) => iv.completedAt || iv.createdAt;
 const byDate = (getter) => (a, b) => (t(getter(a)) || 0) - (t(getter(b)) || 0) || (sid(a._id) < sid(b._id) ? -1 : 1);
 
@@ -117,9 +145,16 @@ export const studentDelivery = (interviews) => {
 };
 
 // ---------------------------------------------------------------- CV analyses
-// Non-tech job ads get matchPercentage 0 by design; they say nothing about the CV, so they do not count either.
+// For the student record: non-tech job ads get matchPercentage 0 by design and say nothing about the CV.
 export const countsTowardMatch = (result) => result?.scoreBreakdown?.aiAvailable !== false && result?.isNonTechRole !== true
   && typeof result?.matchPercentage === 'number';
+
+// The result kind; documents written before results had a kind were all checked against pasted job descriptions.
+export const resultKind = (result) => (result?.kind === 'target_role' ? 'target_role' : 'job_description');
+
+// A result that counts as the student's CV score.
+export const isTargetRoleScore = (result) => resultKind(result) === 'target_role'
+  && result?.scoreBreakdown?.aiAvailable !== false && isNum(result?.matchPercentage);
 
 // The CV controller re-analyses the same CV in place (unique userId + resumeHash), so updatedAt is the last run.
 export const cvDate = (analysis) => analysis?.updatedAt || analysis?.createdAt || null;
@@ -131,17 +166,16 @@ export const bestMatch = (analysis) => {
   return { best: eligible.length ? Math.max(...eligible) : null, excludedResults: results.filter((r) => r?.scoreBreakdown?.aiAvailable === false).length };
 };
 
-// Missing skills of one analysis (union over its jobs, case-insensitive, first spelling kept).
-export const missingSkillsOf = (analysis) => {
-  const seen = new Map();
-  for (const r of analysis?.results || []) {
-    for (const s of r?.scoreBreakdown?.missingSkills || []) {
-      const k = String(s || '').trim().toLowerCase();
-      if (k && !seen.has(k)) seen.set(k, String(s).trim());
-    }
+// The latest target-role result with an AI score, over analyses sorted oldest first. Null when there is none.
+export const latestTargetRoleResult = (analyses) => {
+  for (let i = analyses.length - 1; i >= 0; i -= 1) {
+    const results = (analyses[i]?.results || []).filter(isTargetRoleScore);
+    if (results.length) return results[results.length - 1];
   }
-  return [...seen.values()];
+  return null;
 };
+
+const skillList = (xs) => (Array.isArray(xs) ? xs.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim()) : []);
 
 // ---------------------------------------------------------------- practice
 export const practiceSummary = (attempts) => {
@@ -157,16 +191,17 @@ export const practiceSummary = (attempts) => {
 
 // ---------------------------------------------------------------- one student
 // data: { interviews, cvAnalyses, attempts } already limited to this student.
-export const studentRow = (user, data, now) => {
+// institution: the student's institution with its targetRoles (optional), for the target role title.
+export const studentRow = (user, data, now, institution = null) => {
   const interviews = data.interviews || [];
   const cvAnalyses = [...(data.cvAnalyses || [])].sort(byDate(cvDate));
   const attempts = data.attempts || [];
   const completed = interviews.filter(isCompleted).sort(byDate(ivDate));
-  const scored = completed.map((iv) => ({ iv, s: interviewScores(iv) })).filter((x) => x.s.score != null);
-  const { pools, excluded } = answerPools(completed.flatMap((iv) => iv.responses || []));
-
-  const withMatch = cvAnalyses.map((a) => ({ a, m: bestMatch(a) })).filter((x) => x.m.best != null);
-  const latestCvMatch = withMatch.length ? withMatch[withMatch.length - 1].m.best : null;
+  const scores = completed.map((iv) => interviewScores(iv).score);
+  const latest = completed.length ? completed[completed.length - 1] : null;
+  const lastInterviewScore = latest ? scores[scores.length - 1] : null;
+  const previousScore = completed.length >= 2 ? scores[scores.length - 2] : null;
+  const cvResult = latestTargetRoleResult(cvAnalyses);
   const practice = practiceSummary(attempts);
 
   const lastActive = latestDate(
@@ -178,114 +213,73 @@ export const studentRow = (user, data, now) => {
 
   const row = {
     id: sid(user._id), name: user.name || '', email: user.email || '', group: user.group || '',
-    lastActive: lastActive ? lastActive.toISOString() : null,
-    interviewsCompleted: completed.length,
-    latestInterviewScore: scored.length ? scored[scored.length - 1].s.score : null,
-    avgInterviewScore: round(mean(scored.map((x) => x.s.score))),
-    latestCvMatch,
-    cvAnalyses: cvAnalyses.length,
+    targetRoleTitle: findTargetRole(institution, user.targetRoleId)?.title ?? null,
+    cvScore: cvResult ? cvResult.matchPercentage : null,
+    lastInterviewScore,
+    lastLevelReached: latest ? levelOf(latest.levelReached) : null,
+    trend: scores.filter(isNum).slice(-3),
     practiceSolved: practice.solved,
+    lastActive: lastActive ? lastActive.toISOString() : null,
   };
-  row.needsAttention = attentionReasons(row, now);
-  // Not part of the table, used for overview aggregates.
-  Object.defineProperty(row, '_agg', {
-    enumerable: false,
-    value: {
-      categories: categoriesOf(pools), excludedAnswers: excluded,
-      excludedCvResults: cvAnalyses.reduce((n, a) => n + bestMatch(a).excludedResults, 0),
-      latestMissingSkills: cvAnalyses.length ? missingSkillsOf(cvAnalyses[cvAnalyses.length - 1]) : [],
-      delivery: studentDelivery(interviews),
-    },
-  });
+  row.attention = attentionFor({
+    hasCv: cvAnalyses.length > 0, hasInterview: completed.length > 0, lastActive: row.lastActive, lastInterviewScore, previousScore,
+  }, now);
+  // Not part of the table, used for the overview.
+  Object.defineProperty(row, '_agg', { enumerable: false, value: { missingSkills: cvResult ? skillList(cvResult.scoreBreakdown?.missingSkills) : [] } });
   return row;
 };
 
-export const attentionReasons = (row, now) => {
-  const out = [];
-  if (!row.interviewsCompleted) out.push({ code: 'no_interview', message: 'Has not completed a mock interview' });
-  if (!row.cvAnalyses) out.push({ code: 'no_cv', message: 'Has not analysed a CV' });
-  if (row.latestInterviewScore != null && row.latestInterviewScore < LOW_SCORE) {
-    out.push({ code: 'low_interview_score', message: `Latest mock interview score is ${row.latestInterviewScore} (below ${LOW_SCORE})`, value: row.latestInterviewScore, threshold: LOW_SCORE });
-  }
-  if (row.latestCvMatch != null && row.latestCvMatch < LOW_SCORE) {
-    out.push({ code: 'low_cv_match', message: `Latest CV match is ${row.latestCvMatch}% (below ${LOW_SCORE}%)`, value: row.latestCvMatch, threshold: LOW_SCORE });
-  }
-  const last = t(row.lastActive);
-  if (!Number.isFinite(last) || t(now) - last >= INACTIVE_DAYS * DAY_MS) {
-    const days = Number.isFinite(last) ? Math.floor((t(now) - last) / DAY_MS) : null;
-    out.push({ code: 'inactive_30_days', message: days == null ? 'No recorded activity' : `No activity for ${days} days`, days, threshold: INACTIVE_DAYS });
-  }
-  return out;
+// Needs-attention flags, in ATTENTION_CODES order, each with its plain label.
+export const attentionFor = ({ hasCv, hasInterview, lastActive, lastInterviewScore, previousScore }, now) => {
+  const codes = [];
+  if (!hasCv) codes.push('no_cv');
+  if (!hasInterview) codes.push('no_interview');
+  const last = t(lastActive);
+  if (!Number.isFinite(last) || t(now) - last >= INACTIVE_DAYS * DAY_MS) codes.push('inactive_14_days');
+  if (isNum(lastInterviewScore) && isNum(previousScore) && previousScore - lastInterviewScore >= SCORE_DROP) codes.push('score_drop_15');
+  return codes.map((code) => ({ code, label: ATTENTION_LABELS[code] }));
 };
 
 // ---------------------------------------------------------------- overview
-const shown = (vals) => {
-  const n = vals.length;
-  return { average: n >= MIN_N ? round(mean(vals)) : null, n };
-};
-const notice = (n) => (n < MIN_N ? `Only ${n} student(s) have data here. At least ${MIN_N} are needed before averages are shown.` : null);
-
 export const overview = (rows, now) => {
-  const within = (days) => rows.filter((r) => r.lastActive && t(now) - t(r.lastActive) < days * DAY_MS).length;
-  const totals = {
-    students: rows.length,
-    withMockInterview: rows.filter((r) => r.interviewsCompleted > 0).length,
-    withCvAnalysis: rows.filter((r) => r.cvAnalyses > 0).length,
-    active7d: within(7), active30d: within(30),
-    needingAttention: rows.filter((r) => r.needsAttention.length).length,
-  };
+  const cvScores = rows.map((r) => r.cvScore).filter(isNum);
+  const interviewScoresList = rows.map((r) => r.lastInterviewScore).filter(isNum);
+  const levelReachedCounts = { easy: 0, medium: 0, hard: 0 };
+  for (const r of rows) if (r.lastLevelReached) levelReachedCounts[r.lastLevelReached] += 1;
 
-  const overall = shown(rows.map((r) => r.avgInterviewScore).filter((v) => v != null));
-  const interview = {
-    overall,
-    ...Object.fromEntries(CATEGORIES.map((c) => [c, shown(rows.map((r) => r._agg.categories[c]).filter((v) => v != null))])),
-    excludedFallbackAnswers: rows.reduce((n, r) => n + r._agg.excludedAnswers, 0),
-    insufficientData: overall.n < MIN_N, notice: notice(overall.n), minimum: MIN_N,
-  };
-
-  const best = shown(rows.map((r) => r.latestCvMatch).filter((v) => v != null));
-  const skillCounts = new Map();
-  let withLatest = 0;
-  for (const r of rows) {
-    if (r.cvAnalyses) withLatest += 1;
-    for (const s of r._agg.latestMissingSkills) {
-      const k = s.toLowerCase();
-      if (!skillCounts.has(k)) skillCounts.set(k, { skill: s, students: 0 });
-      skillCounts.get(k).students += 1;
+  let topMissingSkills = null;
+  if (cvScores.length >= MIN_GROUP) {
+    const counts = new Map();
+    for (const r of rows) {
+      for (const s of new Set(r._agg.missingSkills.map((x) => x.toLowerCase()))) {
+        const spelled = r._agg.missingSkills.find((x) => x.toLowerCase() === s);
+        if (!counts.has(s)) counts.set(s, { skill: spelled, students: 0 });
+        counts.get(s).students += 1;
+      }
     }
+    topMissingSkills = [...counts.values()]
+      .sort((a, b) => b.students - a.students || a.skill.toLowerCase().localeCompare(b.skill.toLowerCase()))
+      .slice(0, 10);
   }
-  // Held back below MIN_N contributing students (students with a CV analysis), like every other aggregate:
-  // with only a few students a chip such as "docker: 1" points at an individual.
-  const topMissingSkillsInsufficientData = withLatest < MIN_N;
-  const topMissingSkills = topMissingSkillsInsufficientData ? [] : [...skillCounts.values()]
-    .sort((a, b) => b.students - a.students || a.skill.toLowerCase().localeCompare(b.skill.toLowerCase()))
-    .slice(0, 10);
-  const cv = {
-    averageBestMatch: best, excludedAiUnavailableResults: rows.reduce((n, r) => n + r._agg.excludedCvResults, 0),
-    topMissingSkills, topMissingSkillsInsufficientData, studentsWithAnalysis: withLatest,
-    insufficientData: best.n < MIN_N, notice: notice(best.n), minimum: MIN_N,
+
+  return {
+    students: rows.length,
+    activeLast14Days: rows.filter((r) => r.lastActive && t(now) - t(r.lastActive) < INACTIVE_DAYS * DAY_MS).length,
+    needingAttention: rows.filter((r) => r.attention.length).length,
+    avgCvScore: round(mean(cvScores)),
+    studentsWithCvScore: cvScores.length,
+    avgInterviewScore: round(mean(interviewScoresList)),
+    studentsWithInterviewScore: interviewScoresList.length,
+    levelReachedCounts,
+    topMissingSkills,
+    minimumForSkills: MIN_GROUP,
+    practiceSolved: rows.reduce((n, r) => n + r.practiceSolved, 0),
   };
-
-  const d = rows.map((r) => r._agg.delivery).filter((x) => x.hasData);
-  const dn = d.length;
-  const delivery = { n: dn, answers: d.reduce((n, x) => n + x.answers, 0), insufficientData: dn < MIN_N, notice: notice(dn), minimum: MIN_N };
-  delivery.cameraUsedPct = dn >= MIN_N ? shown(d.map((x) => x.cameraUsedPct)) : { average: null, n: dn };
-  for (const k of NUMERIC_DELIVERY) {
-    const vals = d.filter((x) => x[k].n > 0).map((x) => x[k].average);
-    delivery[k] = dn >= MIN_N ? shown(vals) : { average: null, n: vals.length };
-  }
-  const heads = { low: 0, medium: 0, high: 0 };
-  for (const x of d) for (const h of ['low', 'medium', 'high']) heads[h] += x.headMovement[h];
-  const headTotal = heads.low + heads.medium + heads.high;
-  delivery.headMovement = dn >= MIN_N && headTotal
-    ? { lowPct: round((heads.low / headTotal) * 100), mediumPct: round((heads.medium / headTotal) * 100), highPct: round((heads.high / headTotal) * 100), answers: headTotal }
-    : { lowPct: null, mediumPct: null, highPct: null, answers: headTotal };
-
-  return { totals, interview, cv, delivery };
 };
 
 // ---------------------------------------------------------------- table: filter, sort, page
-export const SORT_KEYS = ['name', 'lastActive', 'interviewsCompleted', 'latestInterviewScore', 'avgInterviewScore', 'latestCvMatch', 'cvAnalyses', 'practiceSolved'];
+export const SORT_KEYS = ['name', 'group', 'targetRoleTitle', 'cvScore', 'lastInterviewScore', 'practiceSolved', 'lastActive'];
+const TEXT_KEYS = ['name', 'group', 'targetRoleTitle'];
 
 // Returns { key, desc } or null for an unknown key. '-key' sorts descending.
 export const parseSort = (raw) => {
@@ -295,9 +289,13 @@ export const parseSort = (raw) => {
   return SORT_KEYS.includes(key) ? { key, desc } : null;
 };
 
-// Nulls always last; ties by name then id.
+// Nulls (and empty text) always last; ties by name then id.
 export const sortRows = (rows, { key, desc }) => {
-  const val = (r) => (key === 'lastActive' ? (r.lastActive ? t(r.lastActive) : null) : key === 'name' ? (r.name || '').toLowerCase() : r[key]);
+  const val = (r) => {
+    if (key === 'lastActive') return r.lastActive ? t(r.lastActive) : null;
+    if (TEXT_KEYS.includes(key)) return r[key] ? r[key].toLowerCase() : null;
+    return r[key];
+  };
   const tie = (a, b) => (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase()) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   return [...rows].sort((a, b) => {
     const va = val(a); const vb = val(b);

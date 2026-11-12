@@ -1,6 +1,5 @@
 // Courses, assessments, integrity review, the old course-scoped / career-officer analytics and unused student routes were removed.
-// Their URLs must answer a JSON 404 to a logged-in user (anonymous calls under /api/analytics get 401 first,
-// which leaks nothing).
+// Their URLs must answer a JSON 404 to a logged-in user. The whole /api/analytics module is gone too.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -2,7 +2,7 @@ import peopleRepo from './people.repo.js';
 import { institutionOf } from '../../middleware/tenancy.js';
 import {
   PeopleError, ROLES, publicUser, getUsage, inviteUser, importUsers,
-  deactivateUser, reactivateUser, resendInvite, changeRole, setGroup, cleanGroup,
+  deactivateUser, reactivateUser, resendInvite, changeRole, setGroup, cleanGroup, setAssignedGroups, listStudentGroups,
 } from './people.service.js';
 
 const STATUSES = ['invited', 'active', 'deactivated'];
@@ -82,4 +82,12 @@ export const setGroupOf = withInstitution(async (req, res, institution) => {
 
 export const setRole = withInstitution(async (req, res, institution) => {
   res.json({ success: true, ...(await changeRole({ institution, actor: req.user, id: req.params.id, role: req.body?.role })) });
+});
+
+export const setAssignedGroupsOf = withInstitution(async (req, res, institution) => {
+  res.json({ success: true, ...(await setAssignedGroups({ institution, actor: req.user, id: req.params.id, groups: req.body?.groups })) });
+});
+
+export const groups = withInstitution(async (req, res, institution) => {
+  res.json({ success: true, groups: await listStudentGroups(institution) });
 });

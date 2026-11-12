@@ -104,6 +104,14 @@ export const makeWorld = () => {
       u.group = group;
       return u.toObject();
     });
+    mock.method(peopleRepo, 'updateAssignedGroups', async (institutionId, id, groups) => {
+      const u = world.users.find((x) => same(x._id, id) && same(x.institutionId, institutionId) && x.role === 'lecturer');
+      if (!u) return null;
+      u.assignedGroups = groups;
+      return u.toObject();
+    });
+    mock.method(peopleRepo, 'distinctStudentGroups', async (institutionId) =>
+      [...new Set(world.users.filter((u) => same(u.institutionId, institutionId) && u.role === 'student').map((u) => u.group).filter(Boolean))]);
 
     mock.method(peopleRepo, 'findUsersByIds', async (institutionId, ids) =>
       world.users.filter((u) => same(u.institutionId, institutionId) && ids.some((i) => same(i, u._id))));
