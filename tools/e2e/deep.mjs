@@ -33,7 +33,8 @@ check('every MCQ submission is graded', sub > 0 && ok === sub, `${ok}/${sub}`);
 const after = (await lect.req('GET', '/api/dashboard/students?pageSize=100&sort=name')).data.students || [];
 const solvedBefore = before.reduce((n, s) => n + (s.practiceSolved || 0), 0);
 const solvedAfter = after.reduce((n, s) => n + (s.practiceSolved || 0), 0);
-check('lecturer table shows more practice solved', solvedAfter > solvedBefore, `${solvedBefore} -> ${solvedAfter}`);
+// The same students give the same answers every run, so on a repeat run nothing new is solved: the count must then stay.
+check('lecturer table shows practice solved (more than before on the first run, never fewer)', solvedAfter > 0 && solvedAfter >= solvedBefore && (solvedBefore > 0 || solvedAfter > solvedBefore), `${solvedBefore} -> ${solvedAfter}`);
 // Task 7: the lecturer sees only Group 1; the admin sees everyone plus seats.
 const ov = await lect.req('GET', '/api/dashboard/overview');
 check('lecturer overview still loads (Group 1 only)', ov.status === 200 && ov.data.students >= 20 && JSON.stringify(ov.data.groups) === '["Group 1"]' && ov.data.practiceSolved > 0, JSON.stringify(ov.data).slice(0, 200));

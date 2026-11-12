@@ -45,6 +45,7 @@ for (const [c, k] of [[adminA, 'adminA'], [lectA, 'lectA'], [stuA, 'studentA'], 
 let r = await stuA.req('GET', '/api/auth/is-auth'); check('is-auth returns role', r.data?.user?.role === 'student', short(r.data));
 r = await new Client('x').login(['student@email.com', 'wrong']); check('wrong password is refused', r.status === 401);
 
+try {
 // ---------------------------------------------------------------- admin: people, invites, groups
 r = await adminA.req('GET', '/api/institution/usage'); check('admin usage', r.status === 200 && r.data.studentLimit === 60, short(r.data));
 const remainingBefore = r.data.remaining;
@@ -342,6 +343,20 @@ r = await stuB.req('GET', '/api/practice/questions'); check('B student can read 
   check('signup for an existing email gives the same answer, no link', dup.status === 200 && dup.data.message === su.data.message && !dup.data.devVerificationLink, short(dup.data));
   const oldOtp = await anon.req('POST', '/api/auth/send-verify-otp');
   check('old email-code route is gone', oldOtp.status === 404, String(oldOtp.status));
+}
+
+} finally {
+  // Everything this run created (invited, imported and self-signed-up students) is made inactive again, so the run
+  // takes no student seats and can be repeated on the same database.
+  try {
+    const found = await adminA.req('GET', `/api/institution/people?role=student&search=${stamp}`);
+    for (const person of (found.data.people || []).filter((x) => x.email.includes(`${stamp}@`) && x.status !== 'deactivated')) {
+      const d = await adminA.req('PATCH', `/api/institution/people/${person.id}/deactivate`);
+      if (d.status !== 200) console.log(`WARN  could not deactivate ${person.email}: ${d.status} ${short(d.data)}`);
+    }
+  } catch (error) {
+    console.log('WARN  clean-up failed:', error.message);
+  }
 }
 
 console.log(`\n${results.filter((x) => x.ok).length}/${results.length} passed`);

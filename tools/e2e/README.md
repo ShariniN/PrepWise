@@ -18,12 +18,16 @@ and the same passwords for `@demo-b.test`).
        if it has none.
      - `SANDBOX=1` also calls Practice run/submit and question validation, which use code-runner credits when JDoodle is
        configured. Without a runner they must answer `503` with a reason, never a fake result.
+   - The seed gives every demo student a target role and the demo student already has adaptive interviews, so those
+     smoke steps (target role required, readiness required) only run on a database where the student has none.
    - `node deep.mjs` - 30 students answer MCQ practice questions, then checks that the lecturer table and the admin
      overview pick it up. No AI, no code runner.
-   - `node prep.mjs && node e2e.mjs` - real-browser walk: student login, `/login` while signed in, "Page not found" for
+   - `node prep.mjs && node e2e.mjs` - real-browser walk: onboarding with a student who signs up during the run (dev verification link), student login, `/login` while signed in, "Page not found" for
      unknown and removed pages, Practice, the removed Skills, Questions and Grading pages, profile phone validation, a full
      mock interview on the interview page (after smoke.mjs, which puts a CV and a target role on file), the lecturer
      dashboard (overview, student, interview) and cancelling a pending invitation in Manage people. Screenshots go to `e2e/`.
    - `node shot.mjs /login out.png --role student --width 1440` - screenshot any page (add `--full` for the whole page).
+
+The suites do not depend on each other's data: run them in any order on one stack.
 
 Code execution and AI features report "unavailable" until the sandbox and AI keys are configured; that is expected.
