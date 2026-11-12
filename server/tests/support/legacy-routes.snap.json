@@ -11,6 +11,42 @@
       "analysis": [
         {
           "matchPercentage": 0,
+          "jobDescription": "Backend developer intern<br/><br/>Builds APIs and services with a team of engineers.<br/><br/>Key skills: Node.js, SQL",
+          "hasError": true,
+          "isNonTechRole": false,
+          "timestamp": "<date>",
+          "strengths": [],
+          "contentWeaknesses": [],
+          "structureWeaknesses": [],
+          "contentRecommendations": [],
+          "structureRecommendations": [],
+          "recommendationsUnavailable": true,
+          "message": "AI analysis is unavailable right now, so no match score was calculated.",
+          "scoreBreakdown": {
+            "aiAvailable": false,
+            "aiScore": null,
+            "aiWeight": 0.7,
+            "keywordScore": 0.5,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "sql"
+            ],
+            "matchedSkills": [
+              "node.js"
+            ],
+            "missingSkills": [
+              "sql"
+            ],
+            "aiError": "Unreadable AI reply: about half",
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [],
+          "kind": "target_role",
+          "targetRoleId": "<id>"
+        },
+        {
+          "matchPercentage": 0,
           "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
           "hasError": true,
           "isNonTechRole": false,
@@ -48,14 +84,15 @@
             "aiError": "Unreadable AI reply: about half",
             "model": "gemini-3.6-flash"
           },
-          "extractedTechnologies": []
+          "extractedTechnologies": [],
+          "kind": "job_description"
         }
       ],
       "metadata": {
         "useProfileCV": true,
         "resumeFileName": "cv.pdf",
         "analysisDate": "<date>",
-        "jobDescriptionCount": 1,
+        "jobDescriptionCount": 2,
         "technologiesFound": 0,
         "technologiesUnavailable": true,
         "apiUsed": "Gemini 2.5 Flash Enhanced",
@@ -83,7 +120,7 @@
     "status": 400,
     "body": {
       "success": false,
-      "message": "At least one job description is required"
+      "message": "Resume file is required when not using profile CV"
     }
   },
   "analyze no profile cv": {
@@ -109,6 +146,57 @@
       ],
       "technologiesUnavailable": false,
       "analysis": [
+        {
+          "matchPercentage": 71,
+          "jobDescription": "Backend developer intern<br/><br/>Builds APIs and services with a team of engineers.<br/><br/>Key skills: Node.js, SQL",
+          "hasError": false,
+          "isNonTechRole": false,
+          "rawSimilarity": 0.71,
+          "timestamp": "<date>",
+          "strengths": [
+            "Node.js projects"
+          ],
+          "contentWeaknesses": [
+            "no tests"
+          ],
+          "structureWeaknesses": [],
+          "contentRecommendations": [
+            "add tests"
+          ],
+          "structureRecommendations": [
+            "add links"
+          ],
+          "recommendationsUnavailable": false,
+          "message": null,
+          "scoreBreakdown": {
+            "aiAvailable": true,
+            "aiScore": 0.8,
+            "aiWeight": 0.7,
+            "keywordScore": 0.5,
+            "keywordWeight": 0.3,
+            "requiredSkills": [
+              "node.js",
+              "sql"
+            ],
+            "matchedSkills": [
+              "node.js"
+            ],
+            "missingSkills": [
+              "sql"
+            ],
+            "aiError": null,
+            "model": "gemini-3.6-flash"
+          },
+          "extractedTechnologies": [
+            {
+              "name": "Node.js",
+              "category": "Web Frameworks",
+              "confidenceLevel": 7
+            }
+          ],
+          "kind": "target_role",
+          "targetRoleId": "<id>"
+        },
         {
           "matchPercentage": 86,
           "jobDescription": "Software engineering intern: <strong>Node.js</strong>, Express and MongoDB.<br/><br/>Work on our REST API with Git.",
@@ -163,7 +251,8 @@
               "category": "Web Frameworks",
               "confidenceLevel": 7
             }
-          ]
+          ],
+          "kind": "job_description"
         },
         {
           "matchPercentage": 0,
@@ -196,7 +285,8 @@
               "category": "Web Frameworks",
               "confidenceLevel": 7
             }
-          ]
+          ],
+          "kind": "job_description"
         },
         {
           "matchPercentage": 0,
@@ -204,14 +294,15 @@
           "hasError": true,
           "message": "Analysis failed: Job description too short. Please provide a detailed job posting.",
           "jobDescription": "Short JD",
-          "extractedTechnologies": []
+          "extractedTechnologies": [],
+          "kind": "job_description"
         }
       ],
       "metadata": {
         "useProfileCV": true,
         "resumeFileName": "cv.pdf",
         "analysisDate": "<date>",
-        "jobDescriptionCount": 3,
+        "jobDescriptionCount": 4,
         "technologiesFound": 1,
         "technologiesUnavailable": false,
         "apiUsed": "Gemini 2.5 Flash Enhanced",

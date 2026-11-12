@@ -6,11 +6,12 @@ import { pdfText } from '../../services/pdfText.js';
 import {
   analyzeCv, createResumeHash, validateResumeContent, savedAnalysisView, savedResultsView,
 } from './cvAnalysis.service.js';
+import { targetRoleOf } from '../institution/institution.service.js';
 
 const isObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
 // POST /api/analyze/analyze-resume: the uploaded PDF (field "resume") or, with useProfileCV=true, the profile CV,
-// against the job descriptions sent as a JSON string array. Nothing is stored here (see saveAnalysis).
+// against the student's target role and any job descriptions sent as a JSON string array. Nothing is stored here (see saveAnalysis).
 export const analyzeResume = async (req, res) => {
   try {
     const { jobDescriptions: jobDescriptionsString } = req.body;
@@ -27,7 +28,26 @@ export const analyzeResume = async (req, res) => {
       });
     }
 
-    if (!Array.isArray(jobDescriptions) || jobDescriptions.length === 0) {
+    if (!Array.isArray(jobDescriptions)) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one job description is required'
+      });
+    }
+    jobDescriptions = jobDescriptions.filter((jd) => typeof jd !== 'string' || jd.trim());
+
+    // A student is always scored against their target role, so pasted job descriptions are optional for them.
+    let targetRole = null;
+    if (req.user.role === 'student') {
+      targetRole = await targetRoleOf(req.user);
+      if (!targetRole) {
+        return res.status(409).json({
+          success: false,
+          code: 'TARGET_ROLE_REQUIRED',
+          message: 'Choose the role you are preparing for before analysing your CV.'
+        });
+      }
+    } else if (jobDescriptions.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'At least one job description is required'
@@ -80,7 +100,7 @@ export const analyzeResume = async (req, res) => {
 
     validateResumeContent(resumeText);
 
-    const { analysis: analysisResults, extractedTechnologies, technologiesUnavailable } = await analyzeCv(resumeText, jobDescriptions);
+    const { analysis: analysisResults, extractedTechnologies, technologiesUnavailable } = await analyzeCv(resumeText, jobDescriptions, { targetRole });
 
     res.json({
       success: true,
@@ -94,7 +114,7 @@ export const analyzeResume = async (req, res) => {
         useProfileCV,
         resumeFileName,
         analysisDate: new Date().toISOString(),
-        jobDescriptionCount: jobDescriptions.length,
+        jobDescriptionCount: analysisResults.length,
         technologiesFound: extractedTechnologies.length,
         technologiesUnavailable,
         apiUsed: 'Gemini 2.5 Flash Enhanced',
@@ -196,6 +216,7 @@ export const saveAnalysis = async (req, res) => {
 
     if (analysis) {
       analysis.jobDescriptions = jobDescriptions;
+      analysis.targetRoleId = req.user.targetRoleId || null;
       analysis.results = results;
       analysis.resumeText = resumeText.substring(0, 15000);
       analysis.isSaved = shouldSave;
@@ -212,6 +233,7 @@ export const saveAnalysis = async (req, res) => {
       analysis = new CVAnalysis({
         userId: req.user.id,
         institutionId: req.user.institutionId,
+        targetRoleId: req.user.targetRoleId || null,
         resumeText: resumeText.substring(0, 15000),
         resumeHash,
         jobDescriptions,

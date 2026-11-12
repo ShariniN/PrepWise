@@ -10,6 +10,7 @@ import request from 'supertest';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { makeWorld, IDS, newId } from './helpers.js';
 import CVAnalysis from '../models/CvAnalysis.js';
+import institutionRepo from '../modules/institution/institution.repo.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import app from '../app.js';
@@ -58,7 +59,10 @@ beforeEach(() => {
   resetAiCapCache();
   process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
-  student = w.addUser({ name: 'Stu', email: 's@a.edu', institutionId: IDS.instA });
+  const targetRole = { _id: newId(), title: 'Backend developer intern', description: 'Builds APIs and services with a team of engineers.', skills: ['Node.js', 'SQL'] };
+  w.institutions[IDS.instA].targetRoles = [targetRole];
+  mock.method(institutionRepo, 'getInstitution', async (id) => w.institutions[String(id)] || null);
+  student = w.addUser({ name: 'Stu', email: 's@a.edu', institutionId: IDS.instA, targetRoleId: targetRole._id });
   cvStore = []; ivStore = [];
 
   mock.method(CVAnalysis, 'find', (q) => chain(() => cvStore.filter((d) => matches(d, q))));
