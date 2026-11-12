@@ -121,16 +121,8 @@ test('reset OTP is refused for deactivated and invited accounts', async () => {
   assert.equal(w.mails.length, 0);
 });
 
-test('the OTP verify and reset flow still works for an active user', async () => {
-  const user = w.addUser({ email: 'ok@a.edu', institutionId: IDS.instA, isAccountVerified: false, verifyOtp: '', verifyOtpExpireAt: 0 });
-  const send = await request(app).post('/api/auth/send-verify-otp').set('Cookie', w.cookie(user));
-  assert.equal(send.body.success, true);
-  assert.equal(w.mails.length, 1);
-  const bad = await request(app).post('/api/auth/verify-account').set('Cookie', w.cookie(user)).send({ otp: '000000' });
-  assert.equal(bad.body.success, false);
-  const good = await request(app).post('/api/auth/verify-account').set('Cookie', w.cookie(user)).send({ otp: user.verifyOtp });
-  assert.equal(good.body.success, true);
-  assert.equal(user.isAccountVerified, true);
+test('the reset OTP flow still works for an active user', async () => {
+  const user = w.addUser({ email: 'ok@a.edu', institutionId: IDS.instA, isAccountVerified: true });
 
   await request(app).post('/api/auth/send-reset-otp').send({ email: 'ok@a.edu' });
   const reset = await request(app).post('/api/auth/reset-password').send({ email: 'ok@a.edu', otp: user.resetOtp, newPassword: 'NewPassw0rd!' });

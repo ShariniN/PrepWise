@@ -105,14 +105,6 @@ test('CV upload: a non-PDF type is a clear 400, not a 500', async () => {
   assert.match(res.body.message, /Only PDF files are accepted/);
 });
 
-test('interview CV upload (process-cv) also refuses non-PDF files with 400', async () => {
-  for (const contentType of ['application/pdf', 'text/plain']) {
-    const res = await request(app).post('/api/interviews/process-cv').set(as()).attach('cv', FAKE_PDF, { filename: 'x.pdf', contentType });
-    assert.equal(res.status, 400, `${contentType}: ${res.text}`);
-    assert.match(res.body.error || res.body.message, /Only PDF files are accepted/);
-  }
-});
-
 test('CV analyzer upload also refuses non-PDF files with 400', async () => {
   for (const contentType of ['application/pdf', 'text/plain']) {
     const res = await request(app).post('/api/analyze/analyze-resume').set(as())
@@ -120,5 +112,28 @@ test('CV analyzer upload also refuses non-PDF files with 400', async () => {
       .attach('resume', FAKE_PDF, { filename: 'x.pdf', contentType });
     assert.equal(res.status, 400, `${contentType}: ${res.text}`);
     assert.match(res.body.message, /Only PDF files are accepted/);
+  }
+});
+
+test('profile projections hide the reset code fields by their real names', async () => {
+  const selects = [];
+  const base = userModel.findById;
+  mock.method(userModel, 'findById', (id) => {
+    const p = Promise.resolve(base.call(userModel, id));
+    p.select = (s) => { selects.push(s); return p.then((u) => ({ ...u, resetOtp: undefined, resetOtpExpireAt: undefined })); };
+    return p;
+  });
+  mock.method(userModel, 'findByIdAndUpdate', (id, update, opts) => {
+    selects.push(opts.select);
+    return Promise.resolve(student.toObject());
+  });
+  const get = await request(app).get('/api/user/profile').set('Cookie', w.cookie(student));
+  assert.equal(get.status, 200);
+  assert.ok(!('resetOtpExpireAt' in (get.body.user || get.body)));
+  await request(app).put('/api/user/profile').set('Cookie', w.cookie(student)).send({ name: 'New Name' });
+  assert.equal(selects.length, 2);
+  for (const s of selects) {
+    const fields = s.split(/\s+/);
+    assert.deepEqual(fields, ['-password', '-resetOtp', '-resetOtpExpireAt']);
   }
 });

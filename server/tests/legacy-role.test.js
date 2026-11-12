@@ -29,8 +29,8 @@ test('login with a removed role is refused with 403 and no session cookie', asyn
 test('an existing token for a removed role gets 403 everywhere, including routes with no role gate', async () => {
   for (const [m, url] of [
     ['get', '/api/auth/is-auth'], ['get', '/api/interviews/history'], ['get', '/api/user/profile'], ['get', '/api/me/export'],
-    ['get', '/api/grading/queue'], ['get', '/api/institution/people'], ['get', '/api/questions'], ['get', '/api/practice/questions'],
-    ['get', '/api/lecturer/overview'], ['get', '/api/lecturer/students'], ['get', '/api/analytics/admin/overview'],
+    ['get', '/api/institution/people'], ['get', '/api/practice/questions'],
+    ['get', '/api/dashboard/overview'], ['get', '/api/dashboard/students'],
   ]) {
     const res = await request(app)[m](url).set(as(co));
     assert.equal(res.status, 403, `${m} ${url}`);

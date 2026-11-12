@@ -17,7 +17,7 @@ const s0 = new C(); await s0.req('POST', '/api/auth/login', { email: 'student@em
 const mcqs = ((await s0.req('GET', '/api/practice/questions?type=mcq')).data.questions || []).slice(0, 4);
 check('found MCQ practice questions', mcqs.length > 0, String(mcqs.length));
 
-const before = (await lect.req('GET', '/api/lecturer/students?pageSize=100&sort=name')).data.students || [];
+const before = (await lect.req('GET', '/api/dashboard/students?pageSize=100&sort=name')).data.students || [];
 let sub = 0, ok = 0;
 for (let i = 1; i <= 30; i++) {
   const c = new C(); const e = i === 1 ? 'student@email.com' : `student${String(i).padStart(2, '0')}@demo-a.test`;
@@ -30,14 +30,20 @@ for (let i = 1; i <= 30; i++) {
 }
 check('every MCQ submission is graded', sub > 0 && ok === sub, `${ok}/${sub}`);
 
-const after = (await lect.req('GET', '/api/lecturer/students?pageSize=100&sort=name')).data.students || [];
+const after = (await lect.req('GET', '/api/dashboard/students?pageSize=100&sort=name')).data.students || [];
 const solvedBefore = before.reduce((n, s) => n + (s.practiceSolved || 0), 0);
 const solvedAfter = after.reduce((n, s) => n + (s.practiceSolved || 0), 0);
-check('lecturer table shows more practice solved', solvedAfter > solvedBefore, `${solvedBefore} -> ${solvedAfter}`);
-const ov = await lect.req('GET', '/api/lecturer/overview'); check('lecturer overview still loads', ov.status === 200 && ov.data.totals?.students >= 40, JSON.stringify(ov.data).slice(0, 200));
-const top = await lect.req('GET', '/api/lecturer/students?sort=-practiceSolved&pageSize=3');
+// The same students give the same answers every run, so on a repeat run nothing new is solved: the count must then stay.
+check('lecturer table shows practice solved (more than before on the first run, never fewer)', solvedAfter > 0 && solvedAfter >= solvedBefore && (solvedBefore > 0 || solvedAfter > solvedBefore), `${solvedBefore} -> ${solvedAfter}`);
+// Task 7: the lecturer sees only Group 1; the admin sees everyone plus seats.
+const ov = await lect.req('GET', '/api/dashboard/overview');
+check('lecturer overview still loads (Group 1 only)', ov.status === 200 && ov.data.students >= 20 && JSON.stringify(ov.data.groups) === '["Group 1"]' && ov.data.practiceSolved > 0, JSON.stringify(ov.data).slice(0, 200));
+check('lecturer table is Group 1 only', after.length > 0 && after.every((s) => s.group === 'Group 1'), JSON.stringify(after.map((s) => s.group)).slice(0, 200));
+const top = await lect.req('GET', '/api/dashboard/students?sort=-practiceSolved&pageSize=3');
 check('sort by practice solved', top.status === 200 && top.data.students[0].practiceSolved >= top.data.students[2].practiceSolved, JSON.stringify(top.data).slice(0, 200));
 const adm = new C(); await adm.req('POST', '/api/auth/login', { email: 'admin@email.com', password: 'admin@123' });
-const ao = await adm.req('GET', '/api/analytics/admin/overview'); check('admin overview loads', ao.status === 200, JSON.stringify(ao.data).slice(0, 200));
+const ao = await adm.req('GET', '/api/dashboard/overview');
+check('admin dashboard overview loads with seats', ao.status === 200 && ao.data.students >= 40 && typeof ao.data.seats?.used === 'number' && ao.data.practiceSolved >= ov.data.practiceSolved, JSON.stringify(ao.data).slice(0, 200));
+const old = await adm.req('GET', '/api/analytics/admin/overview'); check('old admin analytics path is 404', old.status === 404, String(old.status));
 console.log(`\n${results.filter(Boolean).length}/${results.length} passed`);
 if (results.some((x) => !x)) process.exitCode = 1;

@@ -1,0 +1,161 @@
+// Run / submit logic as plain functions that return { status, body }, used by the practice API. `ctx.attemptExtra` (optional) is merged into every stored attempt.
+import questionRepo from './practice.repo.js';
+import { gradeTests, gradeVisibleFirst } from '../../services/grading.js';
+import {
+  run as runOnce, MAX_SOURCE_CHARS, MAX_STDIN_CHARS, ExecutionUnavailableError, UnsupportedLanguageError,
+} from '../../services/execution/index.js';
+import { normalizeLanguage } from '../../services/execution/languages.js';
+import { friendlyUnavailable, unavailableReason } from '../../services/execution/errors.js';
+import { studentTestResults, storedPerTest } from '../../services/questionSerializers.js';
+
+export const CODE_TYPES = ['coding'];
+const bad = (status, message, extra = {}) => ({ status, body: { success: false, message, ...extra } });
+const normText = (s) => String(s ?? '').trim().replace(/\r\n?/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n');
+
+// The message says why (in plain words) and that nothing was scored; `reason` lets the client react (quota, network, ...).
+export const unavailable = (error) => bad(503, `${friendlyUnavailable(error)} Nothing was scored.`, { verdict: 'unavailable', reason: unavailableReason(error) });
+
+// Returns { lang } or { error: result }.
+export const pickLanguage = (q, language) => {
+  const lang = normalizeLanguage(language);
+  if (!lang) return { error: bad(400, `Unsupported language: ${language}`) };
+  if (q.languages?.length && !q.languages.map(normalizeLanguage).includes(lang)) return { error: bad(400, `This question does not allow ${lang}`) };
+  return { lang };
+};
+
+export const checkSource = (source) => {
+  if (typeof source !== 'string' || !source.trim()) return bad(400, 'source is required');
+  if (source.length > MAX_SOURCE_CHARS) return bad(413, 'Code is too large');
+  return null;
+};
+
+const handleRunError = (error) => {
+  if (error instanceof ExecutionUnavailableError) return unavailable(error);
+  if (error instanceof UnsupportedLanguageError) return bad(400, error.message);
+  throw error;
+};
+
+export const notRunMessage = (n) => `A visible test failed, so the ${n} hidden test${n === 1 ? ' was' : 's were'} not run and count${n === 1 ? 's' : ''} as not passed. Make the visible tests pass, then submit again.`;
+
+const detailFor = (graded, tests) => {
+  const d = {};
+  for (const t of graded.perTest.filter((x) => x.visible)) {
+    const def = tests.find((x) => String(x._id) === t.testId);
+    d[t.testId] = { input: def.input, expectedOutput: def.expectedOutput, actualOutput: t.stdout, error: t.compileOutput || t.stderr || '' };
+  }
+  return d;
+};
+
+export const runForQuestion = async (q, body, ctx) => {
+  if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question is not a coding question');
+  const { language, source, stdin } = body || {};
+  const picked = pickLanguage(q, language);
+  if (picked.error) return picked.error;
+  const srcErr = checkSource(source);
+  if (srcErr) return srcErr;
+  if (stdin !== undefined && (typeof stdin !== 'string' || stdin.length > MAX_STDIN_CHARS)) return bad(400, 'stdin must be a string of at most 16 KB');
+  const lang = picked.lang;
+  const base = {
+    userId: ctx.userId, institutionId: ctx.institutionId, questionId: q._id, questionVersion: q.version, runKind: 'run', language: lang, source,
+    ...(ctx.attemptExtra || {}),
+  };
+  try {
+    if (typeof stdin === 'string' && stdin !== '') {
+      const r = await runOnce({ language: lang, source, stdin, limits: { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb } });
+      await questionRepo.createAttempt({ ...base, verdict: r.status, perTest: [], score: null });
+      return {
+        status: 200,
+        body: {
+          success: true, mode: 'custom', verdict: r.status, stdout: r.stdout, stderr: r.stderr, compileOutput: r.compileOutput,
+          timeMs: r.timeMs, memoryKb: r.memoryKb,
+        },
+      };
+    }
+    const visible = (await questionRepo.listTests(q._id)).filter((t) => t.visible);
+    if (!visible.length) return bad(409, 'This question has no visible tests; provide stdin to run your code');
+    const graded = await gradeTests({ language: lang, source, tests: visible, limits: { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb } });
+    await questionRepo.createAttempt({ ...base, verdict: graded.verdict, perTest: storedPerTest(graded.perTest), score: null });
+    return {
+      status: 200,
+      body: { success: true, mode: 'visible_tests', verdict: graded.verdict, tests: studentTestResults(graded.perTest, { detail: detailFor(graded, visible) }) },
+    };
+  } catch (error) {
+    return handleRunError(error);
+  }
+};
+
+// The student pressed Run and the code ran in their own browser (Python / JavaScript). Nothing ran here, so nothing
+// is verified: the record only keeps practice activity visible (lecturer "last active", admin "active students").
+// Whatever the browser says about its result is ignored; the verdict is always BROWSER_RUN, never a score.
+export const BROWSER_RUN = 'browser_unverified';
+export const recordBrowserRun = async (q, body, ctx) => {
+  if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question is not a coding question');
+  const { language, source } = body || {};
+  const picked = pickLanguage(q, language);
+  if (picked.error) return picked.error;
+  const srcErr = checkSource(source);
+  if (srcErr) return srcErr;
+  await questionRepo.createAttempt({
+    userId: ctx.userId, institutionId: ctx.institutionId, questionId: q._id, questionVersion: q.version, runKind: 'run',
+    language: picked.lang, source, verdict: BROWSER_RUN, perTest: [], score: null, ...(ctx.attemptExtra || {}),
+  });
+  return { status: 201, body: { success: true, recorded: true, verified: false } };
+};
+
+// Result also carries `attempt` (the stored document) for callers that need it.
+export const submitForQuestion = async (q, body, ctx) => {
+  const base = {
+    userId: ctx.userId, institutionId: ctx.institutionId, questionId: q._id, questionVersion: q.version, runKind: 'submit', ...(ctx.attemptExtra || {}),
+  };
+  body = body || {};
+  const objective = (attempt) => ({
+    status: 200,
+    attempt,
+    body: { success: true, attemptId: String(attempt._id), verdict: attempt.verdict, score: attempt.score, explanation: q.explanation || '' },
+  });
+
+  if (q.type === 'mcq') {
+    if (!Array.isArray(body.selected) || !body.selected.every((n) => Number.isInteger(n) && n >= 0 && n < (q.options || []).length)) {
+      return bad(400, 'selected must be an array of option indexes');
+    }
+    const picked = [...new Set(body.selected)].sort();
+    const right = [...(q.correct || [])].sort();
+    const ok = picked.length === right.length && picked.every((n, i) => n === right[i]);
+    return objective(await questionRepo.createAttempt({ ...base, verdict: ok ? 'accepted' : 'wrong_answer', score: ok ? 100 : 0, answer: picked }));
+  }
+  if (q.type === 'trace') {
+    if (typeof body.answer !== 'string' || !body.answer.trim() || body.answer.length > 2000) return bad(400, 'answer is required');
+    const ok = normText(body.answer) === normText(q.traceAnswer);
+    return objective(await questionRepo.createAttempt({ ...base, verdict: ok ? 'accepted' : 'wrong_answer', score: ok ? 100 : 0, answer: body.answer }));
+  }
+  // Anything that is not coding, mcq or trace (for example an old short or behavioural question) cannot be answered here.
+  if (!CODE_TYPES.includes(q.type)) return bad(400, 'This question type is not supported');
+
+  // coding: server-side. Visible tests first; the hidden tests run only if every visible test passed
+  // (see gradeVisibleFirst). Skipped hidden tests are stored and shown as `not_run` and score as not passed.
+  const picked = pickLanguage(q, body.language);
+  if (picked.error) return picked.error;
+  const srcErr = checkSource(body.source);
+  if (srcErr) return srcErr;
+  const tests = await questionRepo.listTests(q._id);
+  if (!tests.length) return bad(409, 'This question has no tests yet');
+  try {
+    const graded = await gradeVisibleFirst({ language: picked.lang, source: body.source, tests, limits: { timeMs: q.timeLimitMs, memoryKb: q.memoryLimitKb } });
+    const attempt = await questionRepo.createAttempt({
+      ...base, language: picked.lang, source: body.source, verdict: graded.verdict, perTest: storedPerTest(graded.perTest), score: graded.score,
+    });
+    return {
+      status: 200,
+      attempt,
+      body: {
+        success: true, attemptId: String(attempt._id), verdict: graded.verdict, score: graded.score,
+        passed: graded.perTest.filter((t) => t.passed).length, total: graded.perTest.length,
+        notRun: graded.notRun,
+        ...(graded.notRun ? { message: notRunMessage(graded.notRun) } : {}),
+        tests: studentTestResults(graded.perTest, { detail: detailFor(graded, tests) }),
+      },
+    };
+  } catch (error) {
+    return handleRunError(error);
+  }
+};

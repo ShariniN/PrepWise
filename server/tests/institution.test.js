@@ -2,7 +2,8 @@
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { makeWorld, IDS } from './helpers.js';
+import { makeWorld, IDS, peopleRepo, transporter } from './helpers.js';
+import { seatLockRepo } from '../services/seatLock.js';
 import app from '../app.js';
 
 let w;
@@ -306,7 +307,7 @@ test('cancelling a pending invitation (deactivate an invited user) frees the sea
 });
 
 test('an invited user without a password passes model validation when deactivated', async () => {
-  const { default: userModel } = await import('../models/userModel.js');
+  const { default: userModel } = await import('../models/User.js');
   const doc = new userModel({ name: 'Inv', email: 'inv2@a.edu', role: 'student', institutionId: IDS.instA, status: 'invited' });
   await doc.validate();
   doc.status = 'deactivated';
@@ -342,4 +343,195 @@ test('CSV import at the limit validates every row first and labels each by its r
   assert.match(reason[3], /limit/);
   assert.deepEqual(res.body.summary, { total: 8, skipped: 2, blocked_limit: 1, error: 4, invited: 1 });
   assert.equal(res.body.limitReached, true);
+});
+
+// ---------------------------------------------------------------- lecturer group assignment
+const assign = (user, target, body) => request(app).patch(`/api/institution/people/${target._id}/assigned-groups`).set(as(user)).send(body);
+
+test('admin assigns groups to a lecturer', async () => {
+  const res = await assign(adminA, lecturerA, { groups: [' Group   1 ', 'Group 2', 'Group 2', ''] });
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.user.assignedGroups, ['Group 1', 'Group 2'], 'cleaned, without blanks or repeats');
+  assert.deepEqual(lecturerA.assignedGroups, ['Group 1', 'Group 2']);
+  assert.equal(w.saves, 0, 'an atomic update: no save hook, so the lecturer does not look active');
+  const entry = w.audit.find((a) => a.action === 'user.assigned_groups_change');
+  assert.deepEqual(entry.meta, { from: [], to: ['Group 1', 'Group 2'] });
+  assert.equal(String(entry.target), String(lecturerA._id));
+  const list = await request(app).get('/api/institution/people?role=lecturer').set(as(adminA));
+  assert.deepEqual(list.body.people[0].assignedGroups, ['Group 1', 'Group 2']);
+  const cleared = await assign(adminA, lecturerA, { groups: [] });
+  assert.equal(cleared.status, 200);
+  assert.deepEqual(lecturerA.assignedGroups, []);
+});
+
+test('assigning groups to a student is 400 NOT_A_LECTURER', async () => {
+  for (const target of [studentA, adminA]) {
+    const res = await assign(adminA, target, { groups: ['Group 1'] });
+    assert.equal(res.status, 400, target.role);
+    assert.equal(res.body.code, 'NOT_A_LECTURER');
+    assert.equal(res.body.success, false);
+  }
+  assert.equal(studentA.assignedGroups, undefined);
+});
+
+test('more than 20 groups is 400', async () => {
+  const many = Array.from({ length: 21 }, (_, i) => `G${i}`);
+  const res = await assign(adminA, lecturerA, { groups: many });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'TOO_MANY_GROUPS');
+  assert.equal((await assign(adminA, lecturerA, { groups: [...many.slice(0, 20), 'G0', ' G1 '] })).status, 200, 'repeats do not count');
+  const long = await assign(adminA, lecturerA, { groups: ['x'.repeat(61)] });
+  assert.equal(long.status, 400);
+  assert.equal(long.body.code, 'INVALID_GROUP');
+  for (const body of [{}, { groups: 'Group 1' }, { groups: [3] }]) {
+    const bad = await assign(adminA, lecturerA, body);
+    assert.equal(bad.status, 400, JSON.stringify(body));
+    assert.match(bad.body.code, /^INVALID_GROUPS?$/);
+  }
+  assert.equal(lecturerA.assignedGroups.length, 20);
+});
+
+test('lecturer cannot assign groups', async () => {
+  assert.equal((await assign(lecturerA, lecturerA, { groups: ['Group 1'] })).status, 403);
+  assert.equal((await assign(studentA, lecturerA, { groups: ['Group 1'] })).status, 403);
+  assert.equal((await request(app).get('/api/institution/groups').set(as(lecturerA))).status, 403);
+  const lecB = w.addUser({ email: 'lec@b.edu', role: 'lecturer', institutionId: IDS.instB });
+  assert.equal((await assign(adminA, lecB, { groups: ['Group 1'] })).status, 404, 'another university');
+  assert.equal(lecturerA.assignedGroups, undefined);
+});
+
+test('GET /api/institution/groups lists the distinct student groups of the caller institution', async () => {
+  studentA.group = 'Group 2';
+  w.addUser({ email: 's2@a.edu', role: 'student', institutionId: IDS.instA, group: 'Group 1' });
+  w.addUser({ email: 's3@a.edu', role: 'student', institutionId: IDS.instA, group: 'Group 1', status: 'invited' });
+  w.addUser({ email: 's4@a.edu', role: 'student', institutionId: IDS.instA });
+  w.addUser({ email: 'l2@a.edu', role: 'lecturer', institutionId: IDS.instA, group: 'Staff only' });
+  studentB.group = 'Other uni';
+  const res = await request(app).get('/api/institution/groups').set(as(adminA));
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.groups, ['Group 1', 'Group 2']);
+});
+
+// ---------------------------------------------------------------- unverified self-signups
+const unverified = () => w.addUser({ name: 'Pending', email: 'pending@a.edu', role: 'student', institutionId: IDS.instA, status: 'unverified', isAccountVerified: false, password: undefined, emailVerifyTokenHash: 'h'.repeat(64) });
+
+test('people list filters by ?status=unverified', async () => {
+  const p = unverified();
+  const res = await request(app).get('/api/institution/people?status=unverified').set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.people.map((x) => x.id), [String(p._id)]);
+  assert.equal(res.body.people[0].status, 'unverified');
+  assert.equal(res.body.counts.byStatus.unverified, 1);
+});
+
+test('cancel sign-up removes the unverified account, frees the address for an invite, and is audited', async () => {
+  const p = unverified();
+  const res = await request(app).post(`/api/institution/people/${p._id}/cancel-signup`).set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.success, true);
+  assert.ok(!w.users.includes(p));
+  assert.equal(w.audit.at(-1).action, 'user.signup_cancel');
+  assert.equal(String(w.audit.at(-1).target), String(p._id));
+  const inv = await request(app).post('/api/institution/people/invite').set(as(adminA)).send({ email: 'pending@a.edu', role: 'student' });
+  assert.equal(inv.status, 201, inv.text);
+});
+
+test('cancel sign-up only works for unverified people of your own institution', async () => {
+  const res = await request(app).post(`/api/institution/people/${studentA._id}/cancel-signup`).set(as(adminA));
+  assert.equal(res.status, 409);
+  assert.equal(res.body.code, 'NOT_UNVERIFIED');
+  assert.ok(w.users.includes(studentA));
+  const other = w.addUser({ email: 'pb@b.edu', role: 'student', institutionId: IDS.instB, status: 'unverified' });
+  assert.equal((await request(app).post(`/api/institution/people/${other._id}/cancel-signup`).set(as(adminA))).status, 404);
+  assert.ok(w.users.includes(other));
+});
+
+test('a role change on an unverified account is 400 ACCOUNT_NOT_VERIFIED', async () => {
+  const p = unverified();
+  const same = await request(app).patch(`/api/institution/people/${p._id}/role`).set(as(adminA)).send({ role: 'student' });
+  assert.equal(same.body.code, 'ACCOUNT_NOT_VERIFIED');
+  const res = await request(app).patch(`/api/institution/people/${p._id}/role`).set(as(adminA)).send({ role: 'lecturer' });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'ACCOUNT_NOT_VERIFIED');
+  assert.equal(res.body.message, "This person hasn't verified their email yet.");
+  assert.equal(p.role, 'student');
+});
+
+// ---------------------------------------------------------------- seat lock on invite, import, reactivate and role change
+// Make the seat count, user creation and saves yield, so concurrent requests really interleave.
+const slowDown = () => {
+  const yieldTwice = (fn) => async (...args) => { await new Promise(setImmediate); const r = await fn(...args); await new Promise(setImmediate); return r; };
+  for (const name of ['countStudentsByStatus', 'createUser']) {
+    const orig = peopleRepo[name];
+    mock.method(peopleRepo, name, yieldTwice(orig));
+  }
+  for (const u of w.users) {
+    const save = u.save;
+    u.save = async function slowSave() { await new Promise(setImmediate); return save.call(this); };
+  }
+};
+const lastSeat = () => w.addUser({ email: 'filler@a.edu', role: 'student', institutionId: IDS.instA }); // with studentA: 2 of 3
+const activeStudents = () => w.users.filter((u) => u.role === 'student' && String(u.institutionId) === IDS.instA && ['active', 'invited'].includes(u.status)).length;
+const invite = (email) => request(app).post('/api/institution/people/invite').set(as(adminA)).send({ email, role: 'student' });
+
+test('two concurrent invites for the last seat: exactly one succeeds', async () => {
+  lastSeat();
+  slowDown();
+  const [a, b] = await Promise.all([invite('one@a.edu'), invite('two@a.edu')]);
+  assert.deepEqual([a.status, b.status].sort(), [201, 409]);
+  assert.equal([a, b].find((r) => r.status === 409).body.code, 'STUDENT_LIMIT_REACHED');
+  assert.equal(activeStudents(), 3);
+  assert.equal(w.institutions[IDS.instA].seatLockUntil, null, 'the lock is released');
+});
+
+test('a concurrent invite and CSV import for the last seat: only one student is added', async () => {
+  lastSeat();
+  slowDown();
+  const csv = request(app).post('/api/institution/people/import').set(as(adminA)).set('Content-Type', 'text/csv').send('email,role\ncsv@a.edu,student\n');
+  const [i, c] = await Promise.all([invite('inv@a.edu'), csv]);
+  assert.equal(c.status, 200, c.text);
+  const added = (i.status === 201 ? 1 : 0) + (c.body.summary.invited || 0);
+  assert.equal(added, 1, `invite ${i.status}, import ${JSON.stringify(c.body.summary)}`);
+  assert.equal(activeStudents(), 3);
+});
+
+test('two concurrent reactivations for the last seat: exactly one succeeds', async () => {
+  lastSeat();
+  const d1 = w.addUser({ email: 'd1@a.edu', role: 'student', institutionId: IDS.instA, status: 'deactivated' });
+  const d2 = w.addUser({ email: 'd2@a.edu', role: 'student', institutionId: IDS.instA, status: 'deactivated' });
+  slowDown();
+  const re = (u) => request(app).patch(`/api/institution/people/${u._id}/reactivate`).set(as(adminA));
+  const [a, b] = await Promise.all([re(d1), re(d2)]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 409]);
+  assert.equal(activeStudents(), 3);
+});
+
+test('two concurrent role changes to student for the last seat: exactly one succeeds', async () => {
+  lastSeat();
+  const l2 = w.addUser({ email: 'lec2@a.edu', role: 'lecturer', institutionId: IDS.instA });
+  slowDown();
+  const toStudent = (u) => request(app).patch(`/api/institution/people/${u._id}/role`).set(as(adminA)).send({ role: 'student' });
+  const [a, b] = await Promise.all([toStudent(lecturerA), toStudent(l2)]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 409]);
+  assert.equal(activeStudents(), 3);
+});
+
+test('a seat lock that stays held makes a student invite answer 503 TRY_AGAIN; staff invites need no seat', async () => {
+  w.institutions[IDS.instA].seatLockUntil = new Date(Date.now() + 60000);
+  const res = await invite('wait@a.edu');
+  assert.equal(res.status, 503);
+  assert.equal(res.body.code, 'TRY_AGAIN');
+  assert.ok(!w.users.some((u) => u.email === 'wait@a.edu'));
+  const staff = await request(app).post('/api/institution/people/invite').set(as(adminA)).send({ email: 'lec9@a.edu', role: 'lecturer' });
+  assert.equal(staff.status, 201, staff.text);
+});
+
+test('invite emails are sent after the seat lock is released', async () => {
+  let lockHeldAtSend = null;
+  const send = transporter.sendMail;
+  mock.method(transporter, 'sendMail', async (m) => { lockHeldAtSend = w.institutions[IDS.instA].seatLockUntil; return send.call(transporter, m); });
+  const res = await invite('mail@a.edu');
+  assert.equal(res.status, 201, res.text);
+  assert.ok(seatLockRepo.acquire.mock.callCount() >= 1, 'the invite took the seat lock');
+  assert.ok(!lockHeldAtSend, 'and released it before sending the email');
 });

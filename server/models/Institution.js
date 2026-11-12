@@ -8,7 +8,17 @@ const institutionSchema = new mongoose.Schema({
   contractEnd: { type: Date, default: null },
   allowedEmailDomains: { type: [String], default: [] },
   monthlyAiCallCap: { type: Number, default: 20000, min: 0 },
-  status: { type: String, enum: ['active', 'suspended', 'archived'], default: 'active' }
+  status: { type: String, enum: ['active', 'suspended', 'archived'], default: 'active' },
+  // When true, people with an approved email domain can create their own student account.
+  selfSignup: { type: Boolean, default: false },
+  // Short self-expiring lock that serialises seat-taking (see services/seatLock.js).
+  seatLockUntil: { type: Date, default: null },
+  // The job roles students practise for. Edited by the university admin.
+  targetRoles: [{
+    title: { type: String, required: true, trim: true, maxlength: 80 },
+    description: { type: String, trim: true, maxlength: 2000, default: '' },
+    skills: { type: [String], default: [] }
+  }]
 }, { timestamps: true, collection: 'institutions' });
 
 institutionSchema.pre('validate', function (next) {

@@ -6,7 +6,7 @@ process.env.NODE_ENV = 'test';
 process.env.CLIENT_URL = 'http://localhost:5173';
 delete process.env.JDOODLE_CLIENT_ID;
 delete process.env.JDOODLE_CLIENT_SECRET;
-delete process.env.ASSEMBLYAI_API_KEY;
+delete process.env.GROQ_API_KEY;
 
 import { mock } from 'node:test';
 import mongoose from 'mongoose';
@@ -14,10 +14,11 @@ import jwt from 'jsonwebtoken';
 
 mongoose.set('bufferCommands', false); // an unstubbed model call fails at once instead of hanging
 
-const { default: userModel } = await import('../models/userModel.js');
-const { default: peopleRepo } = await import('../repositories/peopleRepo.js');
-const { default: complianceRepo } = await import('../repositories/complianceRepo.js');
+const { default: userModel } = await import('../models/User.js');
+const { default: peopleRepo } = await import('../modules/people/people.repo.js');
+const { default: complianceRepo } = await import('../modules/compliance/compliance.repo.js');
 const { auditRepo } = await import('../services/audit.js');
+const { seatLockRepo } = await import('../services/seatLock.js');
 const { default: transporter } = await import('../config/nodemailer.js');
 
 export { userModel, peopleRepo, complianceRepo, auditRepo, transporter };
@@ -41,6 +42,7 @@ export const makeWorld = () => {
     users: [],
     interviews: [],
     consents: [],
+    attempts: [],
     audit: [],
     mails: [],
     saves: 0,
@@ -97,6 +99,11 @@ export const makeWorld = () => {
     mock.method(peopleRepo, 'findByIdInInstitution', async (id, institutionId) =>
       world.users.find((u) => same(u._id, id) && same(u.institutionId, institutionId)) || null);
     mock.method(peopleRepo, 'createUser', async (data) => world.addUser({ ...data, password: undefined }));
+    mock.method(peopleRepo, 'deleteUnverified', async (institutionId, id) => {
+      const before = world.users.length;
+      world.users = world.users.filter((u) => !(same(u._id, id) && same(u.institutionId, institutionId) && u.status === 'unverified'));
+      return world.users.length < before;
+    });
     // Atomic update in the real repo: no save(), so no pre-save hook and no lastActive bump.
     mock.method(peopleRepo, 'updateGroup', async (institutionId, id, group) => {
       const u = world.users.find((x) => same(x._id, id) && same(x.institutionId, institutionId));
@@ -104,26 +111,50 @@ export const makeWorld = () => {
       u.group = group;
       return u.toObject();
     });
+    mock.method(peopleRepo, 'updateAssignedGroups', async (institutionId, id, groups) => {
+      const u = world.users.find((x) => same(x._id, id) && same(x.institutionId, institutionId) && x.role === 'lecturer');
+      if (!u) return null;
+      u.assignedGroups = groups;
+      return u.toObject();
+    });
+    mock.method(peopleRepo, 'distinctStudentGroups', async (institutionId) =>
+      [...new Set(world.users.filter((u) => same(u.institutionId, institutionId) && u.role === 'student').map((u) => u.group).filter(Boolean))]);
 
     mock.method(peopleRepo, 'findUsersByIds', async (institutionId, ids) =>
       world.users.filter((u) => same(u.institutionId, institutionId) && ids.some((i) => same(i, u._id))));
 
     mock.method(complianceRepo, 'findUser', async (id) => world.users.find((u) => same(u._id, id)) || null);
-    mock.method(complianceRepo, 'collect', async (userId) => ({
+    const ownAttempt = (a, userId, institutionId) => same(a.userId, userId) && same(a.institutionId, institutionId);
+    mock.method(complianceRepo, 'collect', async (userId, institutionId) => ({
       interviews: world.interviews.filter((i) => same(i.userId, userId)),
       analyses: [], skills: [],
       consents: world.consents.filter((c) => same(c.userId, userId)),
+      attempts: world.attempts.filter((a) => ownAttempt(a, userId, institutionId)),
     }));
-    mock.method(complianceRepo, 'deleteAll', async (userId) => {
-      const before = { interviews: world.interviews.length, consents: world.consents.length };
+    mock.method(complianceRepo, 'deleteAll', async (userId, institutionId) => {
+      const before = { interviews: world.interviews.length, consents: world.consents.length, attempts: world.attempts.length };
       world.interviews = world.interviews.filter((i) => !same(i.userId, userId));
       world.consents = world.consents.filter((c) => !same(c.userId, userId));
+      world.attempts = world.attempts.filter((a) => !ownAttempt(a, userId, institutionId));
       world.users = world.users.filter((u) => !same(u._id, userId));
       return {
         interviews: before.interviews - world.interviews.length, consents: before.consents - world.consents.length,
+        attempts: before.attempts - world.attempts.length,
       };
     });
     mock.method(complianceRepo, 'addConsent', async (d) => { world.consents.push(d); return d; });
+
+    // In-memory seat lock with the same rule as the real query: free when unset or expired.
+    mock.method(seatLockRepo, 'acquire', async (id, now, until) => {
+      const i = inst(id);
+      if (!i || (i.seatLockUntil && i.seatLockUntil >= now)) return null;
+      i.seatLockUntil = until;
+      return { _id: id };
+    });
+    mock.method(seatLockRepo, 'release', async (id, until) => {
+      const i = inst(id);
+      if (i && i.seatLockUntil === until) i.seatLockUntil = null;
+    });
 
     mock.method(auditRepo, 'create', async (d) => { world.audit.push(d); });
     mock.method(transporter, 'sendMail', async (m) => { world.mails.push(m); return {}; });

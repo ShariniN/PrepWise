@@ -43,7 +43,11 @@ if (firstRun) {
   await seedQuestions.main();
   const seedDemo = await import('./seed-demo.js');
   await seedDemo.main();
-  console.log('\nDemo logins: admin@email.com, lecturer@email.com, student@email.com (passwords: admin@123, lecturer@123, student@123).\n');
+  console.log('\nDemo logins:');
+  console.log('  admin@email.com / admin@123');
+  console.log('  lecturer@email.com / lecturer@123  (sees Group 1)');
+  console.log('  lecturer2@demo-a.test / lecturer@123  (sees Group 2)');
+  console.log('  student@email.com / student@123\n');
 }
 
 const { default: app } = await import('../app.js');

@@ -3,7 +3,7 @@ process.env.JWT_SECRET = 'test-secret-test-secret-1234';
 process.env.NODE_ENV = 'test';
 delete process.env.JDOODLE_CLIENT_ID;
 delete process.env.JDOODLE_CLIENT_SECRET;
-delete process.env.ASSEMBLYAI_API_KEY;
+delete process.env.GROQ_API_KEY;
 
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
 import app from '../app.js';
-import userModel from '../models/userModel.js';
+import userModel from '../models/User.js';
 import transporter from '../config/nodemailer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +48,7 @@ afterEach(() => {
 test('protected routes reject requests with no login', async () => {
   for (const [method, url] of [
     ['get', '/api/user/profile'],
-    ['post', '/api/code/execute'],
+    ['get', '/api/practice/questions'],
     ['post', '/api/interviews/transcribe'],
     ['post', '/api/interviews/create'],
   ]) {
@@ -102,17 +102,6 @@ test('profile update ignores role and plan fields from the client', async () => 
   assert.equal(res.status, 200);
   assert.deepEqual(Object.keys(captured), ['$set']); // only $set (no $unset when a phone is sent)
   assert.deepEqual(Object.keys(captured.$set).sort(), ['lastActive', 'name', 'phoneNumber']);
-});
-
-test('code execution reports unavailable instead of returning fake output', async () => {
-  const res = await request(app)
-    .post('/api/code/execute')
-    .set('Cookie', authCookie())
-    .send({ script: 'print(1)', language: 'python3' });
-
-  assert.equal(res.status, 503);
-  assert.notEqual(res.body.success, true);
-  assert.equal(res.body.output, undefined);
 });
 
 test('transcription reports not configured when no key is set', async () => {

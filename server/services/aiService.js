@@ -1,0 +1,261 @@
+import { AI_MODELS } from '../config/ai.js';
+import { generateWithFallback } from './geminiClient.js';
+import { consumeAi } from './aiUsage.js';
+
+
+
+let requestCount = 0;
+let lastResetTime = Date.now();
+const MAX_REQUESTS_PER_MINUTE = 10; 
+
+setInterval(() => {
+  requestCount = 0;
+  lastResetTime = Date.now();
+}, 60000).unref();
+
+
+const checkRateLimit = async () => {
+  if (requestCount >= MAX_REQUESTS_PER_MINUTE) {
+    const waitTime = 60000 - (Date.now() - lastResetTime);
+    if (waitTime > 0) {
+      console.log(`AI rate limit reached, waiting ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      requestCount = 0;
+      lastResetTime = Date.now();
+    }
+  }
+  requestCount++;
+};
+
+
+
+export const parseAIResponse = (rawText) => {
+  let cleanedText = rawText
+    .trim()
+    .replace(/```json\s*/gi, '')
+    .replace(/```javascript\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/^```/gm, '')
+    .replace(/```$/gm, '')
+    .replace(/^\s*[\r\n]/gm, '');
+
+  const arrayStart = cleanedText.indexOf('[');
+  const arrayEnd = cleanedText.lastIndexOf(']');
+
+  if (arrayStart === -1 || arrayEnd === -1) {
+    // If not array, check for object (overall feedback or single question evaluation)
+    const objStart = cleanedText.indexOf('{');
+    const objEnd = cleanedText.lastIndexOf('}');
+    if (objStart !== -1 && objEnd !== -1) {
+      const jsonText = cleanedText.substring(objStart, objEnd + 1);
+      try {
+        return JSON.parse(jsonText);
+      } catch (e) {
+        console.error('Failed to parse object fallback:', e.message);
+      }
+    }
+    console.error('No JSON found in the AI response');
+    console.error('Response preview:', cleanedText.substring(0, 500));
+    throw new Error('No JSON found in response');
+  }
+
+  let jsonText = cleanedText.substring(arrayStart, arrayEnd + 1)
+    .replace(/,\s*}/g, '}')
+    .replace(/,\s*]/g, ']')
+    .replace(/\r\n|\r|\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/"\s*:\s*"/g, '": "')
+    .replace(/",\s*"/g, '", "');
+
+  try {
+    return JSON.parse(jsonText);
+  } catch (parseError) {
+    console.error('AI response JSON parse failed, trying to repair it:', parseError.message);
+    
+    let fixedJson = jsonText
+      .replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":');
+    
+    if (!fixedJson.trim().endsWith(']')) {
+      const lastCommaIndex = fixedJson.lastIndexOf(',');
+      if (lastCommaIndex > -1) {
+        fixedJson = fixedJson.substring(0, lastCommaIndex) + ']';
+      }
+    }
+    
+    try {
+      return JSON.parse(fixedJson);
+    } catch (fixError) {
+      console.error('Could not repair the AI response JSON:', fixError.message);
+      console.error('Problematic JSON (first 500 chars):', jsonText.substring(0, 500));
+      throw new Error('Could not parse AI response as JSON: ' + fixError.message);
+    }
+  }
+};
+
+// All AI calls go through the model chain in config/ai.js (Groq first, then Gemini), which skips
+// models that are over quota or retired and retries overloaded ones. Tests replace aiClient.generate.
+export const aiClient = {
+  generate: async (prompt, { temperature } = {}) => (await generateWithFallback(prompt, { models: AI_MODELS, temperature })).text,
+};
+
+const callAIModel = async (prompt, config = {}) => {
+  await consumeAi(); // per-university monthly cap; throws AiLimitError when exceeded
+  return aiClient.generate(prompt, config);
+};
+
+export const generateAIFeedback = async (question, questionType, responseText, code, language, executionResults) => {
+  await checkRateLimit(); 
+  
+  const truncate = (text, max) => text?.length > max ? text.substring(0, max) + "..." : text;
+
+  const instruction = `You are an expert interview evaluator for software engineering intern candidates. Evaluate the candidate's response to the following interview question. Provide a detailed, structured evaluation as JSON. Ensure the score and responseType match:
+- 85-100: perfectly-relevant
+- 65-84: mostly-relevant
+- 45-64: partially-relevant
+- 25-44: mostly-irrelevant
+- 0-24: completely-off-topic`;
+
+  const inputPrompt = `QUESTION TYPE: ${questionType}
+QUESTION: "${truncate(question, 800)}"
+CANDIDATE ANSWER: "${truncate(responseText, 1500)}"
+${code ? `CODE SUBMITTED: "${truncate(code, 1500)}"` : ''}
+${language ? `PROGRAMMING LANGUAGE: ${language}` : ''}
+${executionResults ? `CODE EXECUTION RESULT: "${executionResults.output || 'No output'}"${executionResults.error ? ' | ERROR: ' + executionResults.error : ''}` : ''}`;
+
+  const prompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON format:
+{
+  "score": 67,
+  "responseType": "mostly-relevant",
+  "strengths": ["Specific strength observed"],
+  "improvements": ["Specific improvement needed"],
+  "detailedAnalysis": "Response shows [specific analysis].",
+  "overallAssessment": "Assessment that matches the score level",
+  "questionRelevance": 7,
+  "correctness": 7,
+  "communicationClarity": 7,
+  "technicalAccuracy": 6
+}`;
+
+  const rawText = await callAIModel(prompt, { temperature: 0.1 });
+
+  let cleanText = rawText.trim().replace(/```json\s*|```\s*/g, '');
+  const jsonStart = cleanText.indexOf('{');
+  const jsonEnd = cleanText.lastIndexOf('}');
+  
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error('No valid JSON found in response');
+  }
+
+  const aiAnalysis = JSON.parse(cleanText.substring(jsonStart, jsonEnd + 1));
+  
+  const score = Math.max(0, Math.min(100, aiAnalysis.score || 50));
+  const baseRating = Math.max(1, Math.min(10, Math.floor(score / 10)));
+
+  return {
+    score,
+    questionRelevance: Math.max(1, Math.min(10, aiAnalysis.questionRelevance || baseRating)),
+    responseType: mapScoreToResponseType(score),
+    correctness: Math.max(1, Math.min(10, aiAnalysis.correctness || baseRating)),
+    syntax: questionType === 'coding' ? baseRating : Math.floor(score / 15),
+    languageBestPractices: baseRating,
+    efficiency: questionType === 'coding' ? Math.floor(score / 12) : Math.floor(score / 15),
+    structureAndReadability: Math.max(1, Math.min(10, aiAnalysis.communicationClarity || baseRating)),
+    edgeCaseHandling: questionType === 'coding' ? Math.floor(score / 15) : Math.floor(score / 20),
+    strengths: Array.isArray(aiAnalysis.strengths) ? aiAnalysis.strengths.slice(0, 4) : [],
+    improvements: Array.isArray(aiAnalysis.improvements) ? aiAnalysis.improvements.slice(0, 5) : [],
+    detailedAnalysis: aiAnalysis.detailedAnalysis || '',
+    overallAssessment: aiAnalysis.overallAssessment || '',
+    communicationClarity: Math.max(1, Math.min(10, aiAnalysis.communicationClarity || baseRating)),
+    technicalAccuracy: Math.max(1, Math.min(10, aiAnalysis.technicalAccuracy || baseRating))
+  };
+};
+
+// Generate overall interview feedback WITH RATE LIMITING
+export const generateOverallInterviewFeedback = async (responses) => {
+  const answeredResponses = responses.filter(r => !r.skipped && r.feedback);
+  const skippedCount = responses.filter(r => r.skipped).length;
+  
+  if (answeredResponses.length === 0) {
+    return createAllSkippedFeedback(responses.length);
+  }
+
+  await checkRateLimit(); 
+
+  const scores = answeredResponses.map(r => r.feedback?.score || 0);
+  const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+  const instruction = `You are a senior hiring manager conducting final assessment of an intern interview. Provide a structured evaluation as JSON.`;
+
+  const inputPrompt = `INTERVIEW SUMMARY:
+- Total Questions: ${responses.length}
+- Questions Answered: ${answeredResponses.length}
+- Questions Skipped: ${skippedCount}
+- Average Score: ${averageScore.toFixed(1)}/100`;
+
+  const prompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON:
+{
+  "overallScore": 45,
+  "readinessLevel": "Needs Development Before Ready",
+  "keyStrengths": ["Specific strengths"],
+  "majorImprovements": ["Critical improvements"],
+  "recommendations": ["Actionable steps"],
+  "generalFeedback": "Honest assessment",
+  "hiringRecommendation": "Clear recommendation"
+}`;
+
+  const rawText = await callAIModel(prompt, { temperature: 0.3 });
+
+  const aiAnalysis = parseAIResponse(rawText);
+
+  return {
+    score: Math.round(aiAnalysis.overallScore || averageScore),
+    feedback: {
+      readinessLevel: aiAnalysis.readinessLevel || 'Under Assessment',
+      strengths: aiAnalysis.keyStrengths || [],
+      improvements: aiAnalysis.majorImprovements || [],
+      recommendations: aiAnalysis.recommendations || [],
+      generalFeedback: aiAnalysis.generalFeedback || '',
+      categoryScores: calculateCategoryScores(answeredResponses)
+    }
+  };
+};
+
+const mapScoreToResponseType = (score) => {
+  if (score >= 85) return 'perfectly-relevant';
+  if (score >= 65) return 'mostly-relevant';
+  if (score >= 45) return 'partially-relevant';
+  if (score >= 25) return 'mostly-irrelevant';
+  return 'completely-off-topic';
+};
+
+const createAllSkippedFeedback = (totalQuestions) => ({
+  score: 0,
+  feedback: {
+    readinessLevel: 'Not Ready for Intern Role',
+    strengths: ['Completed interview session'],
+    improvements: ['Answer questions instead of skipping', 'Prepare thoroughly', 'Build confidence'],
+    recommendations: ['Study fundamentals', 'Practice coding', 'Work on projects'],
+    generalFeedback: `All ${totalQuestions} questions were skipped, indicating lack of preparation.`,
+    categoryScores: { technicalKnowledge: 0, codingAbility: 0, behavioralSkills: 0, communication: 0 }
+  }
+});
+
+const calculateCategoryScores = (responses) => {
+  const byType = (type) => responses.filter(r => r.questionType === type);
+  const avgScore = (arr) => arr.length > 0 
+    ? Math.round(arr.reduce((sum, r) => sum + (r.feedback?.score || 0), 0) / arr.length) 
+    : 0;
+
+  return {
+    technicalKnowledge: avgScore(byType('technical')),
+    codingAbility: avgScore(byType('coding')),
+    behavioralSkills: avgScore(byType('behavioral')),
+    communication: Math.round(responses.reduce((sum, r) => sum + (r.feedback?.communicationClarity || 5), 0) / responses.length)
+  };
+};
+
+
+export default { 
+  generateAIFeedback, 
+  generateOverallInterviewFeedback
+};

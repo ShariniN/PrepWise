@@ -2,12 +2,13 @@
 // returned to the student, and never used for the AI score. No real AI, no real database.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import axios from 'axios';
+import { aiClient } from '../services/aiService.js';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
-import InterviewModel from '../models/InterviewModel.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
-import { sanitizeDeliveryMetrics, summarizeDelivery } from '../controllers/interviewController.js';
+import { sanitizeDeliveryMetrics, summarizeDelivery } from '../modules/interviews/interviews.controller.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 const KEYS = ['cameraUsed', 'faceVisiblePct', 'eyeContactPct', 'lookAwayCount', 'headMovement', 'wordsPerMinute', 'fillerWordCount', 'durationSec'];
@@ -17,7 +18,6 @@ const ALL_NULL = { cameraUsed: false, faceVisiblePct: null, eyeContactPct: null,
 let w, student, interview, aiPrompts;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   interview = {
@@ -30,18 +30,19 @@ beforeEach(() => {
     async save() { return this; },
   };
   mock.method(InterviewModel, 'findOne', async () => interview);
+  installAnswerClaims((id) => (String(id) === String(interview._id) ? interview : null));
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiPrompts = [];
-  mock.method(axios, 'post', async (url, body) => {
-    aiPrompts.push(JSON.stringify(body));
-    return { data: { response: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
+  mock.method(aiClient, 'generate', async (prompt) => {
+    aiPrompts.push(prompt);
+    return JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' });
   });
   mock.method(console, 'error', () => {});
   mock.method(console, 'log', () => {});
   mock.method(console, 'warn', () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; });
+afterEach(() => mock.restoreAll());
 
 const answer = (body) => request(app).post('/api/interviews/i1/submit-answer').set('Cookie', w.cookie(student))
   .send({ questionId: 'b1', responseText: 'I built a timetable app for my university society with React and Node.', answerMode: 'audio', responseTime: 40, ...body });
@@ -61,6 +62,7 @@ test('delivery metrics never reach the AI and never change the score', async () 
   assert.equal(withMetrics.status, 200, withMetrics.text);
   assert.equal(withMetrics.body.feedback.score, without.body.feedback.score);
   assert.equal(interview.responses[0].feedback.score, interview.responses[1].feedback.score);
+  assert.equal(aiPrompts.length, 2, 'both answers went to the AI client');
   const prompts = aiPrompts.join('\n');
   for (const word of ['deliveryMetrics', 'eyeContact', 'lookAway', 'fillerWord', 'wordsPerMinute', 'headMovement', 'faceVisible']) {
     assert.ok(!prompts.includes(word), `AI prompt mentions ${word}`);
@@ -100,7 +102,7 @@ test('camera fields are null unless cameraUsed is exactly true', async () => {
 
 test('old clients without deliveryMetrics, or junk values, still submit fine and store null', async () => {
   for (const body of [{}, { deliveryMetrics: 'abc' }]) {
-    interview.responses = [];
+    interview.responses = []; interview.claimedAnswers = [];
     const res = await answer(body);
     assert.equal(res.status, 200, res.text);
     assert.equal(interview.responses[0].deliveryMetrics, null);

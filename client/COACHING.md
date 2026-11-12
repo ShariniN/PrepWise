@@ -106,9 +106,9 @@ a `deliverySummary`.
   left"), so mirroring can never make it point the wrong way.
 - **Pace** depends on the recording length, which includes pauses before and after speaking. Answers under
   5 seconds get no pace.
-- **Filler words are under-counted at the source.** The transcription service (AssemblyAI) removes "um" and
-  "uh" from transcripts unless `disfluencies: true` is sent with the transcription request (see the
-  `/transcribe` route in `server/routes/InterviewRoutes.js`). Transcripts without punctuation also
+- **Filler words are under-counted at the source.** The transcription model (Groq Whisper) tends to drop "um" and
+  "uh"; the transcription request sends a prompt full of filler words to keep them (see
+  `server/services/transcription.js`). Transcripts without punctuation also
   under-count comma-based `like`.
 - **Browser support** needs WebAssembly SIMD (all current Chrome, Edge, Firefox and Safari 16.4+). Older
   browsers get "could not start" and carry on without coaching. The GPU path is tried first, with a CPU

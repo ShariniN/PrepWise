@@ -10,15 +10,24 @@ and the same passwords for `@demo-b.test`).
    - `node smoke.mjs` - about 75 API checks: logins and roles, invites (accept, single use, cancel a pending invite), CSV import,
      group editing, tenancy, the lecturer API (overview, students with group filter and sorting, student profile,
      interview detail, CSV export), removed routes answering 404, Practice, the question bank, profile validation,
-     a camera-free mock interview answer with its delivery metrics stored, and compliance.
-     - The mock interview checks make 2-3 AI calls (or take the fallback path without an AI key). `SKIP_AI=1` skips them.
+     the adaptive mock interview (CV on file and target role required, readiness on a first interview, five answers
+     each with a level, no question pool in GET, delivery metrics stored, voice answers unavailable without a key), and
+     compliance.
+     - The mock interview checks make about 13 AI calls (or take the fallback path without an AI key). `SKIP_AI=1` skips them.
+     - They upload a small CV for the demo student if it has none, and set a target role through `PUT /api/me/target-role`
+       if it has none.
      - `SANDBOX=1` also calls Practice run/submit and question validation, which use code-runner credits when JDoodle is
        configured. Without a runner they must answer `503` with a reason, never a fake result.
+   - The seed gives every demo student a target role and the demo student already has adaptive interviews, so those
+     smoke steps (target role required, readiness required) only run on a database where the student has none.
    - `node deep.mjs` - 30 students answer MCQ practice questions, then checks that the lecturer table and the admin
      overview pick it up. No AI, no code runner.
-   - `node prep.mjs && node e2e.mjs` - real-browser walk: student login, `/login` while signed in, "Page not found" for
-     unknown and removed pages, Practice, the Skills page without a CV analysis, profile phone validation, the lecturer
+   - `node prep.mjs && node e2e.mjs` - real-browser walk: onboarding with a student who signs up during the run (dev verification link), student login, `/login` while signed in, "Page not found" for
+     unknown and removed pages, Practice, the removed Skills, Questions and Grading pages, profile phone validation, a full
+     mock interview on the interview page (after smoke.mjs, which puts a CV and a target role on file), the lecturer
      dashboard (overview, student, interview) and cancelling a pending invitation in Manage people. Screenshots go to `e2e/`.
    - `node shot.mjs /login out.png --role student --width 1440` - screenshot any page (add `--full` for the whole page).
+
+The suites do not depend on each other's data: run them in any order on one stack.
 
 Code execution and AI features report "unavailable" until the sandbox and AI keys are configured; that is expected.

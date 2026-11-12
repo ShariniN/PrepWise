@@ -3,6 +3,7 @@
 // Optional: --slug, --ai-cap (monthly AI calls, default 20000), --contract-start/--contract-end (YYYY-MM-DD)
 import { parseArgs } from 'node:util';
 import { connect, isMain, run, slugify } from './_db.js';
+import { DEFAULT_TARGET_ROLES } from '../config/defaultTargetRoles.js';
 
 export const parseCreateArgs = (argv) => {
   const { values } = parseArgs({
@@ -35,8 +36,8 @@ const main = async () => {
   const args = parseCreateArgs(process.argv.slice(2));
   await connect();
   const [{ default: Institution }, { default: userModel }, { audit }, tokens, { sendInviteEmail }] = await Promise.all([
-    import('../models/Institution.js'), import('../models/userModel.js'), import('../services/audit.js'),
-    import('../services/inviteTokens.js'), import('../services/peopleService.js'),
+    import('../models/Institution.js'), import('../models/User.js'), import('../services/audit.js'),
+    import('../services/inviteTokens.js'), import('../modules/people/people.service.js'),
   ]);
 
   if (await Institution.findOne({ slug: args.slug })) throw new Error(`An institution with slug "${args.slug}" already exists`);
@@ -47,7 +48,7 @@ const main = async () => {
 
   const { adminEmail, adminName, ...institutionFields } = args;
   if (institutionFields.monthlyAiCallCap === undefined) delete institutionFields.monthlyAiCallCap;
-  const institution = await Institution.create(institutionFields);
+  const institution = await Institution.create({ ...institutionFields, targetRoles: DEFAULT_TARGET_ROLES });
 
   const invite = tokens.createInviteToken();
   const admin = await userModel.create({

@@ -4,7 +4,7 @@
 // A good model ranks them in the expected order, gives similar scores on repeat runs, and responds reliably.
 import 'dotenv/config';
 import { generateWithFallback } from '../services/geminiClient.js';
-import { buildPrompt, parseScore } from '../services/cvScoring.js';
+import { buildPrompt, parseScore } from '../modules/cvAnalysis/cvAnalysis.scoring.js';
 
 const JD = `Software Engineering Intern (Backend/Full-stack). Required: JavaScript or TypeScript, Node.js and Express,
 React, REST APIs, SQL or MongoDB, Git, unit testing, data structures and algorithms. You will build and test API

@@ -3,7 +3,12 @@ import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
-import { makeWorld, IDS } from './helpers.js';
+import mongoose from 'mongoose';
+import { makeWorld, IDS, userModel, complianceRepo } from './helpers.js';
+import InterviewModel from '../models/Interview.js';
+import CVAnalysis from '../models/CvAnalysis.js';
+import ConsentRecord from '../models/ConsentRecord.js';
+import Attempt from '../models/Attempt.js';
 import app from '../app.js';
 
 let w, stu, other, adminA;
@@ -83,11 +88,79 @@ test('sub-processor list is public and honest about what is in use', async () =>
   const res = await request(app).get('/api/compliance/subprocessors');
   assert.equal(res.status, 200);
   const by = Object.fromEntries(res.body.subprocessors.map((s) => [s.name, s.status]));
-  for (const name of ['MongoDB Atlas', 'Google Gemini API', 'JDoodle', 'Judge0', 'AssemblyAI', 'Vercel', 'Cloudflare']) {
+  for (const name of ['MongoDB Atlas', 'Groq', 'Google Gemini API', 'JDoodle', 'Judge0', 'Vercel', 'Cloudflare']) {
     assert.ok(name in by, name);
   }
   assert.equal(by['Google Gemini API'], 'in_use');
   assert.equal(by['Judge0'], 'planned');
+  assert.equal(by['Groq'], 'in_use');
+  assert.ok(!('Groq (voice transcription)' in by), 'Groq is one entry for everything it does');
+  assert.ok(!Object.keys(by).some((n) => /hugging/i.test(n)), 'no Hugging Face path is left');
+  assert.ok(!('AssemblyAI' in by), 'AssemblyAI is no longer used');
   assert.equal(by['Vercel'], 'planned');
   assert.equal(by['Cloudflare'], 'planned');
+});
+
+test('the sub-processor list names Groq as the default AI and Gemini as the fallback, with what each receives', async () => {
+  const { body } = await request(app).get('/api/compliance/subprocessors');
+  const groq = body.subprocessors.find((x) => x.name === 'Groq');
+  const gemini = body.subprocessors.find((x) => x.name === 'Google Gemini API');
+  for (const what of [/default/i, /CV scoring/i, /interview questions/i, /feedback/i, /transcription/i]) assert.match(groq.purpose, what);
+  for (const what of [/CV text/i, /interview answers/i, /code/i, /audio/i]) assert.match(groq.data, what);
+  assert.match(gemini.purpose, /fallback/i);
+  assert.match(gemini.purpose, /Groq/);
+  for (const what of [/CV text/i, /interview answers/i, /code/i]) assert.match(gemini.data, what);
+});
+
+// ---------------------------------------------------------------- practice attempts
+test('export contains the caller\'s practice attempts only', async () => {
+  w.attempts.push(
+    { userId: stu._id, institutionId: IDS.instA, runKind: 'submit', source: 'print("mine")' },
+    { userId: other._id, institutionId: IDS.instA, runKind: 'submit', source: 'print("theirs")' },
+    { userId: stu._id, institutionId: IDS.instB, runKind: 'submit', source: 'print("other university")' },
+  );
+  const res = await request(app).get('/api/me/export').set(as(stu));
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.attempts.map((a) => a.source), ['print("mine")']);
+});
+
+test('account deletion removes the caller\'s practice attempts and reports how many', async () => {
+  w.attempts.push(
+    { userId: stu._id, institutionId: IDS.instA, runKind: 'draft', source: 'a' },
+    { userId: stu._id, institutionId: IDS.instA, runKind: 'submit', source: 'b' },
+    { userId: other._id, institutionId: IDS.instA, runKind: 'submit', source: 'c' },
+  );
+  const res = await request(app).delete('/api/me').set(as(stu)).send({ password: 'Passw0rd!' });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.deleted.attempts, 2);
+  assert.deepEqual(w.attempts.map((a) => a.source), ['c']);
+});
+
+// The real repository functions, with the models replaced: the Attempt queries are scoped by user and institution.
+const lean = (rows) => ({ lean: async () => rows });
+const stubModels = (seen) => {
+  for (const [name, model] of [['interviews', InterviewModel], ['analyses', CVAnalysis], ['consents', ConsentRecord], ['attempts', Attempt]]) {
+    mock.method(model, 'find', (q) => { seen.push([name, 'find', q]); return lean([{ name }]); });
+    mock.method(model, 'deleteMany', async (q) => { seen.push([name, 'deleteMany', q]); return { deletedCount: name === 'attempts' ? 4 : 1 }; });
+  }
+  mock.method(mongoose.connection, 'collection', () => ({ deleteMany: async () => ({ deletedCount: 0 }) }));
+  mock.method(userModel, 'deleteOne', async () => ({ deletedCount: 1 }));
+};
+
+test('complianceRepo.collect reads Attempt by userId and institutionId', async () => {
+  complianceRepo.collect.mock.restore();
+  const seen = [];
+  stubModels(seen);
+  const data = await complianceRepo.collect(stu._id, IDS.instA);
+  assert.deepEqual(data.attempts, [{ name: 'attempts' }]);
+  assert.deepEqual(seen.find(([n]) => n === 'attempts')[2], { userId: stu._id, institutionId: IDS.instA });
+});
+
+test('complianceRepo.deleteAll deletes Attempt by userId and institutionId', async () => {
+  complianceRepo.deleteAll.mock.restore();
+  const seen = [];
+  stubModels(seen);
+  const counts = await complianceRepo.deleteAll(stu._id, IDS.instA);
+  assert.equal(counts.attempts, 4);
+  assert.deepEqual(seen.find(([n, op]) => n === 'attempts' && op === 'deleteMany')[2], { userId: stu._id, institutionId: IDS.instA });
 });

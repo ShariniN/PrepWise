@@ -1,14 +1,5 @@
-import crypto from 'node:crypto';
-
 const toPlain = (m) => (m instanceof Map ? Object.fromEntries(m) : (m || {}));
 const idOf = (doc) => String(doc._id ?? doc.id);
-
-// Everything that defines what a question is. A validation is only valid for the content hash it ran against.
-export const contentHash = (q, tests = []) => crypto.createHash('sha256').update(JSON.stringify({
-  t: q.title, s: q.statement, ty: q.type, l: q.languages, sc: toPlain(q.starterCode), tl: q.timeLimitMs, ml: q.memoryLimitKb,
-  r: q.referenceSolution || null, w: q.wrongSolution || null, o: q.options || [], c: q.correct || [], ta: q.traceAnswer || null,
-  tests: tests.map((x) => [x.input, x.expectedOutput, !!x.visible, x.weight, x.comparison]),
-})).digest('hex');
 
 // STUDENT view: a whitelist. A field that is not listed here can never reach a student by accident.
 export const studentQuestion = (q, tests = []) => ({
@@ -27,7 +18,8 @@ export const studentQuestion = (q, tests = []) => ({
   version: q.version,
   isSeed: q.source === 'seed',
   ...(q.type === 'mcq' ? { options: q.options || [], multi: !!q.multi } : {}),
-  visibleTests: tests.filter((t) => t.visible).map((t) => ({ id: idOf(t), input: t.input, expectedOutput: t.expectedOutput })),
+  // comparison lets the in-browser Run compare output exactly the way the server does
+  visibleTests: tests.filter((t) => t.visible).map((t) => ({ id: idOf(t), input: t.input, expectedOutput: t.expectedOutput, comparison: t.comparison || 'trim' })),
   hiddenTestCount: tests.filter((t) => !t.visible).length,
 });
 
@@ -49,26 +41,3 @@ export const studentTestResults = (perTest, { detail }) => perTest.map((t, i) =>
 export const storedPerTest = (perTest) => perTest.map((t) => ({
   testId: t.testId, visible: t.visible, passed: t.passed, timeMs: t.timeMs, verdict: t.verdict,
 }));
-
-// STAFF view: full question including solutions.
-export const staffQuestion = (q, tests, { editable }) => ({
-  id: idOf(q), institutionId: q.institutionId ? String(q.institutionId) : null, authorId: q.authorId ? String(q.authorId) : null,
-  slug: q.slug || null, variantGroup: q.variantGroup || null, title: q.title, statement: q.statement, type: q.type, topic: q.topic || [], difficulty: q.difficulty,
-  languages: q.languages || [], starterCode: toPlain(q.starterCode), timeLimitMs: q.timeLimitMs, memoryLimitKb: q.memoryLimitKb,
-  estimatedMinutes: q.estimatedMinutes ?? null, learningOutcome: q.learningOutcome || '', source: q.source, status: q.status,
-  version: q.version, referenceSolution: q.referenceSolution || null, altReferenceSolutions: q.altReferenceSolutions || [],
-  wrongSolution: q.wrongSolution || null, options: q.options || [], correct: q.correct || [], multi: !!q.multi,
-  traceAnswer: q.traceAnswer ?? null, explanation: q.explanation ?? null,
-  validation: q.validation ? { ...q.validation, current: q.validation.contentHash === contentHash(q, tests || []) } : null,
-  editable, createdAt: q.createdAt, updatedAt: q.updatedAt,
-  ...(tests ? { tests: tests.map(staffTest) } : {}),
-});
-
-export const staffTest = (t) => ({
-  id: idOf(t), input: t.input, expectedOutput: t.expectedOutput, visible: !!t.visible, weight: t.weight, comparison: t.comparison,
-});
-
-export const staffListItem = (q, editable) => ({
-  id: idOf(q), title: q.title, type: q.type, topic: q.topic || [], difficulty: q.difficulty, source: q.source, status: q.status,
-  version: q.version, authorId: q.authorId ? String(q.authorId) : null, isSeed: q.source === 'seed', editable, updatedAt: q.updatedAt,
-});

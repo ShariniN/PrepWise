@@ -5,7 +5,7 @@ import Judge0Provider from './judge0Provider.js';
 import JDoodleProvider from './jdoodleProvider.js';
 import UnavailableProvider from './unavailableProvider.js';
 import { UnsupportedLanguageError } from './errors.js';
-import { normalizeLanguage, supportedLanguages } from './languages.js';
+import { normalizeLanguage } from './languages.js';
 
 export { ExecutionUnavailableError, UnsupportedLanguageError } from './errors.js';
 export { VERDICTS } from './verdicts.js';
@@ -61,11 +61,6 @@ export const providerFromEnv = (env = process.env) => {
 };
 
 export const getProvider = () => override || providerFromEnv();
-
-export const status = () => {
-  const p = getProvider();
-  return { provider: p.name, configured: p.configured ? p.configured() : true, languages: supportedLanguages() };
-};
 
 // ---- running ----
 const keyOf = (provider, { language, source, stdin, limits }) =>

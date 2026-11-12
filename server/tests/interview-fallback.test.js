@@ -1,13 +1,14 @@
 // When the AI is unavailable: fallback-scored answers are not presented or counted as AI scores (QA-04),
-// and interviews built from the generic fallback question set say so (QA-05). No real AI, no database.
+// and interviews built from the generic fallback question pool say so (QA-05). No real AI, no database.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import axios from 'axios';
+import { aiClient } from '../services/aiService.js';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
-import InterviewModel from '../models/InterviewModel.js';
+import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
-import { calculateFinalResults } from '../controllers/services/utilityService.js';
+import { calculateFinalResults, fallbackSlot } from '../modules/interviews/interviews.questions.js';
+import { interviewAi } from '../modules/interviews/interviews.controller.js';
 import app from '../app.js';
 
 const ans = (questionType, score, source = 'ai', extra = {}) => ({
@@ -44,7 +45,6 @@ test('calculateFinalResults without fallback answers is unchanged and not partia
 let w, student, interview, aiCalls, aiDown, saved;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'ollama';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   interview = {
@@ -59,16 +59,15 @@ beforeEach(() => {
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiCalls = 0; aiDown = false;
-  mock.method(axios, 'post', async () => {
+  mock.method(aiClient, 'generate', async () => {
     aiCalls += 1;
-    // "Down" = the model answers with something unusable. (Throwing here would make aiService fall back to the
-    // Gemini SDK, which would try the network.)
-    if (aiDown) return { data: { response: 'Sorry, I cannot help with that right now.' } };
-    return { data: { response: JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' }) } };
+    // "Down" = the model answers with something unusable.
+    if (aiDown) return 'Sorry, I cannot help with that right now.';
+    return JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' });
   });
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; });
+afterEach(() => mock.restoreAll());
 
 const as = () => ({ Cookie: w.cookie(student) });
 
@@ -89,27 +88,37 @@ test('completing a mixed interview scores only the AI-scored answers', async () 
   assert.equal(res.body.results.score, 80);
   assert.equal(res.body.results.excludedFallbackAnswers, 1);
   assert.equal(res.body.results.scoreIsPartial, true);
+  assert.equal(aiCalls, 1, 'the overall feedback went to the AI client');
   const fb = await request(app).get('/api/interviews/i1/feedback').set(as());
   assert.equal(fb.body.feedback.score, 80);
   assert.equal(fb.body.feedback.excludedFallbackAnswers, 1);
 });
 
+// Creation uses the CV on file and the target role; the question pool is one AI call (stubbed through interviewAi).
+const ROLE_ID = 'cccccccccccccccccccccccc';
+const readyStudent = () => {
+  w.institutions[IDS.instA].targetRoles = [{ _id: ROLE_ID, title: 'Backend developer intern', description: 'Builds APIs', skills: ['Node.js', 'MongoDB'] }];
+  student.targetRoleId = ROLE_ID;
+  student.currentCV = { text: 'Student CV with Node.js, Express, MongoDB projects and tests.', fileName: 'cv.pdf' };
+};
+
 test('interview creation reports when the generic fallback questions were used', async () => {
-  aiDown = true;
-  const body = { jobDescription: 'Junior backend developer, Node.js and MongoDB', resumeText: 'Student CV with Node.js, Express, MongoDB projects and tests.' };
-  const res = await request(app).post('/api/interviews/create').set(as()).send(body);
+  readyStudent();
+  mock.method(interviewAi, 'generate', async () => ({ text: 'Sorry, I cannot help with that right now.' }));
+  const res = await request(app).post('/api/interviews/create').set(as()).send({ readiness: 'some_practice', jobDescription: 'Junior backend developer, Node.js and MongoDB' });
   assert.equal(res.status, 201, res.text);
   assert.equal(res.body.usedFallbackQuestions, true);
   assert.equal(res.body.interview.usedFallbackQuestions, true);
   assert.equal(saved[0].usedFallbackQuestions, true, 'stored on the interview, so a reload still knows');
+  assert.deepEqual(res.body.interview.questions[0].question, fallbackSlot(0).medium.question);
 });
 
 test('interview creation with AI questions says usedFallbackQuestions: false', async () => {
-  mock.method(axios, 'post', async () => ({ data: { response: JSON.stringify([
-    { questionId: 'q1', type: 'behavioral', question: 'Tell me about your Node.js project', category: 'x', difficulty: 'easy' },
-  ]) } }));
-  const res = await request(app).post('/api/interviews/create').set(as())
-    .send({ jobDescription: 'Junior backend developer, Node.js', resumeText: 'CV text with Node.js projects and enough words.' });
+  readyStudent();
+  const slot = (n) => Object.fromEntries(['easy', 'medium', 'hard'].map((l) => [l, { question: `Tell me about your Node.js project (slot ${n}, ${l})`, category: 'x' }]));
+  mock.method(interviewAi, 'generate', async () => ({ text: JSON.stringify({ slots: { 0: slot(0), 1: slot(1), 3: slot(3), 4: slot(4) } }) }));
+  const res = await request(app).post('/api/interviews/create').set(as()).send({ readiness: 'ready' });
   assert.equal(res.status, 201, res.text);
   assert.equal(res.body.usedFallbackQuestions, false);
+  assert.equal(res.body.interview.questions[0].question, 'Tell me about your Node.js project (slot 0, hard)');
 });

@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useId, useRef, useState } from 'react';
-import { EDITOR_LANGUAGES } from '../utils/practice';
+import { EDITOR_LANGUAGES } from '../features/practice/utils';
 
 const Editor = React.lazy(async () => {
   // Prefer the bundled Monaco. If that fails, the CDN loader of
@@ -31,7 +31,7 @@ class MonacoBoundary extends React.Component {
 
 const selectCls = 'rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink focus:outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-600/15';
 
-// Monaco wrapper. `recorder` is optional ({ recordChange, record }) from useEditEvents.
+// Monaco wrapper. `recorder` is optional ({ recordChange, record }) from the interview.
 const CodeEditor = ({
   value, onChange, language = 'javascript', onLanguageChange, languages,
   recorder, readOnly = false, height = '380px', ariaLabel = 'Code editor',

@@ -6,20 +6,16 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import authRouter from './routes/AuthRoutes.js';
-import skillAssessor from './routes/SkillAssessorRoutes.js';
-import userRouter from './routes/UserRoutes.js';
-import analysisRouter from './routes/CVanalysisRoutes.js';
-import interviewRouter from './routes/InterviewRoutes.js';
-import codeRouter from './routes/codeRoutes.js';
-import institutionRouter from './routes/InstitutionRoutes.js';
-import meRouter from './routes/MeRoutes.js';
-import complianceRouter from './routes/ComplianceRoutes.js';
-import practiceRouter from './routes/practiceRoutes.js';
-import questionRouter from './routes/questionRoutes.js';
-import analyticsRouter from './routes/AnalyticsRoutes.js';
-import gradingRouter from './routes/GradingRoutes.js';
-import lecturerRouter from './routes/LecturerRoutes.js';
+import authRouter from './modules/auth/auth.routes.js';
+import userRouter from './modules/users/users.routes.js';
+import analysisRouter from './modules/cvAnalysis/cvAnalysis.routes.js';
+import interviewRouter from './modules/interviews/interviews.routes.js';
+import institutionRouter from './modules/people/people.routes.js';
+import institutionSettingsRouter from './modules/institution/institution.routes.js';
+import meRouter from './modules/compliance/me.routes.js';
+import complianceRouter from './modules/compliance/compliance.routes.js';
+import practiceRouter from './modules/practice/practice.routes.js';
+import dashboardRouter from './modules/dashboard/dashboard.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -53,17 +49,13 @@ app.use(cors({
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/analyze', analysisRouter);
-app.use('/api/swot', skillAssessor);
 app.use('/api/interviews', interviewRouter);
-app.use('/api/code', codeRouter);
+app.use('/api/institution', institutionSettingsRouter);
 app.use('/api/institution', institutionRouter);
 app.use('/api/me', meRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/practice', practiceRouter);
-app.use('/api/questions', questionRouter);
-app.use('/api/analytics', analyticsRouter);
-app.use('/api/grading', gradingRouter);
-app.use('/api/lecturer', lecturerRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Unknown API paths must return JSON 404, never the web page
 app.use('/api', (req, res) => {
