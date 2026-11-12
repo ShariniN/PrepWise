@@ -18,6 +18,7 @@ const { default: userModel } = await import('../models/User.js');
 const { default: peopleRepo } = await import('../modules/people/people.repo.js');
 const { default: complianceRepo } = await import('../modules/compliance/compliance.repo.js');
 const { auditRepo } = await import('../services/audit.js');
+const { seatLockRepo } = await import('../services/seatLock.js');
 const { default: transporter } = await import('../config/nodemailer.js');
 
 export { userModel, peopleRepo, complianceRepo, auditRepo, transporter };
@@ -142,6 +143,18 @@ export const makeWorld = () => {
       };
     });
     mock.method(complianceRepo, 'addConsent', async (d) => { world.consents.push(d); return d; });
+
+    // In-memory seat lock with the same rule as the real query: free when unset or expired.
+    mock.method(seatLockRepo, 'acquire', async (id, now, until) => {
+      const i = inst(id);
+      if (!i || (i.seatLockUntil && i.seatLockUntil >= now)) return null;
+      i.seatLockUntil = until;
+      return { _id: id };
+    });
+    mock.method(seatLockRepo, 'release', async (id, until) => {
+      const i = inst(id);
+      if (i && i.seatLockUntil === until) i.seatLockUntil = null;
+    });
 
     mock.method(auditRepo, 'create', async (d) => { world.audit.push(d); });
     mock.method(transporter, 'sendMail', async (m) => { world.mails.push(m); return {}; });

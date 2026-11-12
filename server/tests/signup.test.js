@@ -27,17 +27,7 @@ beforeEach(() => {
   });
   // Stores only the fields given, like the real create (the test world otherwise fills in a password).
   mock.method(signupRepo, 'createUser', async (data) => w.addUser({ password: undefined, ...data }));
-  // In-memory seat lock with the same rule as the real query: free when unset or expired.
-  mock.method(seatLockRepo, 'acquire', async (id, now, until) => {
-    const inst = w.institutions[String(id)];
-    if (inst.seatLockUntil && inst.seatLockUntil >= now) return null;
-    inst.seatLockUntil = until;
-    return { _id: id };
-  });
-  mock.method(seatLockRepo, 'release', async (id, until) => {
-    const inst = w.institutions[String(id)];
-    if (inst.seatLockUntil === until) inst.seatLockUntil = null;
-  });
+  // The in-memory seat lock comes from the shared test world (helpers.js).
 });
 afterEach(() => mock.restoreAll());
 
