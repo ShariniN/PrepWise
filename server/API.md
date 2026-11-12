@@ -74,3 +74,51 @@ An adaptive mock interview has 5 slots in the order behavioural, technical, codi
 | POST `/code/execute` | `script`, `language`, `stdin?` | `{ success, verdict, output, error, executionTime, memory, statusCode }` | 400 missing field or unsupported language; 413 too large; 503 `verdict: "unavailable"` with `reason` when no runner is set up (nothing is scored); 429 (50 per 15 minutes) |
 | GET `/code/health` and GET `/code/languages` | none | `{ success, provider, configured, supportedLanguages, languages, warning?, timestamp }` | |
 
+## People (`/api/institution`, university admin)
+
+Everything here works on the admin's own university. A person outside it is `404 NOT_FOUND`. Errors carry `{ success: false, message, code }`.
+
+`person` = `{ id, name, email, role, status, group, assignedGroups, isAccountVerified, lastActive, createdAt, inviteExpiresAt }`. `status` is `invited`, `active` or `deactivated`.
+
+| Method and path | Body or query | Response | Errors |
+|---|---|---|---|
+| GET `/institution/people` | query `role`, `status`, `search`, `group` | `{ success, people, counts: { total, byRole, byStatus }, usage }` | 400 unknown role or status filter, bad group |
+| GET `/institution/usage` | none | `{ success, studentLimit, activeStudents, invitedStudents, remaining }` | |
+| GET `/institution/groups` | none | `{ success, groups: [name] }` (student groups in use) | |
+| POST `/institution/people/invite` | `email`, `name?`, `role?` (default `student`), `group?` | 201 `{ success, user, emailSent, warning?, inviteLink? }` (`inviteLink` outside production only) | 400 `INVALID_EMAIL`, `INVALID_ROLE`, `INVALID_GROUP`, `DOMAIN_NOT_ALLOWED`; 409 `EMAIL_IN_USE`, `STUDENT_LIMIT_REACHED` |
+| POST `/institution/people/import` | CSV as the body (`Content-Type: text/csv`) or `{ csv }`. Columns: `email` (required), `name`, `role`, `group`. Up to 2000 rows. | `{ success, results: [{ line, email, role, status, reason?, inviteLink? }], summary, limitReached?, warning? }`. Row status is `invited`, `skipped`, `blocked_limit` or `error`. | 400 `INVALID_CSV`; 413 `TOO_MANY_ROWS` |
+| PATCH `/institution/people/:id/deactivate` | none | `{ success, user }` | 400 `SELF`; 404; 409 `ALREADY`, `LAST_ADMIN` |
+| PATCH `/institution/people/:id/reactivate` | none | `{ success, user, inviteLink?, emailSent? }` (someone who never accepted goes back to `invited`) | 404; 409 `NOT_DEACTIVATED`, `STUDENT_LIMIT_REACHED` |
+| PATCH `/institution/people/:id/role` | `role` | `{ success, user }` | 400 `INVALID_ROLE`, `SELF`; 404; 409 `SAME_ROLE`, `LAST_ADMIN` |
+| PATCH `/institution/people/:id/group` | `group` (text up to 60 chars; `""` clears) | `{ success, user }` | 400 `INVALID_GROUP`; 404 |
+| PATCH `/institution/people/:id/assigned-groups` | `groups` (list of names, up to 20) | `{ success, user }`. These are the groups a lecturer sees on the dashboard. | 400 `NOT_A_LECTURER`, `INVALID_GROUPS`, `TOO_MANY_GROUPS`; 404 |
+| POST `/institution/people/:id/resend-invite` | none | `{ success, user, emailSent, inviteLink? }` | 404; 409 `NOT_INVITED` |
+
+## University settings and target roles (`/api/institution`, university admin)
+
+`role` = `{ id, title, description, skills }`. Up to 30 roles; title up to 80 chars; description up to 2000; up to 30 skills of up to 60 chars.
+
+| Method and path | Body | Response | Errors |
+|---|---|---|---|
+| GET `/institution/settings` | none | `{ success, allowedEmailDomains, selfSignup, contractedStudentLimit, targetRoles }` | 404 |
+| PATCH `/institution/settings` | `allowedEmailDomains?` (list), `selfSignup?` (boolean) | the same as GET | 400 bad domain, not a boolean, nothing to change, `LIMIT_NOT_EDITABLE` (the student limit is set by contract) |
+| POST `/institution/target-roles` | `title`, `description?`, `skills?` | 201 `{ success, targetRole, targetRoles }` | 400 missing or too long fields, too many roles |
+| PATCH `/institution/target-roles/:id` | any of `title`, `description`, `skills` | `{ success, targetRole, targetRoles }` | 400 nothing to change; 404 |
+| DELETE `/institution/target-roles/:id` | none | `{ success, targetRoles }`. Students who had the role are cleared and see onboarding again. | 404; 409 `LAST_TARGET_ROLE` |
+
+## Me, target role and data rights (`/api/me`, any signed-in user unless noted)
+
+| Method and path | Who | Body | Response | Errors |
+|---|---|---|---|---|
+| GET `/me/target-roles` | any user | none | plain array `[{ id, title, description }]` of the university's roles | |
+| PUT `/me/target-role` | student | `targetRoleId` | `{ success, targetRoleId, targetRoleTitle }` | 400 `TARGET_ROLE_INVALID` |
+| GET `/me/export` | any user | none | a JSON download of the caller's own data (profile, CV text, interviews, analyses, attempts) | 404 |
+| POST `/me/consent` | any user | `type`, `version` | 201 `{ success, consent: { type, version, acceptedAt } }` | 400 bad type or version |
+| DELETE `/me` | any user | `password` | `{ success, message, deleted }`, clears the cookie. Deletes the account and its data. | 400 no password; 403 wrong password; 409 only administrator |
+
+## Compliance (`/api/compliance`)
+
+| Method and path | Who | Response |
+|---|---|---|
+| GET `/compliance/subprocessors` | public | `{ success, updated, subprocessors: [{ name, purpose, status, data, note? }] }` (`status` is `in_use` or `planned`) |
+
