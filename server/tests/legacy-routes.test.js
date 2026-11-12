@@ -1,11 +1,11 @@
 // Characterization tests for the student CV analysis, skills and interview routes: they pin the status and the
 // full response body so the code behind them can be reorganised without changing what the client receives.
 // Snapshots live in support/legacy-routes.snap.json; regenerate with UPDATE_SNAPSHOTS=1 only on purpose.
-// No database and no real AI: models are stubbed and the AI provider is a stubbed axios call.
+// No database and no real AI: models are stubbed and the AI client (aiClient.generate) is stubbed.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import axios from 'axios';
+import { aiClient } from '../services/aiService.js';
 import request from 'supertest';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { makeWorld, IDS, newId } from './helpers.js';
@@ -59,7 +59,6 @@ const chain = (getDocs) => {
 let w, student, cvStore, ivStore;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   const targetRole = { _id: newId(), title: 'Backend developer intern', description: 'Builds APIs and services with a team of engineers.', skills: ['Node.js', 'SQL'] };
   w.institutions[IDS.instA].targetRoles = [targetRole];
@@ -86,7 +85,7 @@ beforeEach(() => {
   mock.method(usageRepo, 'getCap', async () => 100);
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
+afterEach(() => mock.restoreAll());
 
 const as = () => ({ Cookie: w.cookie(student) });
 const get = (url) => request(app).get(url).set(as());
@@ -177,7 +176,7 @@ test('POST /api/analyze/analyze-resume with the profile CV: CS role, non-CS role
 
 // ---------------------------------------------------------------- interviews
 
-const aiReturns = (payload) => mock.method(axios, 'post', async () => ({ data: { generated_text: typeof payload === 'string' ? payload : JSON.stringify(payload) } }));
+const aiReturns = (payload) => mock.method(aiClient, 'generate', async () => (typeof payload === 'string' ? payload : JSON.stringify(payload)));
 
 test('POST /api/interviews/create: CV, target role and readiness checks, then the generic question pool', async () => {
   mock.method(interviewAi, 'generate', async () => { throw new Error('All AI models failed'); });

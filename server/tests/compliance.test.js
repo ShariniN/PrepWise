@@ -83,13 +83,26 @@ test('sub-processor list is public and honest about what is in use', async () =>
   const res = await request(app).get('/api/compliance/subprocessors');
   assert.equal(res.status, 200);
   const by = Object.fromEntries(res.body.subprocessors.map((s) => [s.name, s.status]));
-  for (const name of ['MongoDB Atlas', 'Google Gemini API', 'JDoodle', 'Judge0', 'Groq (voice transcription)', 'Vercel', 'Cloudflare']) {
+  for (const name of ['MongoDB Atlas', 'Groq', 'Google Gemini API', 'JDoodle', 'Judge0', 'Vercel', 'Cloudflare']) {
     assert.ok(name in by, name);
   }
   assert.equal(by['Google Gemini API'], 'in_use');
   assert.equal(by['Judge0'], 'planned');
-  assert.equal(by['Groq (voice transcription)'], 'in_use');
+  assert.equal(by['Groq'], 'in_use');
+  assert.ok(!('Groq (voice transcription)' in by), 'Groq is one entry for everything it does');
+  assert.ok(!Object.keys(by).some((n) => /hugging/i.test(n)), 'no Hugging Face path is left');
   assert.ok(!('AssemblyAI' in by), 'AssemblyAI is no longer used');
   assert.equal(by['Vercel'], 'planned');
   assert.equal(by['Cloudflare'], 'planned');
+});
+
+test('the sub-processor list names Groq as the default AI and Gemini as the fallback, with what each receives', async () => {
+  const { body } = await request(app).get('/api/compliance/subprocessors');
+  const groq = body.subprocessors.find((x) => x.name === 'Groq');
+  const gemini = body.subprocessors.find((x) => x.name === 'Google Gemini API');
+  for (const what of [/default/i, /CV scoring/i, /interview questions/i, /feedback/i, /transcription/i]) assert.match(groq.purpose, what);
+  for (const what of [/CV text/i, /interview answers/i, /code/i, /audio/i]) assert.match(groq.data, what);
+  assert.match(gemini.purpose, /fallback/i);
+  assert.match(gemini.purpose, /Groq/);
+  for (const what of [/CV text/i, /interview answers/i, /code/i]) assert.match(gemini.data, what);
 });
