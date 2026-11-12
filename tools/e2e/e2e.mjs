@@ -27,10 +27,21 @@ const signIn = async (p, email, password) => {
 };
 
 // 1. Student: login form, wrong password, signed-in /login and unknown URLs
+// --- Target roles: the onboarding checks use a brand-new student, so they do not depend on what the seed or other
+// suites gave the demo students. Sign up through the API, follow the dev verification link, then use the browser.
+const API = process.env.API || 'http://localhost:4000';
+const stamp = Date.now().toString(36);
+const freshEmail = `e2e.fresh.${stamp}@email.com`;
+const freshPassword = 'Fresh1!pass';
+const signup = await fetch(API + '/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'E2E Fresh', email: freshEmail, password: freshPassword }) }).then((r) => r.json()).catch(() => ({}));
+const verifyToken = new URL(signup.devVerificationLink || 'http://x/?token=').searchParams.get('token');
+ok('sign-up gives a dev verification link', !!verifyToken, JSON.stringify(signup));
+const verified = await fetch(API + '/api/auth/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: verifyToken }) });
+ok('the verification link activates the new student', verified.status === 200, String(verified.status));
+
 let ctx = await newCtx();
-let p = await ctx.newPage(); watch(p, 'student');
-await signIn(p, 'student@email.com', 'student@123');
-// --- Target roles (Task 4): a student without a target role is sent to /welcome, picks one and lands on home
+let p = await ctx.newPage(); watch(p, 'fresh student');
+await signIn(p, freshEmail, freshPassword);
 await p.waitForURL(/welcome/, { timeout: 15000 }).catch(() => {});
 ok('student without a target role is sent to /welcome', /welcome/.test(p.url()), p.url());
 await p.locator('[role="radio"]').first().waitFor({ timeout: 10000 }).catch(() => {});
@@ -43,7 +54,15 @@ await p.getByRole('button', { name: 'Continue' }).click();
 await p.getByRole('button', { name: 'Skip for now' }).waitFor({ timeout: 10000 }).catch(() => {});
 ok('onboarding step 2 offers a CV upload and "Skip for now"', await p.getByRole('button', { name: 'Skip for now' }).count() === 1);
 await p.getByRole('button', { name: 'Skip for now' }).click();
+await p.waitForURL(/fresher-dashboard/, { timeout: 15000 }).catch(() => {});
+ok('after onboarding the new student lands on the dashboard', /fresher-dashboard/.test(p.url()), p.url());
+await ctx.close();
 // --- end Target roles
+
+// The demo student has a target role from the seed (and a CV once smoke.mjs has run).
+ctx = await newCtx();
+p = await ctx.newPage(); watch(p, 'student');
+await signIn(p, 'student@email.com', 'student@123');
 await p.waitForURL(/fresher-dashboard/, { timeout: 15000 }).catch(() => {});
 ok('student login form -> dashboard', /fresher-dashboard/.test(p.url()), p.url());
 await p.goto(B + '/login', { waitUntil: 'networkidle' });
