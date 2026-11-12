@@ -81,23 +81,25 @@ if (await phone.count()) {
 } else ok('profile phone field present', false, 'no #ps-phone');
 await ctx.close();
 
-// 5. Lecturer dashboard
+// 5. Dashboard (Task 7): the lecturer sees only Group 1
 ctx = await newCtx(); const lp = await ctx.newPage(); watch(lp, 'lecturer');
 await signIn(lp, 'lecturer@email.com', 'lecturer@123');
-await lp.waitForURL(/staff/, { timeout: 15000 }).catch(() => {});
-ok('lecturer login -> /staff', /staff/.test(lp.url()), lp.url());
+await lp.waitForURL(/\/dashboard/, { timeout: 15000 }).catch(() => {});
+ok('lecturer login -> /dashboard', /\/dashboard/.test(lp.url()), lp.url());
 await lp.waitForTimeout(1500);
 const ov = await body(lp);
-ok('overview shows interview and CV blocks', /CVs/.test(ov) && /interview/i.test(ov));
-await lp.screenshot({ path: 'e2e/staff-overview.png', fullPage: true });
+ok('overview shows CV score, interview score and level reached', /Average CV score/.test(ov) && /Average interview score/.test(ov) && /Level reached/.test(ov));
+ok('student table has the new columns', /Target role/i.test(ov) && /CV score/i.test(ov) && /Trend/i.test(ov));
+ok('lecturer sees only Group 1', /Group 1/.test(ov) && !/Group 2/.test(ov) && !/Student seats/.test(ov));
+await lp.screenshot({ path: 'e2e/dashboard-lecturer.png', fullPage: true });
 if (st.studentId) {
-  await lp.goto(B + `/staff/students/${st.studentId}`, { waitUntil: 'networkidle' }); await lp.waitForTimeout(1500);
+  await lp.goto(B + `/dashboard/students/${st.studentId}`, { waitUntil: 'networkidle' }); await lp.waitForTimeout(1500);
   ok('student profile opens', !/not found/i.test(await body(lp)));
   const ivLink = lp.locator('a[href*="/interviews/"]').first();
   if (await ivLink.count()) {
     await ivLink.click(); await lp.waitForTimeout(1500);
     ok('interview detail opens', /\/interviews\//.test(lp.url()));
-    await lp.screenshot({ path: 'e2e/staff-interview.png', fullPage: true });
+    await lp.screenshot({ path: 'e2e/dashboard-interview.png', fullPage: true });
   } else ok('interview link present', false, 'none');
 }
 await ctx.close();
@@ -116,6 +118,24 @@ if (await cancel.count()) {
   ok('the invitation is cancelled (status deactivated)', /deactivated/.test(await body(ap)));
   await ap.screenshot({ path: 'e2e/admin-cancel-invite.png' });
 }
+// Task 7: lecturer groups on Manage people, and the admin dashboard with seats.
+await ap.locator('#f-search').fill('lecturer@email.com'); await ap.waitForTimeout(1200);
+ok('lecturer row shows its groups', /Groups: Group 1/.test(await body(ap)));
+const editGroups = ap.getByRole('button', { name: /Edit groups of/ });
+if (await editGroups.count()) {
+  await editGroups.first().click(); await ap.waitForTimeout(1200);
+  const dlg = ap.getByRole('dialog');
+  const g1 = dlg.getByRole('checkbox', { name: 'Group 1' }); const g2 = dlg.getByRole('checkbox', { name: 'Group 2' });
+  ok('edit groups dialog lists the groups with the current ones ticked', (await g1.count()) === 1 && (await g2.count()) === 1 && await g1.isChecked() && !(await g2.isChecked()));
+  await ap.screenshot({ path: 'e2e/admin-edit-groups.png' });
+  await dlg.getByRole('button', { name: 'Cancel' }).click();
+} else ok('edit groups action present', false, 'none');
+await ap.goto(B + '/dashboard', { waitUntil: 'networkidle' }); await ap.waitForTimeout(1500);
+const ad = await body(ap);
+ok('admin dashboard shows seats and every group', /Student seats/.test(ad) && /Group 1/.test(ad) && /Group 2/.test(ad));
+await ap.screenshot({ path: 'e2e/dashboard-admin.png', fullPage: true });
+await ap.goto(B + '/admin-overview', { waitUntil: 'networkidle' }); await ap.waitForTimeout(800);
+ok('the old admin overview page is gone', !/Adoption and renewal/i.test(await body(ap)));
 await ctx.close();
 
 console.log('\nbrowser errors:', errs.length ? errs.slice(0, 8) : 'none');

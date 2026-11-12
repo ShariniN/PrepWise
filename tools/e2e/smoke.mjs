@@ -84,42 +84,76 @@ const s05 = r.data.people?.[0];
 r = await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: `Smoke ${stamp}` });
 check('admin edits a group', r.status === 200 && r.data.user?.group === `Smoke ${stamp}`, short(r.data));
 r = await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: 'x'.repeat(61) }); check('group longer than 60 is refused', r.status === 400 && r.data.code === 'INVALID_GROUP');
-r = await lectA.req('GET', `/api/lecturer/students?group=${encodeURIComponent(`Smoke ${stamp}`)}`);
-check('lecturer group filter finds the re-grouped student', r.status === 200 && r.data.total === 1 && r.data.students[0].email === 'student05@demo-a.test', short(r.data));
+r = await adminA.req('GET', `/api/dashboard/students?group=${encodeURIComponent(`Smoke ${stamp}`)}`);
+check('dashboard group filter finds the re-grouped student', r.status === 200 && r.data.total === 1 && r.data.students[0].email === 'student05@demo-a.test', short(r.data));
+r = await lectA.req('GET', `/api/dashboard/students?group=${encodeURIComponent(`Smoke ${stamp}`)}`);
+check('a lecturer cannot filter by a group not assigned to them', r.status === 403 && r.data.code === 'GROUP_NOT_ASSIGNED', short(r.data));
 await adminA.req('PATCH', `/api/institution/people/${s05?.id}/group`, { group: s05?.group || '' });
 
 // ---------------------------------------------------------------- tenancy and roles
 r = await adminB.req('GET', '/api/institution/people?search=student'); check('B admin cannot see A people', r.status === 200 && !/demo-a\.test|@email\.com/.test(r.text));
 r = await stuA.req('GET', '/api/institution/people'); check('student blocked from manage-people', r.status === 403);
-r = await stuA.req('GET', '/api/lecturer/overview'); check('student blocked from the lecturer API', r.status === 403);
-r = await new Client('anon').req('GET', '/api/lecturer/overview'); check('lecturer API needs a login', r.status === 401);
+r = await stuA.req('GET', '/api/dashboard/overview'); check('student blocked from the dashboard API', r.status === 403);
+r = await new Client('anon').req('GET', '/api/dashboard/overview'); check('dashboard API needs a login', r.status === 401);
 
-// ---------------------------------------------------------------- lecturer dashboard API
-r = await lectA.req('GET', '/api/lecturer/overview');
-check('lecturer overview', r.status === 200 && r.data.totals?.students >= 40 && Array.isArray(r.data.groups), short(r.data));
-check('overview lists Group 1 and Group 2', ['Group 1', 'Group 2'].every((g) => r.data.groups?.includes(g)), short(r.data.groups));
-check('overview interview averages shown (>= 5 students)', typeof r.data.interview?.overall?.average === 'number', short(r.data.interview));
-check('overview top missing skills shown with enough students', r.data.cv?.topMissingSkillsInsufficientData === false && Array.isArray(r.data.cv?.topMissingSkills), short(r.data.cv));
-r = await lectA.req('GET', '/api/lecturer/overview?group=Group%201'); check('overview filtered by group', r.status === 200 && r.data.group === 'Group 1' && r.data.totals.students >= 20, short(r.data.totals));
-r = await lectA.req('GET', '/api/lecturer/students?group=Group%202&pageSize=100');
-check('students list with group filter', r.status === 200 && r.data.total >= 20 && r.data.students.every((s) => s.group === 'Group 2'), short(r.data));
-r = await lectA.req('GET', '/api/lecturer/students?sort=-avgInterviewScore&pageSize=5');
-check('students list sorts by score', r.status === 200 && r.data.students.length === 5 && r.data.sort === '-avgInterviewScore', short(r.data));
-const withInterview = r.data.students?.find((s) => s.interviewsCompleted > 0);
-r = await lectA.req('GET', '/api/lecturer/students?sort=bogus'); check('unknown sort key is a 400', r.status === 400);
+// ---------------------------------------------------------------- Task 7: one dashboard scoped by role
+// lecturer@email.com is assigned Group 1 only; the admin sees the whole university plus seats.
+r = await lectA.req('GET', '/api/dashboard/overview');
+check('lecturer overview: own groups only, no seats', r.status === 200 && r.data.noGroupsAssigned === false && JSON.stringify(r.data.groups) === '["Group 1"]' && r.data.students >= 20 && !('seats' in r.data), short(r.data));
+const lectTotal = r.data.students;
+check('overview has the new figures', ['activeLast14Days', 'avgCvScore', 'avgInterviewScore', 'practiceSolved'].every((k) => k in r.data) && typeof r.data.levelReachedCounts?.easy === 'number', short(r.data));
+r = await lectA.req('GET', '/api/dashboard/students?pageSize=100');
+check('lecturer sees only Group 1 students', r.status === 200 && r.data.total === lectTotal && r.data.students.every((s) => s.group === 'Group 1'), short(r.data));
+const row = r.data.students?.[0] || {};
+check('rows have the new columns', ['targetRoleTitle', 'cvScore', 'lastInterviewScore', 'lastLevelReached', 'trend', 'practiceSolved', 'lastActive'].every((k) => k in row) && Array.isArray(row.attention), short(row));
+check('attention flags carry plain labels', (r.data.students || []).flatMap((s) => s.attention).every((a) => typeof a.label === 'string' && a.label), short((r.data.students || []).flatMap((s) => s.attention).slice(0, 3)));
+const lectRows = r.data.students || [];
+r = await lectA.req('GET', '/api/dashboard/students?group=Group%202'); check('lecturer ?group=Group 2 is 403 GROUP_NOT_ASSIGNED', r.status === 403 && r.data.code === 'GROUP_NOT_ASSIGNED', short(r.data));
+r = await adminA.req('GET', '/api/dashboard/overview');
+check('admin overview: every group and seats', r.status === 200 && ['Group 1', 'Group 2'].every((g) => r.data.groups?.includes(g)) && r.data.students >= 40
+  && ['used', 'limit', 'invited'].every((k) => typeof r.data.seats?.[k] === 'number'), short(r.data));
+r = await adminA.req('GET', '/api/dashboard/students?group=Group%202&pageSize=100');
+check('admin students list with group filter', r.status === 200 && r.data.total >= 20 && r.data.students.every((s) => s.group === 'Group 2'), short(r.data));
+const groupTwoStudent = r.data.students?.[0];
+r = await lectA.req('GET', '/api/dashboard/students?sort=-lastInterviewScore&pageSize=5');
+check('students list sorts by last interview score', r.status === 200 && r.data.students.length === 5 && r.data.sort === '-lastInterviewScore', short(r.data));
+r = await lectA.req('GET', '/api/dashboard/students?sort=bogus'); check('unknown sort key is a 400', r.status === 400);
+const withInterview = lectRows.find((s) => s.lastInterviewScore != null) || lectRows.find((s) => !s.attention.some((a) => a.code === 'no_interview'));
 if (withInterview) {
-  const prof = await lectA.req('GET', `/api/lecturer/students/${withInterview.id}`);
+  const prof = await lectA.req('GET', `/api/dashboard/students/${withInterview.id}`);
   check('student profile', prof.status === 200 && prof.data.student?.id === withInterview.id && Array.isArray(prof.data.interviews), short(prof.data));
   check('student profile never contains CV text or secrets', !/resumeText|currentCV|password|inviteToken|Otp|audioUrl/.test(prof.text));
   const iv = prof.data.interviews?.find((x) => x.status === 'completed');
-  const det = iv && await lectA.req('GET', `/api/lecturer/students/${withInterview.id}/interviews/${iv.id}`);
-  check('interview detail', det?.status === 200 && Array.isArray(det.data.interview?.questions), det ? short(det.data) : 'no completed interview');
-  const otherB = await adminB.req('GET', `/api/lecturer/students/${withInterview.id}`); check('B cannot open an A student (404)', otherB.status === 404);
-} else check('a student with a completed interview exists', false, 'none in the first page');
-r = await lectA.raw('GET', '/api/lecturer/students.csv?group=Group%201');
-check('students CSV export', r.status === 200 && /text\/csv/.test(r.headers.get('content-type') || '') && r.text.startsWith('name,email,group,last_active'), `${r.status} ${short(r.text)}`);
-const groupOne = (await lectA.req('GET', '/api/lecturer/students?group=Group%201&pageSize=100')).data.total;
-check('CSV has one row per student of the group (+ header)', r.text.trim().split(/\r?\n/).length === groupOne + 1, `${r.text.trim().split(/\r?\n/).length} lines, ${groupOne} students`);
+  const det = iv && await lectA.req('GET', `/api/dashboard/students/${withInterview.id}/interviews/${iv.id}`);
+  check('interview detail with levels', det?.status === 200 && Array.isArray(det.data.interview?.questions) && 'levelReached' in det.data.interview
+    && det.data.interview.questions.every((q) => 'level' in q), det ? short(det.data) : 'no completed interview');
+  const otherB = await adminB.req('GET', `/api/dashboard/students/${withInterview.id}`); check('B cannot open an A student (404)', otherB.status === 404);
+} else check('a student with a completed interview exists', false, 'none in Group 1');
+if (groupTwoStudent) {
+  const out = await lectA.req('GET', `/api/dashboard/students/${groupTwoStudent.id}`); check('lecturer cannot open a Group 2 student (404)', out.status === 404, String(out.status));
+}
+r = await lectA.raw('GET', '/api/dashboard/students.csv');
+check('students CSV export', r.status === 200 && /text\/csv/.test(r.headers.get('content-type') || '') && r.text.startsWith('id,name,email,group,target_role,cv_score'), `${r.status} ${short(r.text)}`);
+check('CSV has one row per student in scope (+ header)', r.text.trim().split(/\r?\n/).length === lectTotal + 1, `${r.text.trim().split(/\r?\n/).length} lines, ${lectTotal} students`);
+// Admin assigns groups to a lecturer.
+r = await adminA.req('GET', '/api/institution/groups'); check('admin lists student groups', r.status === 200 && ['Group 1', 'Group 2'].every((g) => r.data.groups?.includes(g)), short(r.data));
+r = await lectA.req('GET', '/api/institution/groups'); check('lecturer cannot list institution groups', r.status === 403);
+r = await adminA.req('GET', '/api/institution/people?search=lecturer2@demo-a.test');
+const lena = r.data.people?.[0];
+check("people list shows a lecturer's groups", lena && JSON.stringify(lena.assignedGroups) === '["Group 2"]', short(lena));
+r = await adminA.req('PATCH', `/api/institution/people/${lena?.id}/assigned-groups`, { groups: ['Group 2', ' Group   1 '] });
+check('admin assigns groups to a lecturer (values cleaned)', r.status === 200 && JSON.stringify(r.data.user?.assignedGroups) === '["Group 2","Group 1"]', short(r.data));
+const lena2 = new Client('lena'); await lena2.login(['lecturer2@demo-a.test', 'lecturer@123']);
+r = await lena2.req('GET', '/api/dashboard/overview'); check('the lecturer now sees both groups', r.status === 200 && r.data.groups?.length === 2, short(r.data));
+await adminA.req('PATCH', `/api/institution/people/${lena?.id}/assigned-groups`, { groups: [] });
+r = await lena2.req('GET', '/api/dashboard/students'); check('a lecturer with no groups gets noGroupsAssigned', r.status === 200 && r.data.noGroupsAssigned === true && r.data.total === 0, short(r.data));
+await adminA.req('PATCH', `/api/institution/people/${lena?.id}/assigned-groups`, { groups: ['Group 2'] });
+r = await adminA.req('PATCH', `/api/institution/people/${s05?.id}/assigned-groups`, { groups: ['Group 1'] }); check('assigning groups to a student is 400 NOT_A_LECTURER', r.status === 400 && r.data.code === 'NOT_A_LECTURER', short(r.data));
+r = await adminA.req('PATCH', `/api/institution/people/${lena?.id}/assigned-groups`, { groups: Array.from({ length: 21 }, (_, i) => `G${i}`) }); check('more than 20 groups is 400', r.status === 400, short(r.data));
+r = await lectA.req('PATCH', `/api/institution/people/${lena?.id}/assigned-groups`, { groups: ['Group 1'] }); check('a lecturer cannot assign groups', r.status === 403);
+for (const [c, path] of [[lectA, '/api/lecturer/overview'], [lectA, '/api/lecturer/students'], [adminA, '/api/analytics/admin/overview'], [adminA, '/api/analytics/admin/evidence']]) {
+  const x = await c.req('GET', path); check(`old path ${path} is 404`, x.status === 404, String(x.status));
+}
 
 // ---------------------------------------------------------------- removed features answer 404
 for (const [c, path] of [
@@ -151,8 +185,6 @@ r = await lectA.req('POST', '/api/questions', { title: `Sum two numbers ${stamp}
 r = await lectA.req('POST', '/api/questions/x/validate', {}); check('question validation is 404', r.status === 404, String(r.status));
 r = await lectA.req('POST', '/api/questions/draft', {}); check('AI question drafting is 404', r.status === 404, String(r.status));
 r = await stuA.req('POST', '/api/practice/x/events', { events: [] }); check('edit-event tracking is 404', r.status === 404, String(r.status));
-r = await adminA.req('GET', '/api/analytics/admin/overview'); check('admin overview', r.status === 200, `${r.status}`);
-r = await adminA.req('GET', '/api/analytics/admin/evidence'); check('admin evidence', r.status === 200, `${r.status}`);
 
 // ---------------------------------------------------------------- profile settings
 r = await stuA.req('PUT', '/api/user/profile', { name: 'Amara Adams', phoneNumber: 'abc' }); check('profile refuses a bad phone with 400', r.status === 400 && /10 to 15 digits/.test(r.data.message), short(r.data));

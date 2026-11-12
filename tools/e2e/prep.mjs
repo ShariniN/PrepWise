@@ -17,7 +17,7 @@ const stu = client(); await stu('POST', '/api/auth/login', { email: 'student@ema
 const inviteEmail = `e2e-pending-${Date.now().toString(36)}@demo-a.test`;
 const inv = await admin('POST', '/api/institution/people/invite', { email: inviteEmail, name: 'E2E Pending', role: 'student' });
 const coding = ((await stu('GET', '/api/practice/questions?type=coding')).data.questions || [])[0];
-const top = (await lect('GET', '/api/lecturer/students?sort=-interviewsCompleted&pageSize=1')).data.students?.[0];
+const top = (await lect('GET', '/api/dashboard/students?sort=-lastInterviewScore&pageSize=1')).data.students?.[0];
 const state = { inviteEmail, invited: inv.status === 201, codingId: coding?.id || coding?._id, studentId: top?.id };
 fs.writeFileSync('e2e-state.json', JSON.stringify(state, null, 2));
 console.log(state);
