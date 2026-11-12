@@ -100,17 +100,17 @@ const RESULT = {
 };
 const NON_TECH = { matchPercentage: 0, isNonTechRole: true, message: 'not a CS role' };
 
-test('POST /api/analyze/save creates, updates, toggles and validates', async () => {
-  snap('cv save missing fields', await post('/api/analyze/save', { jobDescriptions: ['jd'] }));
+test('POST /api/analyze/save only marks an existing analysis as saved or unsaved', async () => {
+  snap('cv save no target', await post('/api/analyze/save', { jobDescriptions: ['jd'] }));
   snap('cv toggle unknown hash', await post('/api/analyze/save', { resumeHash: 'nope' }));
-  const body = { resumeText: 'CV text', resumeHash: 'h1', jobDescriptions: ['JD one', 'JD two'], results: [RESULT, NON_TECH], extractedTechnologies: [{ name: 'Node.js' }] };
-  snap('cv save new', await post('/api/analyze/save', body));
-  assert.equal(cvStore.length, 1);
-  snap('cv save update', await post('/api/analyze/save', { ...body, shouldSave: false, results: [RESULT] }));
-  assert.equal(cvStore.length, 1, 'same hash updates the existing analysis');
+  snap('cv save results without an analysis', await post('/api/analyze/save', { resumeText: 'CV text', resumeHash: 'h1', jobDescriptions: ['JD'], results: [RESULT] }));
+  assert.equal(cvStore.length, 0, 'saving never creates an analysis');
+  cvStore.push(new CVAnalysis({ userId: student._id, institutionId: IDS.instA, resumeHash: 'h1', jobDescriptions: ['JD'], results: [RESULT], isSaved: false }));
   snap('cv toggle existing', await post('/api/analyze/save', { resumeHash: 'h1', shouldSave: true }));
-  snap('cv save without hash', await post('/api/analyze/save', { resumeText: 'Other CV', jobDescriptions: ['JD'], results: [RESULT] }));
-  assert.equal(cvStore.length, 2);
+  assert.equal(cvStore[0].isSaved, true);
+  snap('cv unsave existing', await post('/api/analyze/save', { resumeHash: 'h1', shouldSave: false, results: [NON_TECH] }));
+  assert.equal(cvStore[0].isSaved, false);
+  assert.equal(cvStore[0].results[0].matchPercentage, 72, 'results sent by the client are ignored');
 });
 
 test('GET saved analyses: both URLs give the same list', async () => {

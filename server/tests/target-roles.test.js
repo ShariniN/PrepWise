@@ -5,11 +5,14 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { makeWorld, IDS, newId } from './helpers.js';
+import CVAnalysis from '../models/CvAnalysis.js';
+import { savedResultsView } from '../modules/cvAnalysis/cvAnalysis.service.js';
 import institutionRepo from '../modules/institution/institution.repo.js';
 import { roleAsJobDescription } from '../services/targetRoles.js';
 import app from '../app.js';
 
 const same = (a, b) => String(a) === String(b);
+let cvStore;
 let w, adminA, adminB, lecturerA, studentA, roleBackend, roleData, roleOther;
 
 const stubInstitutionRepo = () => {
@@ -57,6 +60,10 @@ beforeEach(() => {
   lecturerA = w.addUser({ name: 'Lec', email: 'lec@a.edu', role: 'lecturer', institutionId: IDS.instA });
   studentA = w.addUser({ name: 'Stu', email: 'stu@a.edu', role: 'student', institutionId: IDS.instA });
   stubInstitutionRepo();
+  cvStore = [];
+  const matches = (doc, q) => Object.entries(q).every(([k, v]) => same(doc[k], v));
+  mock.method(CVAnalysis, 'findOne', async (q) => cvStore.find((d) => matches(d, q)) || null);
+  mock.method(CVAnalysis.prototype, 'save', async function save() { if (!cvStore.includes(this)) cvStore.push(this); return this; });
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
 afterEach(() => mock.restoreAll());
@@ -247,4 +254,118 @@ test('analyze-resume says so honestly when the AI is unavailable', async () => {
   assert.equal(res.body.analysis[0].matchPercentage, 0);
   assert.equal(res.body.analysis[0].hasError, true);
   assert.equal(res.body.analysis[0].scoreBreakdown.aiAvailable, false);
+});
+
+test('analyze-resume stores the server-computed results with kind target_role', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h1' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const pasted = 'Frontend intern at a startup: React, CSS and a good eye for detail. You will build screens.';
+  const res = await analyze({ jobDescriptions: JSON.stringify([pasted]) });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(cvStore.length, 1);
+  const doc = cvStore[0];
+  assert.equal(res.body.analysisId, String(doc._id));
+  assert.equal(String(doc.userId), String(studentA._id));
+  assert.equal(String(doc.institutionId), IDS.instA);
+  assert.equal(String(doc.targetRoleId), roleBackend._id);
+  assert.equal(doc.isSaved, false);
+  assert.deepEqual(doc.results.map((r) => r.kind), ['target_role', 'job_description']);
+  assert.equal(String(doc.results[0].targetRoleId), roleBackend._id);
+  assert.equal(doc.results[0].matchPercentage, res.body.analysis[0].matchPercentage);
+  assert.deepEqual(doc.jobDescriptions, [pasted]);
+  assert.equal(doc.extractedTechnologies[0].name, 'Node.js');
+
+  // Analysing the same CV again replaces the results in the same document and keeps isSaved.
+  doc.isSaved = true;
+  await analyze({});
+  assert.equal(cvStore.length, 1);
+  assert.equal(doc.isSaved, true);
+  assert.deepEqual(doc.results.map((r) => r.kind), ['target_role']);
+});
+
+test('save ignores client-sent results and scores', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h2' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  await analyze({});
+  const stored = cvStore[0].results[0].matchPercentage;
+  assert.ok(stored < 100);
+  const fake = [{ kind: 'target_role', matchPercentage: 100, isNonTechRole: false }];
+  const res = await request(app).post('/api/analyze/save').set(as(studentA))
+    .send({ resumeHash: 'h2', resumeText: CV_TEXT, jobDescriptions: ['x'], results: fake, shouldSave: true });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.saved, true);
+  assert.equal(cvStore[0].isSaved, true);
+  assert.equal(cvStore[0].results[0].matchPercentage, stored, 'the stored score is untouched');
+  assert.equal(cvStore[0].results.length, 1);
+  const byId = await request(app).post('/api/analyze/save').set(as(studentA)).send({ id: String(cvStore[0]._id), shouldSave: false });
+  assert.equal(byId.status, 200);
+  assert.equal(cvStore[0].isSaved, false);
+});
+
+test('save without a prior analysis is 404', async () => {
+  const res = await request(app).post('/api/analyze/save').set(as(studentA)).send({ resumeHash: 'nope', results: [{ matchPercentage: 100 }] });
+  assert.equal(res.status, 404);
+  assert.equal(res.body.message, 'Analyse your CV first.');
+  assert.equal(cvStore.length, 0);
+  // Another student's analysis cannot be saved by hash either.
+  const other = w.addUser({ email: 'o2@a.edu', role: 'student', institutionId: IDS.instA });
+  cvStore.push(new CVAnalysis({ userId: other._id, resumeHash: 'theirs', results: [] }));
+  assert.equal((await request(app).post('/api/analyze/save').set(as(studentA)).send({ resumeHash: 'theirs' })).status, 404);
+  assert.equal((await request(app).post('/api/analyze/save').set(as(studentA)).send({})).status, 400);
+});
+
+test('savedResultsView keeps kind and targetRoleId', () => {
+  const [a, b] = savedResultsView([
+    { kind: 'target_role', targetRoleId: roleBackend._id, matchPercentage: 70 },
+    { matchPercentage: 50 },
+  ]);
+  assert.equal(a.kind, 'target_role');
+  assert.equal(a.targetRoleId, roleBackend._id);
+  assert.equal(b.kind, 'job_description');
+  assert.equal(b.targetRoleId, null);
+});
+
+test('stale targetRoleId (role deleted) gives analyze 409 TARGET_ROLE_REQUIRED', async () => {
+  studentA.targetRoleId = newId();
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h3' };
+  const res = await analyze({});
+  assert.equal(res.status, 409);
+  assert.equal(res.body.code, 'TARGET_ROLE_REQUIRED');
+  assert.equal(cvStore.length, 0);
+});
+
+test('a job descriptions value that is not a list is a 400, and non-text entries are dropped', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h4' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const bad = await analyze({ jobDescriptions: '{"a":1}' });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.message, 'Job descriptions must be a list of text');
+  const res = await analyze({ jobDescriptions: JSON.stringify([5, null, {}, '  ']) });
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.analysis.map((r) => r.kind), ['target_role']);
+});
+
+test('deleting a role clears the students before the role is removed', async () => {
+  const order = [];
+  studentA.targetRoleId = roleData._id;
+  const clear = institutionRepo.clearTargetRole;
+  const del = institutionRepo.deleteTargetRole;
+  mock.method(institutionRepo, 'clearTargetRole', async (...a) => { order.push('clear'); return clear(...a); });
+  mock.method(institutionRepo, 'deleteTargetRole', async (...a) => { order.push('delete'); return del(...a); });
+  const res = await request(app).delete(`/api/institution/target-roles/${roleData._id}`).set(as(adminA));
+  assert.equal(res.status, 200);
+  assert.deepEqual(order, ['clear', 'delete']);
+  // The last role is refused before any student is touched.
+  order.length = 0;
+  w.users.find((u) => u === studentA).targetRoleId = roleBackend._id;
+  const last = await request(app).delete(`/api/institution/target-roles/${roleBackend._id}`).set(as(adminA));
+  assert.equal(last.status, 409);
+  assert.deepEqual(order, []);
+  assert.equal(studentA.targetRoleId, roleBackend._id);
 });

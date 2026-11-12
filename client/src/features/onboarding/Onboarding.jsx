@@ -42,7 +42,7 @@ const Onboarding = () => {
     setSaveError('');
     try {
       const { data } = await api.put('/api/me/target-role', { targetRoleId: selected });
-      setTargetRole(data.targetRoleTitle);
+      setTargetRole(data.targetRoleTitle, data.targetRoleId);
       setStep(2);
     } catch (err) {
       setSaveError(errorMessage(err, 'Could not save your role'));

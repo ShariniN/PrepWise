@@ -5,6 +5,7 @@ import { CV_MODELS, AI_MODELS } from '../../config/ai.js';
 import { generateWithFallback } from '../../services/geminiClient.js';
 import { scoreResume } from './cvAnalysis.scoring.js';
 import { roleAsJobDescription } from '../../services/targetRoles.js';
+import CVAnalysis from '../../models/CvAnalysis.js';
 
 export const convertMarkdownToHTML = (text) => text
   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -307,6 +308,27 @@ export const analyzeCv = async (cvText, jobDescriptions, { targetRole = null } =
   return { analysis, extractedTechnologies, technologiesUnavailable };
 };
 
+// Stores what the server computed for this CV (one document per user and CV). Re-analysing the same CV replaces
+// the results and keeps isSaved as it was. Nothing here comes from the client's own scores.
+export const storeAnalysis = async ({ user, resumeHash, resumeText, jobDescriptions, results, extractedTechnologies, usedProfileCV, targetRoleId }) => {
+  const fields = {
+    institutionId: user.institutionId,
+    targetRoleId: targetRoleId || null,
+    resumeText: resumeText.substring(0, 15000),
+    jobDescriptions,
+    results,
+    extractedTechnologies,
+    usedProfileCV: !!usedProfileCV,
+  };
+  const existing = await CVAnalysis.findOne({ userId: user.id, resumeHash });
+  if (existing) {
+    existing.set(fields);
+    existing.updatedAt = new Date();
+    return existing.save();
+  }
+  return new CVAnalysis({ userId: user.id, resumeHash, isSaved: false, ...fields }).save();
+};
+
 const averageMatch = (results) => (results.length > 0
   ? Math.round(results.reduce((sum, r) => sum + (r.matchPercentage || 0), 0) / results.length)
   : 0);
@@ -352,6 +374,8 @@ export const savedAnalysisView = (analysis) => {
 
 // The stored results as reported back after a save (each value checked and clamped).
 export const savedResultsView = (results = []) => results.map((result) => ({
+  kind: result.kind === 'target_role' ? 'target_role' : 'job_description',
+  targetRoleId: result.targetRoleId ? String(result.targetRoleId) : null,
   matchPercentage: typeof result.matchPercentage === 'number' ? Math.max(0, Math.min(100, result.matchPercentage)) : 0,
   scoreBreakdown: result.scoreBreakdown || null,
   isNonTechRole: typeof result.isNonTechRole === 'boolean' ? result.isNonTechRole : false,

@@ -1,17 +1,17 @@
 import crypto from 'crypto';
 import CVAnalysis from '../../models/CvAnalysis.js';
 import userModel from '../../models/User.js';
-import { GEMINI_MODEL } from '../../config/ai.js';
 import { pdfText } from '../../services/pdfText.js';
 import {
-  analyzeCv, createResumeHash, validateResumeContent, savedAnalysisView, savedResultsView,
+  analyzeCv, createResumeHash, validateResumeContent, savedAnalysisView, storeAnalysis,
 } from './cvAnalysis.service.js';
 import { targetRoleOf } from '../institution/institution.service.js';
 
 const isObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
 
 // POST /api/analyze/analyze-resume: the uploaded PDF (field "resume") or, with useProfileCV=true, the profile CV,
-// against the student's target role and any job descriptions sent as a JSON string array. Nothing is stored here (see saveAnalysis).
+// against the student's target role and any job descriptions sent as a JSON string array.
+// The scores are computed here and stored here (storeAnalysis); /save only marks a stored analysis as saved.
 export const analyzeResume = async (req, res) => {
   try {
     const { jobDescriptions: jobDescriptionsString } = req.body;
@@ -31,10 +31,10 @@ export const analyzeResume = async (req, res) => {
     if (!Array.isArray(jobDescriptions)) {
       return res.status(400).json({
         success: false,
-        message: 'At least one job description is required'
+        message: 'Job descriptions must be a list of text'
       });
     }
-    jobDescriptions = jobDescriptions.filter((jd) => typeof jd !== 'string' || jd.trim());
+    jobDescriptions = jobDescriptions.filter((jd) => typeof jd === 'string' && jd.trim());
 
     // A student is always scored against their target role, so pasted job descriptions are optional for them.
     let targetRole = null;
@@ -69,7 +69,7 @@ export const analyzeResume = async (req, res) => {
 
       resumeText = user.currentCV.text;
       resumeFileName = user.currentCV.fileName || 'Profile CV';
-      resumeHash = user.currentCV.hash || `profile_cv_${user._id}_${Date.now()}`;
+      resumeHash = user.currentCV.hash || createResumeHash(resumeText);
     } else {
       if (!req.file) {
         return res.status(400).json({
@@ -102,9 +102,21 @@ export const analyzeResume = async (req, res) => {
 
     const { analysis: analysisResults, extractedTechnologies, technologiesUnavailable } = await analyzeCv(resumeText, jobDescriptions, { targetRole });
 
+    const stored = await storeAnalysis({
+      user: req.user,
+      resumeHash,
+      resumeText,
+      jobDescriptions,
+      results: analysisResults,
+      extractedTechnologies,
+      usedProfileCV: useProfileCV,
+      targetRoleId: targetRole ? targetRole._id : null
+    });
+
     res.json({
       success: true,
       message: 'Resume analysis completed successfully using enhanced Gemini API',
+      analysisId: stored._id,
       resumeHash,
       resumeText: useProfileCV ? 'Profile CV content' : `Uploaded: ${resumeFileName}`,
       extractedTechnologies,
@@ -164,125 +176,37 @@ export const getSavedAnalysis = async (req, res) => {
   }
 };
 
-// POST /api/analyze/save: with only resumeHash it toggles the saved flag, otherwise it stores (or updates,
-// same user + hash) a full analysis. analysisMetadata and extractedTechnologies are not in the schema, so they
-// only show up in this response when an existing document is updated.
+// POST /api/analyze/save { resumeHash | id, shouldSave? }: marks the user's own stored analysis as saved or unsaved.
+// Scores and results are never taken from the request: analyze-resume stored what the server computed.
 export const saveAnalysis = async (req, res) => {
   try {
-    let { resumeText, resumeHash, jobDescriptions, results, shouldSave = true, extractedTechnologies } = req.body;
+    const { resumeHash, id } = req.body || {};
+    const shouldSave = req.body?.shouldSave !== false;
 
-    if (resumeHash && !resumeText && !jobDescriptions && !results) {
-      const analysis = await CVAnalysis.findOne({ userId: req.user.id, resumeHash });
-      if (!analysis) {
-        return res.status(404).json({
-          success: false,
-          message: 'CV analysis not found. Please analyze your resume first.',
-          resumeHash
-        });
-      }
-
-      analysis.isSaved = shouldSave;
-      analysis.updatedAt = new Date();
-      await analysis.save();
-
-      return res.json({
-        success: true,
-        message: shouldSave ? 'CV analysis saved successfully.' : 'CV analysis unsaved successfully.',
-        saved: shouldSave,
-        data: {
-          id: analysis._id,
-          isSaved: analysis.isSaved
-        }
-      });
-    }
-
-    if (!resumeText || !jobDescriptions || !results) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields for saving analysis',
-        required: ['resumeText', 'jobDescriptions', 'results'],
-        received: {
-          resumeText: !!resumeText,
-          jobDescriptions: !!jobDescriptions,
-          results: !!results,
-          resumeHash: !!resumeHash
-        }
-      });
-    }
-
-    if (!resumeHash) resumeHash = createResumeHash(resumeText);
-
-    let analysis = await CVAnalysis.findOne({ userId: req.user.id, resumeHash });
-
-    if (analysis) {
-      analysis.jobDescriptions = jobDescriptions;
-      analysis.targetRoleId = req.user.targetRoleId || null;
-      analysis.results = results;
-      analysis.resumeText = resumeText.substring(0, 15000);
-      analysis.isSaved = shouldSave;
-      analysis.updatedAt = new Date();
-      if (extractedTechnologies && Array.isArray(extractedTechnologies)) {
-        analysis.extractedTechnologies = extractedTechnologies;
-      }
-      if (!analysis.analysisMetadata) analysis.analysisMetadata = {};
-      analysis.analysisMetadata.geminiModel = GEMINI_MODEL;
-      analysis.analysisMetadata.processingDate = new Date().toISOString();
-      analysis.analysisMetadata.enhancedParsing = true;
-      await analysis.save();
+    let analysis = null;
+    if (id) {
+      if (isObjectId(String(id))) analysis = await CVAnalysis.findOne({ _id: id, userId: req.user.id });
+    } else if (resumeHash) {
+      analysis = await CVAnalysis.findOne({ userId: req.user.id, resumeHash });
     } else {
-      analysis = new CVAnalysis({
-        userId: req.user.id,
-        institutionId: req.user.institutionId,
-        targetRoleId: req.user.targetRoleId || null,
-        resumeText: resumeText.substring(0, 15000),
-        resumeHash,
-        jobDescriptions,
-        results,
-        extractedTechnologies: extractedTechnologies || [],
-        isSaved: shouldSave,
-        usedProfileCV: false,
-        analysisMetadata: {
-          geminiModel: GEMINI_MODEL,
-          processingDate: new Date().toISOString(),
-          enhancedParsing: true
-        }
-      });
-      await analysis.save();
+      return res.status(400).json({ success: false, message: 'Say which analysis to save with resumeHash or id.' });
+    }
+    if (!analysis) {
+      return res.status(404).json({ success: false, message: 'Analyse your CV first.' });
     }
 
-    const validatedResults = savedResultsView(analysis.results);
-    // Unlike the saved-analyses list, this average leaves out results with a 0% match.
-    const softwareRoles = validatedResults.filter((r) => !r.isNonTechRole && r.matchPercentage > 0);
-    const avgMatchScore = softwareRoles.length > 0
-      ? Math.round(softwareRoles.reduce((sum, r) => sum + r.matchPercentage, 0) / softwareRoles.length)
-      : 0;
-    const technologies = analysis.extractedTechnologies || [];
+    analysis.isSaved = shouldSave;
+    analysis.updatedAt = new Date();
+    await analysis.save();
 
     res.json({
       success: true,
-      message: shouldSave ? 'CV analysis saved successfully.' : 'CV analysis updated successfully.',
+      message: shouldSave ? 'CV analysis saved successfully.' : 'CV analysis unsaved successfully.',
       saved: shouldSave,
       data: {
         id: analysis._id,
         isSaved: analysis.isSaved,
         resumeHash: analysis.resumeHash
-      },
-      analysis: {
-        id: analysis._id,
-        resumeText: analysis.resumeText ? 'CV content saved' : 'No content',
-        isSaved: analysis.isSaved,
-        analysisCount: validatedResults.length,
-        updatedAt: analysis.updatedAt,
-        extractedTechnologies: technologies,
-        technologiesCount: technologies.length,
-        analysisVersion: analysis.analysisMetadata?.geminiModel || 'legacy'
-      },
-      stats: {
-        totalAnalyses: validatedResults.length,
-        softwareRoles: validatedResults.filter((r) => !r.isNonTechRole).length,
-        nonTechRoles: validatedResults.filter((r) => r.isNonTechRole).length,
-        avgMatchScore,
-        technologiesExtracted: technologies.length
       }
     });
   } catch (error) {
@@ -290,8 +214,7 @@ export const saveAnalysis = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to save analysis',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };

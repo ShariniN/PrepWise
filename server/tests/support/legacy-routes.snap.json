@@ -4,6 +4,7 @@
     "body": {
       "success": true,
       "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "analysisId": "<id>",
       "resumeHash": "cvhash",
       "resumeText": "Profile CV content",
       "extractedTechnologies": [],
@@ -135,6 +136,7 @@
     "body": {
       "success": true,
       "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "analysisId": "<id>",
       "resumeHash": "cvhash",
       "resumeText": "Profile CV content",
       "extractedTechnologies": [
@@ -360,116 +362,18 @@
       }
     }
   },
-  "cv save missing fields": {
+  "cv save no target": {
     "status": 400,
     "body": {
       "success": false,
-      "message": "Missing required fields for saving analysis",
-      "required": [
-        "resumeText",
-        "jobDescriptions",
-        "results"
-      ],
-      "received": {
-        "resumeText": false,
-        "jobDescriptions": true,
-        "results": false,
-        "resumeHash": false
-      }
+      "message": "Say which analysis to save with resumeHash or id."
     }
   },
-  "cv save new": {
-    "status": 200,
+  "cv save results without an analysis": {
+    "status": 404,
     "body": {
-      "success": true,
-      "message": "CV analysis saved successfully.",
-      "saved": true,
-      "data": {
-        "id": "<id>",
-        "isSaved": true,
-        "resumeHash": "h1"
-      },
-      "analysis": {
-        "id": "<id>",
-        "resumeText": "CV content saved",
-        "isSaved": true,
-        "analysisCount": 2,
-        "updatedAt": "<date>",
-        "extractedTechnologies": [],
-        "technologiesCount": 0,
-        "analysisVersion": "legacy"
-      },
-      "stats": {
-        "totalAnalyses": 2,
-        "softwareRoles": 1,
-        "nonTechRoles": 1,
-        "avgMatchScore": 72,
-        "technologiesExtracted": 0
-      }
-    }
-  },
-  "cv save update": {
-    "status": 200,
-    "body": {
-      "success": true,
-      "message": "CV analysis updated successfully.",
-      "saved": false,
-      "data": {
-        "id": "<id>",
-        "isSaved": false,
-        "resumeHash": "h1"
-      },
-      "analysis": {
-        "id": "<id>",
-        "resumeText": "CV content saved",
-        "isSaved": false,
-        "analysisCount": 1,
-        "updatedAt": "<date>",
-        "extractedTechnologies": [
-          {
-            "name": "Node.js"
-          }
-        ],
-        "technologiesCount": 1,
-        "analysisVersion": "gemini-2.5-flash-lite"
-      },
-      "stats": {
-        "totalAnalyses": 1,
-        "softwareRoles": 1,
-        "nonTechRoles": 0,
-        "avgMatchScore": 72,
-        "technologiesExtracted": 1
-      }
-    }
-  },
-  "cv save without hash": {
-    "status": 200,
-    "body": {
-      "success": true,
-      "message": "CV analysis saved successfully.",
-      "saved": true,
-      "data": {
-        "id": "<id>",
-        "isSaved": true,
-        "resumeHash": "01f148b2ac7eb56c2ce3333d2ae2e7918e121a7dab30bf2f46ec95dd8513c013"
-      },
-      "analysis": {
-        "id": "<id>",
-        "resumeText": "CV content saved",
-        "isSaved": true,
-        "analysisCount": 1,
-        "updatedAt": "<date>",
-        "extractedTechnologies": [],
-        "technologiesCount": 0,
-        "analysisVersion": "legacy"
-      },
-      "stats": {
-        "totalAnalyses": 1,
-        "softwareRoles": 1,
-        "nonTechRoles": 0,
-        "avgMatchScore": 72,
-        "technologiesExtracted": 0
-      }
+      "success": false,
+      "message": "Analyse your CV first."
     }
   },
   "cv saved empty": {
@@ -497,6 +401,8 @@
             {
               "jobIndex": 0,
               "kind": "job_description",
+              "targetRoleId": null,
+              "hasError": false,
               "matchPercentage": 72,
               "isNonTechRole": false,
               "recommendationsUnavailable": false,
@@ -525,6 +431,8 @@
             {
               "jobIndex": 0,
               "kind": "job_description",
+              "targetRoleId": null,
+              "hasError": false,
               "matchPercentage": 0,
               "isNonTechRole": true,
               "recommendationsUnavailable": false,
@@ -542,6 +450,8 @@
             {
               "jobIndex": 0,
               "kind": "job_description",
+              "targetRoleId": null,
+              "hasError": false,
               "matchPercentage": 40,
               "isNonTechRole": false,
               "recommendationsUnavailable": false,
@@ -593,6 +503,8 @@
           "bestMatch": {
             "jobIndex": 0,
             "kind": "job_description",
+            "targetRoleId": null,
+            "hasError": false,
             "matchPercentage": 72,
             "isNonTechRole": false,
             "recommendationsUnavailable": false,
@@ -631,7 +543,8 @@
       "saved": true,
       "data": {
         "id": "<id>",
-        "isSaved": true
+        "isSaved": true,
+        "resumeHash": "h1"
       }
     }
   },
@@ -639,8 +552,20 @@
     "status": 404,
     "body": {
       "success": false,
-      "message": "CV analysis not found. Please analyze your resume first.",
-      "resumeHash": "nope"
+      "message": "Analyse your CV first."
+    }
+  },
+  "cv unsave existing": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "CV analysis unsaved successfully.",
+      "saved": false,
+      "data": {
+        "id": "<id>",
+        "isSaved": false,
+        "resumeHash": "h1"
+      }
     }
   },
   "iv complete all skipped": {

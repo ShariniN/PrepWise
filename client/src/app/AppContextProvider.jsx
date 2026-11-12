@@ -16,17 +16,26 @@ export const AppContextProvider = (props) => {
     // null until the server has said whether this student still has to pick a target role.
     const [needsOnboarding, setNeedsOnboarding] = useState(null);
     const [targetRoleTitle, setTargetRoleTitle] = useState(null);
+    const [targetRoleId, setTargetRoleId] = useState(null);
 
     const setOnboardingInfo = (user) => {
         setNeedsOnboarding(!!user?.needsOnboarding);
         setTargetRoleTitle(user?.targetRoleTitle || null);
+        setTargetRoleId(user?.targetRoleId || null);
     };
 
     // Called after the student picks a role (onboarding or profile settings).
-    const setTargetRole = (title) => {
+    const setTargetRole = (title, id) => {
         setNeedsOnboarding(false);
         setTargetRoleTitle(title);
+        setTargetRoleId(id || null);
     };
+
+    // Asks the server again who we are, e.g. when a call says the target role is gone (the admin deleted it):
+    // needsOnboarding flips and ProtectedRoute sends the student to /welcome.
+    const refreshAuth = () => axios.get(backendUrl + '/api/auth/is-auth')
+        .then(({ data }) => { if (data.success) setOnboardingInfo(data.user); })
+        .catch(() => {});
 
     const setAuth = (info) => {
         setRole(info?.role || null);
@@ -51,6 +60,7 @@ export const AppContextProvider = (props) => {
         setInstitutionId(null);
         setNeedsOnboarding(null);
         setTargetRoleTitle(null);
+        setTargetRoleId(null);
     };
 
     const getAuthState = async () => {
@@ -111,7 +121,9 @@ export const AppContextProvider = (props) => {
         authLoading,
         needsOnboarding,
         targetRoleTitle,
+        targetRoleId,
         setTargetRole,
+        refreshAuth,
         setAuth,
         clearAuth
     };

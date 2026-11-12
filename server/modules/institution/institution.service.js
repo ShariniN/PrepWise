@@ -124,13 +124,17 @@ export const updateTargetRole = async (institutionId, actorId, roleId, body) => 
 
 export const deleteTargetRole = async (institutionId, actorId, roleId) => {
   if (!isId(roleId)) throw new InstitutionError(404, 'Target role not found');
-  const updated = await institutionRepo.deleteTargetRole(institutionId, roleId);
-  if (!updated) {
+  const refuse = async () => {
     const institution = await loadInstitution(institutionId);
     if (!findTargetRole(institution, roleId)) throw new InstitutionError(404, 'Target role not found');
     throw new InstitutionError(409, 'You need at least one target role. Add another before deleting this one.', 'LAST_TARGET_ROLE');
-  }
+  };
+  const before = await loadInstitution(institutionId);
+  if (!findTargetRole(before, roleId) || before.targetRoles.length < 2) await refuse();
+  // Students are cleared first: a crash between the two steps leaves a role nobody has, never an id with no role.
   await institutionRepo.clearTargetRole(institutionId, roleId);
+  const updated = await institutionRepo.deleteTargetRole(institutionId, roleId);
+  if (!updated) await refuse();
   await audit({ actor: actorId, action: 'targetRole.delete', target: String(roleId), institutionId });
   return { targetRoles: rolesOf(updated) };
 };

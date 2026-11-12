@@ -21,7 +21,7 @@ const API_ENDPOINTS = {
 const resultLabel = (result, index) => (result.kind === 'target_role' ? 'Target role' : `Job description ${index}`);
 
 const CVAnalyzer = () => {
-  const { targetRoleTitle } = useContext(AppContext);
+  const { targetRoleTitle, refreshAuth } = useContext(AppContext);
   // State management
   const [resumeFile, setResumeFile] = useState(null);
   // Optional: the CV is always scored against the target role; this adds one pasted job description.
@@ -202,6 +202,8 @@ const CVAnalyzer = () => {
           if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             errorMessage = errorData.message || errorData.error || errorMessage;
+            // The role was deleted while signed in: refresh who we are so the student is sent to choose again.
+            if (errorData.code === 'TARGET_ROLE_REQUIRED') refreshAuth();
           } else {
             const errorText = await response.text();
             if (errorText) {
@@ -242,6 +244,7 @@ const CVAnalyzer = () => {
       setResumeData({
         resumeText: data.resumeText || (useProfileCV ? 'Profile CV' : `Resume: ${resumeFile?.name}`),
         resumeHash: resumeHash,
+        analysisId: data.analysisId,
         jobDescriptions: pastedJDs,
         extractedTechnologies: data.extractedTechnologies || [],
         // The AI could not extract technologies right now (not the same as "none on the CV")
@@ -283,15 +286,8 @@ const handleSaveIndividualAnalysis = async (index) => {
   if ((!resumeFile && !useProfileCV) || !results[index] || savedIndices.includes(index)) return;
 
   try {
-    const saveData = {
-      // Use resumeText instead of resumeName - this is what the server expects
-      resumeText: resumeData?.resumeText || (useProfileCV ? 'Profile CV content' : resumeFile?.name || 'Resume content'),
-      jobDescriptions: pastedJDs,
-      results: [results[index]], // Send only the specific result we're saving
-      resumeHash: resumeData?.resumeHash,
-      usedProfileCV: useProfileCV,
-      extractedTechnologies: resumeData?.extractedTechnologies || [] // Include extracted technologies
-    };
+    // The server stored the scores when it analysed the CV; saving only marks that analysis as saved.
+    const saveData = { id: resumeData?.analysisId, resumeHash: resumeData?.resumeHash, shouldSave: true };
 
     const response = await fetch(API_ENDPOINTS.saveAnalysis, {
       method: 'POST',

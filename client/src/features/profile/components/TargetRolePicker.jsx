@@ -7,7 +7,7 @@ import { Button, Field, Select } from '../../../components/ui';
 
 // Lets a student change the role they are preparing for (profile settings, student only).
 const TargetRolePicker = () => {
-  const { targetRoleTitle, setTargetRole } = useContext(AppContext);
+  const { targetRoleId, setTargetRole } = useContext(AppContext);
   const [roles, setRoles] = useState(null);
   const [selected, setSelected] = useState('');
   const [saving, setSaving] = useState(false);
@@ -19,20 +19,20 @@ const TargetRolePicker = () => {
       .then(({ data }) => {
         if (cancelled) return;
         setRoles(data);
-        setSelected(data.find((r) => r.title === targetRoleTitle)?.id || '');
+        setSelected(data.find((r) => r.id === targetRoleId)?.id || '');
       })
       .catch((err) => { if (!cancelled) setError(errorMessage(err, 'Could not load the roles')); });
     return () => { cancelled = true; };
-  }, [targetRoleTitle]);
+  }, [targetRoleId]);
 
-  const current = roles?.find((r) => r.title === targetRoleTitle);
+  const current = roles?.find((r) => r.id === targetRoleId);
 
   const save = async () => {
     setSaving(true);
     setError('');
     try {
       const { data } = await api.put('/api/me/target-role', { targetRoleId: selected });
-      setTargetRole(data.targetRoleTitle);
+      setTargetRole(data.targetRoleTitle, data.targetRoleId);
       toast.success('Target role updated');
     } catch (err) {
       setError(errorMessage(err, 'Could not save your role'));

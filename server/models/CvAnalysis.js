@@ -28,6 +28,7 @@ const cvAnalysisSchema = new mongoose.Schema({
     default: false
   },
   targetRoleId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  extractedTechnologies: { type: [mongoose.Schema.Types.Mixed], default: [] },
   // Empty when the CV was scored against a target role instead of pasted job descriptions.
   jobDescriptions: {
     type: [String],
@@ -43,6 +44,8 @@ const cvAnalysisSchema = new mongoose.Schema({
       enum: ['target_role', 'job_description'],
       default: 'job_description'
     },
+    targetRoleId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    hasError: { type: Boolean, default: false },
     jobTitle: {
       type: String,
       trim: true
