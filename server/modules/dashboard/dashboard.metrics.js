@@ -7,7 +7,8 @@
 //   out too (the interview's own score ignores them). Only completed interviews count.
 // - Categories come from each answer's questionType: behavioral -> behavioural; technical, system_design and
 //   problem-solving -> technical; coding -> coding. Communication is feedback.communicationClarity (0-10) x 10.
-// - The CV score is the latest result scored against the student's target role (kind 'target_role') whose
+// - The CV score is the latest result scored against the student's CURRENT target role (kind 'target_role', its
+//   targetRoleId equal to the student's, and that role still in the institution's list) whose
 //   scoreBreakdown.aiAvailable !== false. Results checked against a pasted job description never count.
 // - Averages across students are means of per-student values, so a student with many interviews does not dominate.
 // - The most common missing skills are shown only when at least MIN_GROUP students have a CV score: with fewer,
@@ -167,10 +168,14 @@ export const bestMatch = (analysis) => {
   return { best: eligible.length ? Math.max(...eligible) : null, excludedResults: results.filter((r) => r?.scoreBreakdown?.aiAvailable === false).length };
 };
 
-// The latest target-role result with an AI score, over analyses sorted oldest first. Null when there is none.
-export const latestTargetRoleResult = (analyses) => {
+// The latest target-role result with an AI score for the role `targetRoleId`, over analyses sorted oldest first.
+// Null when there is none, or when no role is given: after a role change or a deleted role the old score does
+// not count until the student re-analyses.
+export const latestTargetRoleResult = (analyses, targetRoleId) => {
+  if (!targetRoleId) return null;
+  const wanted = sid(targetRoleId);
   for (let i = analyses.length - 1; i >= 0; i -= 1) {
-    const results = (analyses[i]?.results || []).filter(isTargetRoleScore);
+    const results = (analyses[i]?.results || []).filter((r) => isTargetRoleScore(r) && r.targetRoleId != null && sid(r.targetRoleId) === wanted);
     if (results.length) return results[results.length - 1];
   }
   return null;
@@ -202,7 +207,8 @@ export const studentRow = (user, data, now, institution = null) => {
   const latest = completed.length ? completed[completed.length - 1] : null;
   const lastInterviewScore = latest ? scores[scores.length - 1] : null;
   const previousScore = completed.length >= 2 ? scores[scores.length - 2] : null;
-  const cvResult = latestTargetRoleResult(cvAnalyses);
+  const targetRole = findTargetRole(institution, user.targetRoleId);
+  const cvResult = latestTargetRoleResult(cvAnalyses, targetRole ? targetRole._id : null);
   const practice = practiceSummary(attempts);
 
   const lastActive = latestDate(
@@ -214,7 +220,7 @@ export const studentRow = (user, data, now, institution = null) => {
 
   const row = {
     id: sid(user._id), name: user.name || '', email: user.email || '', group: user.group || '',
-    targetRoleTitle: findTargetRole(institution, user.targetRoleId)?.title ?? null,
+    targetRoleTitle: targetRole?.title ?? null,
     cvScore: cvResult ? cvResult.matchPercentage : null,
     lastInterviewScore,
     lastLevelReached: latest ? levelOf(latest.levelReached) : null,
