@@ -97,55 +97,55 @@ const Dashboard = () => {
           <EmptyState title="No groups assigned yet" description="No groups assigned yet. Ask your administrator to assign your groups." className="!py-12" />
         </Card>
       ) : (
-      <div className="space-y-8">
-        <section aria-label="Overview">
-          {overview.error && <ErrorState message={overview.error} onRetry={overview.reload} />}
-          {overview.loading && !overview.data && <OverviewSkeleton />}
-          {overview.data && (
-            <div className={overview.loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-              <OverviewPanel data={overview.data} />
+        <div className="space-y-8">
+          <section aria-label="Overview">
+            {overview.error && <ErrorState message={overview.error} onRetry={overview.reload} />}
+            {overview.loading && !overview.data && <OverviewSkeleton />}
+            {overview.data && (
+              <div className={overview.loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+                <OverviewPanel data={overview.data} />
+              </div>
+            )}
+          </section>
+  
+          <Card as="section" aria-labelledby="st-h" className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 id="st-h" className="font-display text-xl font-semibold text-ink">{group ? `Students in ${group}` : 'All students'}</h2>
+                <p className="mt-1 text-sm text-ink-2">Select a student to see their interviews, CVs and Practice.</p>
+              </div>
+              <div className="flex flex-col items-start gap-1 sm:items-end">
+                <Button variant="secondary" size="sm" loading={exporting} onClick={exportCsv} icon={<Download size={15} aria-hidden="true" />}>
+                  Download CSV
+                </Button>
+                <p className="text-xs text-ink-2">Exports are recorded in the audit log.</p>
+              </div>
             </div>
-          )}
-        </section>
-
-        <Card as="section" aria-labelledby="st-h" className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 id="st-h" className="font-display text-xl font-semibold text-ink">{group ? `Students in ${group}` : 'All students'}</h2>
-              <p className="mt-1 text-sm text-ink-2">Select a student to see their interviews, CVs and Practice.</p>
+  
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem]">
+              <div>
+                <label htmlFor="st-search" className="sr-only">Search by name or email</label>
+                <Input id="st-search" type="search" icon={<Search size={16} aria-hidden="true" />} placeholder="Search name or email"
+                  value={searchText} maxLength={100} onChange={(e) => setSearchText(e.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="st-att" className="sr-only">Show</label>
+                <Select id="st-att" value={attention} onChange={(e) => update({ attention: e.target.value })}>
+                  {ATTENTION_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                </Select>
+              </div>
             </div>
-            <div className="flex flex-col items-start gap-1 sm:items-end">
-              <Button variant="secondary" size="sm" loading={exporting} onClick={exportCsv} icon={<Download size={15} aria-hidden="true" />}>
-                Download CSV
-              </Button>
-              <p className="text-xs text-ink-2">Exports are recorded in the audit log.</p>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_15rem]">
-            <div>
-              <label htmlFor="st-search" className="sr-only">Search by name or email</label>
-              <Input id="st-search" type="search" icon={<Search size={16} aria-hidden="true" />} placeholder="Search name or email"
-                value={searchText} maxLength={100} onChange={(e) => setSearchText(e.target.value)} />
-            </div>
-            <div>
-              <label htmlFor="st-att" className="sr-only">Show</label>
-              <Select id="st-att" value={attention} onChange={(e) => update({ attention: e.target.value })}>
-                {ATTENTION_FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-              </Select>
-            </div>
-          </div>
-
-          {students.error && <ErrorState message={students.error} onRetry={students.reload} />}
-          <StudentTable
-            data={students.data}
-            loading={students.loading}
-            sort={sort}
-            onSort={(s) => update({ sort: s })}
-            onPage={(p) => update({ page: p }, { keepPage: true })}
-          />
-        </Card>
-      </div>
+  
+            {students.error && <ErrorState message={students.error} onRetry={students.reload} />}
+            <StudentTable
+              data={students.data}
+              loading={students.loading}
+              sort={sort}
+              onSort={(s) => update({ sort: s })}
+              onPage={(p) => update({ page: p }, { keepPage: true })}
+            />
+          </Card>
+        </div>
       )}
     </AppShell>
   );
