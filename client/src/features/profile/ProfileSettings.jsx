@@ -6,13 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AppShell from "../../components/AppShell";
 import PrivacyTab from "./components/PrivacyTab";
+import TargetRolePicker from "./components/TargetRolePicker";
 import { PASSWORD_RULES, passwordProblems } from "../../lib/roles";
 
 const PHONE_OK = (v) => /^[\d\s\-.()]+$/.test(String(v).trim()) && /^\d{10,15}$/.test(String(v).replace(/\D/g, ''));
 
 const ProfileSettings = () => {
   const navigate = useNavigate();
-  const { backendUrl, userData, getUserData, isLoggedin, setIsLoggedin, setUserData } = useContext(AppContext);
+  const { backendUrl, userData, getUserData, isLoggedin, setIsLoggedin, setUserData, role } = useContext(AppContext);
 
   const [activeTab, setActiveTab] = useState('profile');
   const [showPassword, setShowPassword] = useState(false);
@@ -454,6 +455,7 @@ const ProfileSettings = () => {
           {loading ? 'Updating...' : 'Update Profile'}
         </button>
       </div>
+      {role === 'student' && <TargetRolePicker />}
     </div>
   );
 

@@ -22,6 +22,8 @@ import { ROLES, STAFF_ROLES } from '../lib/roles'
 import AdminOverview from '../features/admin/AdminOverview'
 import StudentProfile from '../features/staff/StudentProfile'
 import StudentInterview from '../features/staff/StudentInterview'
+import Onboarding from '../features/onboarding/Onboarding'
+import InstitutionSettings from '../features/settings/InstitutionSettings'
 
 // Dev-only component gallery; the import is dropped from production builds.
 const UiKit = import.meta.env.DEV ? lazy(() => import('./UiKit')) : null;
@@ -40,6 +42,7 @@ const App = () => {
         <Route path='/reset-password' element={<ResetPassword/>}/>
         
         {/* Student routes */}
+        <Route path='/welcome' element={<ProtectedRoute allow={[ROLES.STUDENT]} skipOnboarding><Onboarding/></ProtectedRoute>}/>
         <Route path='/fresher-dashboard' element={<ProtectedRoute allow={[ROLES.STUDENT]}><StudentHome/></ProtectedRoute>}/>
         <Route path='/cv-analyzer' element={<ProtectedRoute allow={[ROLES.STUDENT]}><CVAnalyzer/></ProtectedRoute>}/>
         <Route path='/interview' element={<ProtectedRoute allow={[ROLES.STUDENT]}><Interview/></ProtectedRoute>}/>
@@ -53,6 +56,7 @@ const App = () => {
         <Route path='/staff/students/:id/interviews/:interviewId' element={<ProtectedRoute allow={STAFF_ROLES}><StudentInterview/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
         <Route path='/admin-overview' element={<ProtectedRoute allow={[ROLES.ADMIN]}><AdminOverview/></ProtectedRoute>}/>
+        <Route path='/settings' element={<ProtectedRoute allow={[ROLES.ADMIN]}><InstitutionSettings/></ProtectedRoute>}/>
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>

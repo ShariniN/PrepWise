@@ -49,6 +49,7 @@ const NavBar = () => {
         { to: '/manage-people', label: 'Manage people' },
         { to: '/staff', label: 'Students' },
         { to: '/admin-overview', label: 'Overview' },
+        { to: '/settings', label: 'Settings' },
       ]
     : role === ROLES.STUDENT
       ? [
