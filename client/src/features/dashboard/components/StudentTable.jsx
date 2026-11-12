@@ -3,19 +3,22 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { Button, EmptyState, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../../../components/ui';
 import AttentionChips from './AttentionChips';
-import { fmtLastActive, fmtNum, fmtDate } from '../utils';
+import Sparkline from './Sparkline';
+import { fmtLastActive, fmtNum, fmtDate, LEVEL_LABELS } from '../utils';
 
 const COLUMNS = [
   { key: 'name', label: 'Student', sort: 'name' },
-  { key: 'needsAttention', label: 'To follow up' },
-  { key: 'group', label: 'Group' },
-  { key: 'interviewsCompleted', label: 'Interviews', sort: 'interviewsCompleted', num: true },
-  { key: 'latestInterviewScore', label: 'Latest score', sort: 'latestInterviewScore', num: true },
-  { key: 'avgInterviewScore', label: 'Avg score', sort: 'avgInterviewScore', num: true },
-  { key: 'latestCvMatch', label: 'CV match', sort: 'latestCvMatch', num: true },
+  { key: 'attention', label: 'To follow up' },
+  { key: 'group', label: 'Group', sort: 'group' },
+  { key: 'targetRoleTitle', label: 'Target role', sort: 'targetRoleTitle' },
+  { key: 'cvScore', label: 'CV score', sort: 'cvScore', num: true },
+  { key: 'lastInterviewScore', label: 'Last interview', sort: 'lastInterviewScore', num: true },
+  { key: 'trend', label: 'Trend' },
   { key: 'practiceSolved', label: 'Practice solved', sort: 'practiceSolved', num: true },
   { key: 'lastActive', label: 'Last active', sort: 'lastActive' },
 ];
+
+const dash = <span className="text-ink-muted">-</span>;
 
 const parseSort = (s) => (s?.startsWith('-') ? { key: s.slice(1), desc: true } : { key: s || 'name', desc: false });
 
@@ -25,8 +28,8 @@ const SortHeader = ({ col, sort, onSort }) => {
   const Icon = active ? (cur.desc ? ArrowDown : ArrowUp) : ChevronsUpDown;
   const next = () => {
     if (active) return onSort(cur.desc ? col.sort : `-${col.sort}`);
-    // Names start A-Z; numbers and dates start with the highest / most recent.
-    return onSort(col.sort === 'name' ? 'name' : `-${col.sort}`);
+    // Text starts A-Z; numbers and dates start with the highest / most recent.
+    return onSort(col.num || col.sort === 'lastActive' ? `-${col.sort}` : col.sort);
   };
   return (
     <Th aria-sort={active ? (cur.desc ? 'descending' : 'ascending') : 'none'} className={col.num ? 'text-right' : undefined}>
@@ -41,7 +44,7 @@ const SortHeader = ({ col, sort, onSort }) => {
 const StudentTable = ({ data, loading, sort, onSort, onPage }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const open = (id) => navigate(`/staff/students/${id}`, { state: { from: `${location.pathname}${location.search}` } });
+  const open = (id) => navigate(`/dashboard/students/${id}`, { state: { from: `${location.pathname}${location.search}` } });
 
   if (loading && !data) {
     return (
@@ -75,7 +78,7 @@ const StudentTable = ({ data, loading, sort, onSort, onPage }) => {
             <Tr key={s.id} onClick={() => open(s.id)} className="align-top">
               <Td className="min-w-[13rem]">
                 <Link
-                  to={`/staff/students/${s.id}`}
+                  to={`/dashboard/students/${s.id}`}
                   state={{ from: `${location.pathname}${location.search}` }}
                   onClick={(e) => e.stopPropagation()}
                   className="font-semibold text-ink hover:text-primary-700 hover:underline"
@@ -84,12 +87,15 @@ const StudentTable = ({ data, loading, sort, onSort, onPage }) => {
                 </Link>
                 <span className="block text-xs text-ink-2">{s.email}</span>
               </Td>
-              <Td className="min-w-[11rem]"><AttentionChips reasons={s.needsAttention} empty={<span className="text-ink-muted">-</span>} /></Td>
-              <Td className="whitespace-nowrap">{s.group || <span className="text-ink-muted">-</span>}</Td>
-              <Td className="text-right tabular-nums">{s.interviewsCompleted}</Td>
-              <Td className="text-right tabular-nums">{fmtNum(s.latestInterviewScore)}</Td>
-              <Td className="text-right tabular-nums">{fmtNum(s.avgInterviewScore)}</Td>
-              <Td className="text-right tabular-nums">{fmtNum(s.latestCvMatch, '%')}</Td>
+              <Td className="min-w-[11rem]"><AttentionChips reasons={s.attention} empty={dash} /></Td>
+              <Td className="whitespace-nowrap">{s.group || dash}</Td>
+              <Td className="min-w-[9rem]">{s.targetRoleTitle || dash}</Td>
+              <Td className="text-right tabular-nums">{fmtNum(s.cvScore, '%')}</Td>
+              <Td className="whitespace-nowrap text-right tabular-nums">
+                {fmtNum(s.lastInterviewScore)}
+                {LEVEL_LABELS[s.lastLevelReached] && <span className="block text-xs text-ink-2">reached {LEVEL_LABELS[s.lastLevelReached]}</span>}
+              </Td>
+              <Td><Sparkline values={s.trend} /></Td>
               <Td className="text-right tabular-nums">{s.practiceSolved}</Td>
               <Td className="whitespace-nowrap"><span title={fmtDate(s.lastActive)}>{fmtLastActive(s.lastActive)}</span></Td>
             </Tr>

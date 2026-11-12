@@ -4,7 +4,7 @@ export const ROLES = {
   ADMIN: 'university_admin',
 };
 
-// Lecturer dashboard (/staff and the student pages under it). Admins open it as "Students".
+// The dashboard (/dashboard and the student pages under it): lecturers see their groups, admins the whole university.
 export const STAFF_ROLES = [ROLES.LECTURER, ROLES.ADMIN];
 
 export const ROLE_LABELS = {
@@ -18,7 +18,7 @@ export const homeForRole = (role) => {
     case ROLES.ADMIN:
       return '/manage-people';
     case ROLES.LECTURER:
-      return '/staff';
+      return '/dashboard';
     default:
       return '/fresher-dashboard';
   }

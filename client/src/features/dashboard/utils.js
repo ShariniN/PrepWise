@@ -1,4 +1,4 @@
-// Formatting helpers for the lecturer dashboard (/staff). The server does all the maths; these only print it.
+// Formatting helpers for the dashboard (/dashboard). The server does all the maths; these only print it.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -31,27 +31,23 @@ export const fmtDuration = (sec) => {
   return m ? `${m} min ${s} s` : `${s} s`;
 };
 
-// Short neutral labels for the needs-attention reasons; the server's full message goes in the tooltip.
-export const attentionLabel = (r) => {
-  switch (r.code) {
-    case 'no_interview': return 'No mock interview';
-    case 'no_cv': return 'No CV analysis';
-    case 'low_interview_score': return `Interview score ${r.value} (under ${r.threshold})`;
-    case 'low_cv_match': return `CV match ${r.value}% (under ${r.threshold}%)`;
-    case 'inactive_30_days': return isNum(r.days) ? `Inactive ${r.days} days` : 'No recorded activity';
-    default: return r.message || r.code;
-  }
-};
-
+// The server sends each needs-attention flag with its plain label; these are for the filter.
 export const ATTENTION_FILTERS = [
   { value: '', label: 'Everyone' },
   { value: 'any', label: 'Anything to follow up' },
-  { value: 'no_interview', label: 'No mock interview' },
-  { value: 'no_cv', label: 'No CV analysis' },
-  { value: 'low_interview_score', label: 'Interview score under 50' },
-  { value: 'low_cv_match', label: 'CV match under 50%' },
-  { value: 'inactive_30_days', label: 'Inactive for 30+ days' },
+  { value: 'no_cv', label: 'No CV yet' },
+  { value: 'no_interview', label: 'No interview yet' },
+  { value: 'inactive_14_days', label: 'Inactive 14+ days' },
+  { value: 'score_drop_15', label: 'Score dropped 15+ points' },
 ];
+
+export const LEVEL_LABELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+// "68, reached Hard"; either part may be missing.
+export const fmtScoreLevel = (score, level) => {
+  const parts = [isNum(score) ? `${score}` : null, LEVEL_LABELS[level] ? `reached ${LEVEL_LABELS[level]}` : null].filter(Boolean);
+  return parts.length ? parts.join(', ') : '-';
+};
 
 export const CATEGORIES = [
   { key: 'behavioural', label: 'Behavioural' },

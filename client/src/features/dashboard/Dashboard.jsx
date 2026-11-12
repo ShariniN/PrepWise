@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Download, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AppShell from '../../components/AppShell';
-import { Button, Card, Field, Input, Select } from '../../components/ui';
+import { Button, Card, EmptyState, Field, Input, Select } from '../../components/ui';
 import { ErrorState } from '../../components/DataStates';
 import OverviewPanel, { OverviewSkeleton } from './components/OverviewPanel';
 import StudentTable from './components/StudentTable';
@@ -20,10 +20,11 @@ const PAGE_SIZE = 25;
 // attention filter value -> API query
 const attentionParams = (a) => (a === 'any' ? { needsAttention: 1 } : a ? { attention: a } : {});
 
-// Lecturer home: how the university's students do in mock interviews, CV analysis and Practice.
+// One dashboard: lecturers see the students of the groups assigned to them, admins the whole university and its seats.
 // Filters live in the URL so they survive opening a student and coming back.
-const StaffDashboard = () => {
+const Dashboard = () => {
   const { role } = useContext(AppContext);
+  const isAdmin = role === ROLES.ADMIN;
   const [params, setParams] = useSearchParams();
   const group = params.get('group') || '';
   const search = params.get('q') || '';
@@ -58,6 +59,7 @@ const StaffDashboard = () => {
   const students = useApiData(() => listStudents(query), JSON.stringify(query));
 
   const groups = overview.data?.groups || [];
+  const noGroups = overview.data?.noGroupsAssigned === true || students.data?.noGroupsAssigned === true;
 
   const exportCsv = async () => {
     setExporting(true);
@@ -73,18 +75,16 @@ const StaffDashboard = () => {
 
   return (
     <AppShell
-      eyebrow={role === ROLES.ADMIN ? 'University admin' : 'Lecturer'}
-      title="Students"
-      subtitle={(
-        <>
-          How your students do in mock interviews, CV analysis and Practice.
-        </>
-      )}
-      actions={(
+      eyebrow={isAdmin ? 'University admin' : 'Lecturer'}
+      title="Dashboard"
+      subtitle={isAdmin
+        ? 'How every student in your university does in mock interviews, CV analysis and Practice.'
+        : 'How the students in your groups do in mock interviews, CV analysis and Practice.'}
+      actions={noGroups ? null : (
         <Field label="Group" className="w-full sm:w-56">
           {(p) => (
             <Select {...p} value={group} onChange={(e) => update({ group: e.target.value })}>
-              <option value="">All students</option>
+              <option value="">{isAdmin ? 'All students' : 'All my groups'}</option>
               {groups.map((g) => <option key={g} value={g}>{g}</option>)}
               {group && !groups.includes(group) && <option value={group}>{group}</option>}
             </Select>
@@ -92,6 +92,11 @@ const StaffDashboard = () => {
         </Field>
       )}
     >
+      {noGroups ? (
+        <Card as="section">
+          <EmptyState title="No groups assigned yet" description="No groups assigned yet. Ask your administrator to assign your groups." className="!py-12" />
+        </Card>
+      ) : (
       <div className="space-y-8">
         <section aria-label="Overview">
           {overview.error && <ErrorState message={overview.error} onRetry={overview.reload} />}
@@ -107,7 +112,7 @@ const StaffDashboard = () => {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 id="st-h" className="font-display text-xl font-semibold text-ink">{group ? `Students in ${group}` : 'All students'}</h2>
-              <p className="mt-1 text-sm text-ink-2">Select a student to see their interviews, CVs, skills and Practice.</p>
+              <p className="mt-1 text-sm text-ink-2">Select a student to see their interviews, CVs and Practice.</p>
             </div>
             <div className="flex flex-col items-start gap-1 sm:items-end">
               <Button variant="secondary" size="sm" loading={exporting} onClick={exportCsv} icon={<Download size={15} aria-hidden="true" />}>
@@ -141,8 +146,9 @@ const StaffDashboard = () => {
           />
         </Card>
       </div>
+      )}
     </AppShell>
   );
 };
 
-export default StaffDashboard;
+export default Dashboard;

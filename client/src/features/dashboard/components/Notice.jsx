@@ -1,16 +1,5 @@
 import React from 'react';
-import { Eye, Info, ShieldAlert } from 'lucide-react';
-
-// The API's own notice text (e.g. "Only 3 student(s) have data here..."), shown as returned.
-export const DataNotice = ({ notice }) => {
-  if (!notice) return null;
-  return (
-    <p className="flex items-start gap-2.5 rounded-2xl border border-sun-200 bg-sun-50 p-3.5 text-sm text-ink" role="note">
-      <ShieldAlert size={16} className="mt-0.5 shrink-0 text-sun-700" aria-hidden="true" />
-      <span><span className="font-semibold">Insufficient data. </span>{notice}</span>
-    </p>
-  );
-};
+import { Eye, Info } from 'lucide-react';
 
 // Small grey note, e.g. how many answers were left out of the averages.
 export const FootNote = ({ children }) => (

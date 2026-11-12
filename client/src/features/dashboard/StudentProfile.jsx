@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import AppShell from '../../components/AppShell';
 import ScoreBreakdown from '../cv/components/ScoreBreakdown';
-import { Badge, Button, Card, CardTitle, EmptyState, Skeleton, Table, THead, TBody, Tr, Th, Td, Tabs, TabPanel } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, Skeleton, Table, THead, TBody, Tr, Th, Td, Tabs, TabPanel } from '../../components/ui';
 import { ErrorState } from '../../components/DataStates';
 import MetricTile from './components/MetricTile';
 import AttentionChips from './components/AttentionChips';
@@ -11,7 +11,7 @@ import DeliverySummary from './components/DeliverySummary';
 import { FootNote, PrivacyNote } from './components/Notice';
 import useApiData from '../../hooks/useApiData';
 import { getStudent } from './api';
-import { CATEGORIES, fmtDate, fmtLastActive, fmtNum } from './utils';
+import { CATEGORIES, LEVEL_LABELS, fmtDate, fmtLastActive, fmtNum } from './utils';
 
 const STATUS_LABELS = { created: 'Not started', in_progress: 'In progress', completed: 'Completed', cancelled: 'Cancelled' };
 const STATUS_TONE = { completed: 'success', in_progress: 'primary', created: 'neutral', cancelled: 'neutral' };
@@ -19,7 +19,7 @@ const STATUS_TONE = { completed: 'success', in_progress: 'primary', created: 'ne
 const Interviews = ({ student, interviews, delivery, from }) => {
   const navigate = useNavigate();
   if (!interviews.length) return <EmptyState title="No mock interviews yet" description="Interviews appear here once the student starts one." className="!py-10" />;
-  const open = (iv) => navigate(`/staff/students/${student.id}/interviews/${iv.id}`, { state: { from } });
+  const open = (iv) => navigate(`/dashboard/students/${student.id}/interviews/${iv.id}`, { state: { from } });
   return (
     <div className="space-y-5">
       <Table className="!shadow-none">
@@ -28,6 +28,7 @@ const Interviews = ({ student, interviews, delivery, from }) => {
           <Tr>
             <Th>Date</Th><Th>Role</Th><Th>Status</Th><Th className="text-right">Score</Th>
             {CATEGORIES.map((c) => <Th key={c.key} className="text-right">{c.label}</Th>)}
+            <Th>Level reached</Th>
             <Th>Readiness</Th>
           </Tr>
         </THead>
@@ -35,7 +36,7 @@ const Interviews = ({ student, interviews, delivery, from }) => {
           {interviews.map((iv) => (
             <Tr key={iv.id} onClick={() => open(iv)} className="align-top">
               <Td className="whitespace-nowrap">
-                <Link to={`/staff/students/${student.id}/interviews/${iv.id}`} state={{ from }} onClick={(e) => e.stopPropagation()}
+                <Link to={`/dashboard/students/${student.id}/interviews/${iv.id}`} state={{ from }} onClick={(e) => e.stopPropagation()}
                   className="font-semibold text-ink hover:text-primary-700 hover:underline">
                   {fmtDate(iv.date)}
                 </Link>
@@ -49,6 +50,7 @@ const Interviews = ({ student, interviews, delivery, from }) => {
               </Td>
               <Td className="text-right font-semibold tabular-nums">{fmtNum(iv.score)}</Td>
               {CATEGORIES.map((c) => <Td key={c.key} className="text-right tabular-nums">{fmtNum(iv.categoryScores?.[c.key])}</Td>)}
+              <Td className="whitespace-nowrap">{LEVEL_LABELS[iv.levelReached] || '-'}</Td>
               <Td className="whitespace-nowrap">{iv.readinessLevel || '-'}</Td>
             </Tr>
           ))}
@@ -75,7 +77,7 @@ const List = ({ title, items }) => (
 );
 
 const CvAnalyses = ({ analyses }) => {
-  if (!analyses.length) return <EmptyState title="No CV analyses yet" description="Analyses appear here once the student checks a CV against a job." className="!py-10" />;
+  if (!analyses.length) return <EmptyState title="No CV analyses yet" description="Analyses appear here once the student checks a CV against their target role." className="!py-10" />;
   return (
     <div className="space-y-5">
       {analyses.map((a) => (
@@ -92,6 +94,7 @@ const CvAnalyses = ({ analyses }) => {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h4 className="font-semibold text-ink">{r.jobTitle || 'Job'}{r.company ? ` at ${r.company}` : ''}</h4>
+                  <Badge tone={r.kind === 'target_role' ? 'primary' : 'neutral'} className="mt-1">{r.kind === 'target_role' ? 'Target role' : 'Pasted job description'}</Badge>
                   {r.jobExcerpt && <p className="mt-0.5 text-sm text-ink-2">{r.jobExcerpt}</p>}
                 </div>
                 <div className="text-right">
@@ -110,31 +113,6 @@ const CvAnalyses = ({ analyses }) => {
           ))}
         </Card>
       ))}
-    </div>
-  );
-};
-
-const SkillRow = ({ s }) => (
-  <li className="flex items-center justify-between gap-3 border-t border-line py-2 first:border-t-0">
-    <span className="min-w-0 text-sm text-ink">{s.name}{s.category && <span className="text-ink-2"> ({s.category})</span>}</span>
-    <span className="shrink-0 text-sm font-semibold text-ink tabular-nums">{s.proficiencyLevel}/10</span>
-  </li>
-);
-
-const Skills = ({ skills }) => {
-  if (!skills) return <EmptyState title="No skills self-assessment yet" description="The student has not rated their skills." className="!py-10" />;
-  return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <MetricTile label="Assessed" value={fmtDate(skills.assessedAt)} />
-        <MetricTile label="Skills rated" value={skills.skillsRated} />
-        <MetricTile label="Average self-rating" value={skills.averageProficiency} suffix=" / 10" className="col-span-2 md:col-span-1" />
-      </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="!shadow-none"><CardTitle>Rated strongest</CardTitle><ul className="m-0 list-none p-0">{skills.strongest.map((s) => <SkillRow key={s.name} s={s} />)}</ul></Card>
-        <Card className="!shadow-none"><CardTitle>Rated weakest</CardTitle><ul className="m-0 list-none p-0">{skills.weakest.map((s) => <SkillRow key={s.name} s={s} />)}</ul></Card>
-      </div>
-      <FootNote>Ratings are the student&apos;s own view of their proficiency (1 to 10), not a test result.</FootNote>
     </div>
   );
 };
@@ -166,7 +144,7 @@ const ProfileSkeleton = () => (
 const StudentProfile = () => {
   const { id } = useParams();
   const location = useLocation();
-  const back = location.state?.from || '/staff';
+  const back = location.state?.from || '/dashboard';
   const [tab, setTab] = useState('interviews');
   const { data, error, loading } = useApiData(() => getStudent(id), id);
   useEffect(() => { window.scrollTo(0, 0); }, [id]);
@@ -180,11 +158,10 @@ const StudentProfile = () => {
     );
   }
 
-  const { student, summary, interviews, cvAnalyses, skills, practice, delivery } = data;
+  const { student, summary, interviews, cvAnalyses, practice, delivery } = data;
   const tabs = [
     { id: 'interviews', label: `Mock interviews (${interviews.length})` },
     { id: 'cv', label: `CV analyses (${cvAnalyses.length})` },
-    { id: 'skills', label: 'Skills' },
     { id: 'practice', label: 'Practice' },
   ];
 
@@ -198,6 +175,8 @@ const StudentProfile = () => {
           <span aria-hidden="true">|</span>
           <span>{student.group ? `Group: ${student.group}` : 'No group'}</span>
           <span aria-hidden="true">|</span>
+          <span>{summary.targetRoleTitle ? `Target role: ${summary.targetRoleTitle}` : 'No target role'}</span>
+          <span aria-hidden="true">|</span>
           <span>Last active: {fmtLastActive(summary.lastActive)}</span>
         </span>
       )}
@@ -207,15 +186,16 @@ const StudentProfile = () => {
       <div className="space-y-6">
         <section aria-label="Summary" className="space-y-3">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <MetricTile label="Interviews completed" value={summary.interviewsCompleted} />
-            <MetricTile label="Average interview score" value={summary.avgInterviewScore} hint={`Latest: ${fmtNum(summary.latestInterviewScore)}`} />
-            <MetricTile label="Latest CV match" value={summary.latestCvMatch} suffix="%" />
+            <MetricTile label="CV score" value={summary.cvScore} suffix="%" hint="Against the target role" />
+            <MetricTile label="Last interview score" value={summary.lastInterviewScore}
+              hint={LEVEL_LABELS[summary.lastLevelReached] ? `Reached ${LEVEL_LABELS[summary.lastLevelReached]}` : `Trend: ${summary.trend.length ? summary.trend.join(', ') : '-'}`} />
+            <MetricTile label="Interviews completed" value={interviews.filter((iv) => iv.status === 'completed').length} />
             <MetricTile label="Practice solved" value={summary.practiceSolved} />
           </div>
-          {summary.needsAttention.length > 0 && (
+          {summary.attention.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
               <span className="font-medium text-ink">To follow up:</span>
-              <AttentionChips reasons={summary.needsAttention} />
+              <AttentionChips reasons={summary.attention} />
             </div>
           )}
         </section>
@@ -225,7 +205,6 @@ const StudentProfile = () => {
           <Interviews student={student} interviews={interviews} delivery={delivery} from={back} />
         </TabPanel>
         <TabPanel id="cv" value={tab} idBase="sp"><CvAnalyses analyses={cvAnalyses} /></TabPanel>
-        <TabPanel id="skills" value={tab} idBase="sp"><Skills skills={skills} /></TabPanel>
         <TabPanel id="practice" value={tab} idBase="sp"><Practice practice={practice} /></TabPanel>
       </div>
     </AppShell>

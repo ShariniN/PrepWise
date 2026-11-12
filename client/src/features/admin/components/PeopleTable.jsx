@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import api, { errorMessage } from '../../../lib/apiClient';
 import { ROLE_LABELS } from '../../../lib/roles';
-import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../../../components/ui';
+import { Badge, Button, Card, EmptyState, Input, Modal, Select, Skeleton, Table, THead, TBody, Tr, Th, Td } from '../../../components/ui';
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';
 
@@ -51,6 +51,87 @@ const GroupCell = ({ person, onChanged }) => {
       <Button type="submit" size="sm" loading={saving}>Save</Button>
       <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
     </form>
+  );
+};
+
+// A lecturer sees the students of these groups on the dashboard.
+// PATCH /api/institution/people/:id/assigned-groups; the choices come from GET /api/institution/groups.
+const LecturerGroupsCell = ({ person, onChanged }) => {
+  const assigned = person.assignedGroups || [];
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [chosen, setChosen] = useState(assigned);
+  const [saving, setSaving] = useState(false);
+  const who = person.name || person.email;
+
+  const start = async () => {
+    setChosen(assigned);
+    setOptions(null);
+    setLoadError('');
+    setOpen(true);
+    try {
+      const { data } = await api.get('/api/institution/groups');
+      // Keep groups that are assigned but have no students yet, so saving never drops them silently.
+      setOptions([...new Set([...(data.groups || []), ...assigned])].sort((a, b) => a.localeCompare(b)));
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load the groups'));
+    }
+  };
+
+  const toggle = (g) => setChosen((c) => (c.includes(g) ? c.filter((x) => x !== g) : [...c, g]));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/api/institution/people/${person.id}/assigned-groups`, { groups: chosen });
+      toast.success(chosen.length ? `${who} now sees ${chosen.length === 1 ? '1 group' : `${chosen.length} groups`}` : `${who} has no groups now`);
+      setOpen(false);
+      onChanged();
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not change the groups'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <span className={assigned.length ? '' : 'text-ink-muted'}>{assigned.length ? `Groups: ${assigned.join(', ')}` : 'No groups'}</span>
+      <button type="button" className={linkBtn} onClick={start} aria-label={`Edit groups of ${who}`}>Edit groups</button>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Groups for ${who}`}
+        description="The lecturer sees the students of these groups on the dashboard."
+        size="sm"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button loading={saving} disabled={!options} onClick={save}>Save groups</Button>
+          </>
+        )}
+      >
+        {loadError && <p role="alert" className="text-sm text-danger-700">{loadError}</p>}
+        {!options && !loadError && <Skeleton className="h-20 w-full" />}
+        {options && !options.length && <p className="text-sm text-ink-2">No student is in a group yet. Set a group on a student first.</p>}
+        {options && options.length > 0 && (
+          <fieldset className="m-0 border-0 p-0">
+            <legend className="sr-only">Groups</legend>
+            <ul className="m-0 max-h-72 list-none space-y-2 overflow-y-auto p-0">
+              {options.map((g) => (
+                <li key={g}>
+                  <label className="flex items-center gap-2 text-sm text-ink">
+                    <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={chosen.includes(g)} onChange={() => toggle(g)} />
+                    {g}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        )}
+      </Modal>
+    </div>
   );
 };
 
@@ -168,7 +249,11 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
               <Tr key={p.id} className="align-top">
                 <Td className="whitespace-nowrap font-medium">{p.name}</Td>
                 <Td className="whitespace-nowrap">{p.email}</Td>
-                <Td><GroupCell key={`${p.id}-${p.group}`} person={p} onChanged={onChanged} /></Td>
+                <Td>
+                  {p.role === 'lecturer'
+                    ? <LecturerGroupsCell key={`${p.id}-${(p.assignedGroups || []).join('|')}`} person={p} onChanged={onChanged} />
+                    : <GroupCell key={`${p.id}-${p.group}`} person={p} onChanged={onChanged} />}
+                </Td>
                 <Td className="whitespace-nowrap">
                   {ROLE_LABELS[p.role] || (
                     <span title={`Stored role: ${p.role}`}>Legacy role <span className="text-ink-muted">(no access)</span></span>

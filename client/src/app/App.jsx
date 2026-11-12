@@ -11,7 +11,7 @@ import ProfileSettings from '../features/profile/ProfileSettings'
 import CVAnalyzer from '../features/cv/CVAnalyzer'
 import AcceptInvite from '../features/auth/AcceptInvite'
 import Interview from '../features/interview/Interview'
-import StaffDashboard from '../features/staff/StaffDashboard'
+import Dashboard from '../features/dashboard/Dashboard'
 import ManagePeople from '../features/admin/ManagePeople'
 import PracticeList from '../features/practice/PracticeList'
 import PracticeQuestion from '../features/practice/PracticeQuestion'
@@ -19,9 +19,8 @@ import DemoBanner from './DemoBanner'
 import ProtectedRoute from './ProtectedRoute'
 import NotFound from './NotFound'
 import { ROLES, STAFF_ROLES } from '../lib/roles'
-import AdminOverview from '../features/admin/AdminOverview'
-import StudentProfile from '../features/staff/StudentProfile'
-import StudentInterview from '../features/staff/StudentInterview'
+import StudentProfile from '../features/dashboard/StudentProfile'
+import StudentInterview from '../features/dashboard/StudentInterview'
 
 // Dev-only component gallery; the import is dropped from production builds.
 const UiKit = import.meta.env.DEV ? lazy(() => import('./UiKit')) : null;
@@ -48,11 +47,10 @@ const App = () => {
         <Route path='/practice/:id' element={<ProtectedRoute allow={[ROLES.STUDENT]}><PracticeQuestion/></ProtectedRoute>}/>
 
         {/* Staff and admin routes */}
-        <Route path='/staff' element={<ProtectedRoute allow={STAFF_ROLES}><StaffDashboard/></ProtectedRoute>}/>
-        <Route path='/staff/students/:id' element={<ProtectedRoute allow={STAFF_ROLES}><StudentProfile/></ProtectedRoute>}/>
-        <Route path='/staff/students/:id/interviews/:interviewId' element={<ProtectedRoute allow={STAFF_ROLES}><StudentInterview/></ProtectedRoute>}/>
+        <Route path='/dashboard' element={<ProtectedRoute allow={STAFF_ROLES}><Dashboard/></ProtectedRoute>}/>
+        <Route path='/dashboard/students/:id' element={<ProtectedRoute allow={STAFF_ROLES}><StudentProfile/></ProtectedRoute>}/>
+        <Route path='/dashboard/students/:id/interviews/:interviewId' element={<ProtectedRoute allow={STAFF_ROLES}><StudentInterview/></ProtectedRoute>}/>
         <Route path='/manage-people' element={<ProtectedRoute allow={[ROLES.ADMIN]}><ManagePeople/></ProtectedRoute>}/>
-        <Route path='/admin-overview' element={<ProtectedRoute allow={[ROLES.ADMIN]}><AdminOverview/></ProtectedRoute>}/>
 
         {/* Any signed-in role */}
         <Route path='/profile-settings' element={<ProtectedRoute><ProfileSettings/></ProtectedRoute>}/>

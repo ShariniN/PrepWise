@@ -75,7 +75,7 @@ const ManagePeople = () => {
   return (
     <AppShell
       title="Manage your university"
-      subtitle={<Link to="/admin-overview" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Adoption and renewal overview</Link>}
+      subtitle={<Link to="/dashboard" className="font-medium text-primary-700 underline underline-offset-2 hover:text-primary-800">Student progress and seat usage are on the dashboard</Link>}
     >
       <datalist id="people-groups">{groups.map((g) => <option key={g} value={g} />)}</datalist>
       <div className="space-y-6">
