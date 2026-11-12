@@ -11,6 +11,8 @@ const institutionSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'suspended', 'archived'], default: 'active' },
   // When true, people with an approved email domain can create their own student account.
   selfSignup: { type: Boolean, default: false },
+  // Short self-expiring lock that serialises seat-taking (see services/seatLock.js).
+  seatLockUntil: { type: Date, default: null },
   // The job roles students practise for. Edited by the university admin.
   targetRoles: [{
     title: { type: String, required: true, trim: true, maxlength: 80 },

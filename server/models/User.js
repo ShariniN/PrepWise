@@ -109,14 +109,6 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
-  verifyOtp: {
-    type: String,
-    default: ''
-  },
-  verifyOtpExpireAt: {
-    type: Number,
-    default: 0
-  },
   resetOtp: {
     type: String,
     default: ''
@@ -191,9 +183,7 @@ userSchema.pre('save', function(next) {
 userSchema.methods.toJSON = function() {
   const userObject = this.toObject();
   delete userObject.password;
-  delete userObject.verifyOtp;
   delete userObject.resetOtp;
-  delete userObject.verifyOtpExpireAt;
   delete userObject.resetOtpExpireAt;
   delete userObject.inviteTokenHash;
   delete userObject.inviteExpiresAt;

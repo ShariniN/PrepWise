@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import AuthLayout from './components/AuthLayout';
 import { Button, Field, Input } from '../../components/ui';
 import { Mail, Lock } from 'lucide-react';
@@ -20,6 +20,7 @@ const Login = () => {
   // Form fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [needsVerify, setNeedsVerify] = useState(false);
 
   // Already signed in: go to your own home instead of seeing the login form again.
   if (!authLoading && isLoggedin && role) return <Navigate to={homeForRole(role)} replace />;
@@ -47,8 +48,18 @@ const Login = () => {
       }
     } catch (error) {
       // Handle errors from server or network
+      setNeedsVerify(error.response?.data?.code === "EMAIL_NOT_VERIFIED");
       const msg = error.response?.data?.message || error.message || "Login failed";
       toast.error(msg);
+    }
+  };
+
+  const resend = async () => {
+    try {
+      const { data } = await axios.post(backendUrl + "/api/auth/resend-verification", { email });
+      toast.success(data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not send a new link");
     }
   };
 
@@ -56,7 +67,7 @@ const Login = () => {
     <AuthLayout
       title="Login to Your Account"
       subtitle="Welcome back. Pick up where you left off."
-      footer={<p>Your university invites you by email.</p>}
+      footer={<p>New here? <Link to="/signup" className="text-primary-700 font-medium hover:underline">Create an account</Link></p>}
     >
       <form onSubmit={onSubmitHandler} className="space-y-4">
         {/* Email Field */}
@@ -101,6 +112,13 @@ const Login = () => {
             Forgot Password?
           </button>
         </div>
+
+        {needsVerify && (
+          <p className="text-sm text-ink" role="status">
+            Your email is not verified yet.{" "}
+            <button type="button" onClick={resend} className="rounded font-medium text-primary-700 hover:underline">Send me a new link</button>
+          </p>
+        )}
 
         {/* Submit Button */}
         <Button type="submit" block size="lg">

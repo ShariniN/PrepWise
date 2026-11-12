@@ -1,4 +1,4 @@
-export const EMAIL_VERIFY_TEMPLATE = `
+export const VERIFY_LINK_TEMPLATE = `
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 
@@ -75,22 +75,22 @@ export const EMAIL_VERIFY_TEMPLATE = `
                       </tr>
                       <tr>
                         <td style="padding: 0 0 10px; font-size: 14px; line-height: 150%;">
-                          You are just one step away to verify your account for this email: <span style="color: #4C83EE;">{{email}}</span>.
+                          Confirm that <span style="color: #4C83EE;">{{email}}</span> is your university email to finish creating your PrepWise account.
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 0 0 16px; font-size: 14px; line-height: 150%; font-weight: 700;">
-                          Use below OTP to verify your account.
+                          Select the button below to verify your email.
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 0 0 24px;">
-                          <p class="button" >{{otp}}</p>
+                          <a class="button" href="{{link}}">Verify my email</a>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 0 0 10px; font-size: 14px; line-height: 150%;">
-                          This OTP is valid for 24 hours.
+                          This link is valid for 24 hours and works once. If you did not sign up, you can ignore this email.
                         </td>
                       </tr>
                     </tbody>

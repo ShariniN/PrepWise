@@ -3,11 +3,12 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import userModel from "../../models/User.js";
 import transporter from "../../config/nodemailer.js";
-import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from "../../config/emailTemplates.js";
+import { PASSWORD_RESET_TEMPLATE } from "../../config/emailTemplates.js";
 import { hashToken } from "../../services/inviteTokens.js";
 import { audit } from "../../services/audit.js";
 import { isKnownRole } from "../../config/roles.js";
 import { passwordOk, PASSWORD_MESSAGE } from "../../services/accountRules.js";
+import { startSignup, resendVerification, completeVerification, exposeVerifyLinks, SignupError, SIGNUP_MESSAGE, RESEND_MESSAGE } from "./auth.signup.js";
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -96,6 +97,49 @@ export const acceptInvite = async (req, res) => {
   }
 };
 
+const sessionBody = (user) => ({
+  success: true,
+  role: user.role,
+  institutionId: user.institutionId,
+  accountType: user.accountType,
+  isAccountVerified: user.isAccountVerified || false,
+  needsVerification: !user.isAccountVerified,
+  userType: "fresher",
+});
+
+export const signup = async (req, res) => {
+  try {
+    const { name, email, password } = req.body || {};
+    const { link } = await startSignup({ name, email, password });
+    return res.json({ success: true, message: SIGNUP_MESSAGE, ...(link && exposeVerifyLinks() ? { devVerificationLink: link } : {}) });
+  } catch (error) {
+    if (error instanceof SignupError) return res.status(error.status).json({ success: false, code: error.code, message: error.message });
+    console.error("Signup error:", error);
+    return res.status(500).json({ success: false, message: "Could not sign you up" });
+  }
+};
+
+export const verifyEmailLink = async (req, res) => {
+  try {
+    const user = await completeVerification((req.body || {}).token);
+    res.cookie("token", signToken(user), { ...cookieOptions(), maxAge: 7 * 24 * 60 * 60 * 1000 });
+    return res.json(sessionBody(user));
+  } catch (error) {
+    if (error instanceof SignupError) return res.status(error.status).json({ success: false, code: error.code, message: error.message });
+    console.error("Verify email error:", error);
+    return res.status(500).json({ success: false, message: "Could not verify your email" });
+  }
+};
+
+export const resendVerificationLink = async (req, res) => {
+  try {
+    await resendVerification((req.body || {}).email);
+  } catch (error) {
+    console.error("Resend verification error:", error);
+  }
+  return res.json({ success: true, message: RESEND_MESSAGE });
+};
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -118,6 +162,9 @@ export const login = async (req, res) => {
     }
 
     // Checked after the password so the message only reaches someone who knows it
+    if (user.status === "unverified") {
+      return res.status(403).json({ success: false, code: "EMAIL_NOT_VERIFIED", message: "Verify your email first. We can send a new link." });
+    }
     if (user.status === "deactivated" || user.status === "invited") {
       return res.status(403).json({
         success: false,
@@ -162,70 +209,6 @@ export const logout = async (req, res) => {
     return res.json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     res.json({ success: false, message: error.message });
-  }
-};
-
-export const sendVerifyOtp = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.user.id);
-
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    if (user.isAccountVerified) {
-      return res.json({ success: false, message: "Account is already verified" });
-    }
-
-    const otp = generateOtp();
-    user.verifyOtp = otp;
-    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
-    await user.save();
-
-    await transporter.sendMail({
-      from: process.env.SENDER_EMAIL,
-      to: user.email,
-      subject: "OTP to Verify Account",
-      html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace("{{email}}", user.email),
-    });
-
-    res.json({ success: true, message: "Verification OTP sent" });
-  } catch (error) {
-    console.error("Send OTP error:", error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-export const verifyEmail = async (req, res) => {
-  const { otp } = req.body;
-
-  if (!req.user.id || !otp) {
-    return res.json({ success: false, message: "Missing details" });
-  }
-
-  try {
-    const user = await userModel.findById(req.user.id);
-
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
-      return res.json({ success: false, message: "Invalid OTP" });
-    }
-
-    if (user.verifyOtpExpireAt < Date.now()) {
-      return res.json({ success: false, message: "OTP expired" });
-    }
-
-    user.isAccountVerified = true;
-    user.verifyOtp = "";
-    user.verifyOtpExpireAt = 0;
-    await user.save();
-
-    return res.json({ success: true, message: "Email verified successfully" });
-  } catch (error) {
-    return res.json({ success: false, message: error.message });
   }
 };
 
