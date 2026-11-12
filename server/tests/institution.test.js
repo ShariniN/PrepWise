@@ -410,3 +410,48 @@ test('GET /api/institution/groups lists the distinct student groups of the calle
   assert.equal(res.status, 200);
   assert.deepEqual(res.body.groups, ['Group 1', 'Group 2']);
 });
+
+// ---------------------------------------------------------------- unverified self-signups
+const unverified = () => w.addUser({ name: 'Pending', email: 'pending@a.edu', role: 'student', institutionId: IDS.instA, status: 'unverified', isAccountVerified: false, password: undefined, emailVerifyTokenHash: 'h'.repeat(64) });
+
+test('people list filters by ?status=unverified', async () => {
+  const p = unverified();
+  const res = await request(app).get('/api/institution/people?status=unverified').set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.people.map((x) => x.id), [String(p._id)]);
+  assert.equal(res.body.people[0].status, 'unverified');
+  assert.equal(res.body.counts.byStatus.unverified, 1);
+});
+
+test('cancel sign-up removes the unverified account, frees the address for an invite, and is audited', async () => {
+  const p = unverified();
+  const res = await request(app).post(`/api/institution/people/${p._id}/cancel-signup`).set(as(adminA));
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.success, true);
+  assert.ok(!w.users.includes(p));
+  assert.equal(w.audit.at(-1).action, 'user.signup_cancel');
+  assert.equal(String(w.audit.at(-1).target), String(p._id));
+  const inv = await request(app).post('/api/institution/people/invite').set(as(adminA)).send({ email: 'pending@a.edu', role: 'student' });
+  assert.equal(inv.status, 201, inv.text);
+});
+
+test('cancel sign-up only works for unverified people of your own institution', async () => {
+  const res = await request(app).post(`/api/institution/people/${studentA._id}/cancel-signup`).set(as(adminA));
+  assert.equal(res.status, 409);
+  assert.equal(res.body.code, 'NOT_UNVERIFIED');
+  assert.ok(w.users.includes(studentA));
+  const other = w.addUser({ email: 'pb@b.edu', role: 'student', institutionId: IDS.instB, status: 'unverified' });
+  assert.equal((await request(app).post(`/api/institution/people/${other._id}/cancel-signup`).set(as(adminA))).status, 404);
+  assert.ok(w.users.includes(other));
+});
+
+test('a role change on an unverified account is 400 ACCOUNT_NOT_VERIFIED', async () => {
+  const p = unverified();
+  const same = await request(app).patch(`/api/institution/people/${p._id}/role`).set(as(adminA)).send({ role: 'student' });
+  assert.equal(same.body.code, 'ACCOUNT_NOT_VERIFIED');
+  const res = await request(app).patch(`/api/institution/people/${p._id}/role`).set(as(adminA)).send({ role: 'lecturer' });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'ACCOUNT_NOT_VERIFIED');
+  assert.equal(res.body.message, "This person hasn't verified their email yet.");
+  assert.equal(p.role, 'student');
+});

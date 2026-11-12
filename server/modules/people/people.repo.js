@@ -47,6 +47,10 @@ const peopleRepo = {
   findByEmail: (email) => userModel.findOne({ email }),
   findByIdInInstitution: (id, institutionId) => userModel.findOne({ _id: id, institutionId }),
   createUser: (data) => userModel.create(data),
+  // Only while the account is still unverified, so a sign-up verified at the same moment is never removed.
+  // Resolves to true when the account was removed.
+  deleteUnverified: async (institutionId, id) =>
+    (await userModel.deleteOne({ _id: id, institutionId, status: 'unverified' })).deletedCount === 1,
   // Atomic update instead of save(): the user pre-save hook would bump lastActive, and the lecturer dashboard
   // reads lastActive as student activity, so an admin assigning groups must not make students look active.
   updateGroup: (institutionId, id, group) =>

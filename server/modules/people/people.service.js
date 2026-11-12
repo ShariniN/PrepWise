@@ -265,6 +265,18 @@ export const resendInvite = async ({ institution, actor, id }) => {
   return { user: publicUser(user), emailSent, ...(exposeInviteLinks() ? { inviteLink: link } : {}) };
 };
 
+// Cancels a self-signup that was never verified. The account is removed (it has no password, seat or data),
+// so the address can be invited, or sign up again, straight away.
+export const cancelSignup = async ({ institution, actor, id }) => {
+  const user = await loadTarget(institution, id);
+  if (user.status !== 'unverified') throw new PeopleError(409, 'Only sign-ups waiting for email verification can be cancelled', 'NOT_UNVERIFIED');
+  if (!(await peopleRepo.deleteUnverified(institution._id, user._id))) {
+    throw new PeopleError(409, 'Only sign-ups waiting for email verification can be cancelled', 'NOT_UNVERIFIED');
+  }
+  await audit({ actor: actor.id, action: 'user.signup_cancel', target: user._id, institutionId: institution._id, meta: { email: user.email } });
+  return { cancelled: true, id: String(user._id) };
+};
+
 export const setGroup = async ({ institution, actor, id, group }) => {
   if (group === undefined) throw new PeopleError(400, 'group is required (send "" to clear it)', 'INVALID_GROUP');
   const g = cleanGroup(group);
@@ -301,6 +313,8 @@ export const changeRole = async ({ institution, actor, id, role }) => {
   if (!ROLES.includes(role)) throw new PeopleError(400, `Role must be one of: ${ROLES.join(', ')}`, 'INVALID_ROLE');
   const user = await loadTarget(institution, id);
   if (String(user._id) === String(actor.id)) throw new PeopleError(400, 'You cannot change your own role', 'SELF');
+  // A self-signup is a student until it is verified; changing its role would create staff nobody invited.
+  if (user.status === 'unverified') throw new PeopleError(400, "This person hasn't verified their email yet.", 'ACCOUNT_NOT_VERIFIED');
   if (user.role === role) throw new PeopleError(409, 'This person already has that role', 'SAME_ROLE');
   const limit = institution.contractedStudentLimit || 0;
   const countsAsSeat = user.status === 'active' || user.status === 'invited';

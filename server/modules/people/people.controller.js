@@ -2,10 +2,10 @@ import peopleRepo from './people.repo.js';
 import { institutionOf } from '../../middleware/tenancy.js';
 import {
   PeopleError, ROLES, publicUser, getUsage, inviteUser, importUsers,
-  deactivateUser, reactivateUser, resendInvite, changeRole, setGroup, cleanGroup, setAssignedGroups, listStudentGroups,
+  deactivateUser, reactivateUser, resendInvite, cancelSignup, changeRole, setGroup, cleanGroup, setAssignedGroups, listStudentGroups,
 } from './people.service.js';
 
-const STATUSES = ['invited', 'active', 'deactivated'];
+const STATUSES = ['invited', 'unverified', 'active', 'deactivated'];
 
 // Runs a handler with the caller's institution loaded and turns PeopleError into a JSON response.
 const withInstitution = (fn) => async (req, res) => {
@@ -74,6 +74,10 @@ export const reactivate = withInstitution(async (req, res, institution) => {
 
 export const resend = withInstitution(async (req, res, institution) => {
   res.json({ success: true, ...(await resendInvite({ institution, actor: req.user, id: req.params.id })) });
+});
+
+export const cancelSignupOf = withInstitution(async (req, res, institution) => {
+  res.json({ success: true, ...(await cancelSignup({ institution, actor: req.user, id: req.params.id })) });
 });
 
 export const setGroupOf = withInstitution(async (req, res, institution) => {

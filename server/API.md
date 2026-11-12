@@ -82,17 +82,18 @@ Everything here works on the admin's own university. A person outside it is `404
 
 | Method and path | Body or query | Response | Errors |
 |---|---|---|---|
-| GET `/institution/people` | query `role`, `status`, `search`, `group` | `{ success, people, counts: { total, byRole, byStatus }, usage }` | 400 unknown role or status filter, bad group |
+| GET `/institution/people` | query `role`, `status` (`invited`, `unverified`, `active`, `deactivated`), `search`, `group` | `{ success, people, counts: { total, byRole, byStatus }, usage }` | 400 unknown role or status filter, bad group |
 | GET `/institution/usage` | none | `{ success, studentLimit, activeStudents, invitedStudents, remaining }` | |
 | GET `/institution/groups` | none | `{ success, groups: [name] }` (student groups in use) | |
 | POST `/institution/people/invite` | `email`, `name?`, `role?` (default `student`), `group?` | 201 `{ success, user, emailSent, warning?, inviteLink? }` (`inviteLink` outside production only) | 400 `INVALID_EMAIL`, `INVALID_ROLE`, `INVALID_GROUP`, `DOMAIN_NOT_ALLOWED`; 409 `EMAIL_IN_USE`, `STUDENT_LIMIT_REACHED` |
 | POST `/institution/people/import` | CSV as the body (`Content-Type: text/csv`) or `{ csv }`. Columns: `email` (required), `name`, `role`, `group`. Up to 2000 rows. | `{ success, results: [{ line, email, role, status, reason?, inviteLink? }], summary, limitReached?, warning? }`. Row status is `invited`, `skipped`, `blocked_limit` or `error`. | 400 `INVALID_CSV`; 413 `TOO_MANY_ROWS` |
 | PATCH `/institution/people/:id/deactivate` | none | `{ success, user }` | 400 `SELF`; 404; 409 `ALREADY`, `LAST_ADMIN` |
 | PATCH `/institution/people/:id/reactivate` | none | `{ success, user, inviteLink?, emailSent? }` (someone who never accepted goes back to `invited`) | 404; 409 `NOT_DEACTIVATED`, `STUDENT_LIMIT_REACHED` |
-| PATCH `/institution/people/:id/role` | `role` | `{ success, user }` | 400 `INVALID_ROLE`, `SELF`; 404; 409 `SAME_ROLE`, `LAST_ADMIN` |
+| PATCH `/institution/people/:id/role` | `role` | `{ success, user }` | 400 `INVALID_ROLE`, `SELF`, `ACCOUNT_NOT_VERIFIED` (a self-signup that has not verified); 404; 409 `SAME_ROLE`, `LAST_ADMIN` |
 | PATCH `/institution/people/:id/group` | `group` (text up to 60 chars; `""` clears) | `{ success, user }` | 400 `INVALID_GROUP`; 404 |
 | PATCH `/institution/people/:id/assigned-groups` | `groups` (list of names, up to 20) | `{ success, user }`. These are the groups a lecturer sees on the dashboard. | 400 `NOT_A_LECTURER`, `INVALID_GROUPS`, `TOO_MANY_GROUPS`; 404 |
 | POST `/institution/people/:id/resend-invite` | none | `{ success, user, emailSent, inviteLink? }` | 404; 409 `NOT_INVITED` |
+| POST `/institution/people/:id/cancel-signup` | none | `{ success, cancelled: true, id }`. Removes an unverified self-signup, so the address can be invited or sign up again. | 404; 409 `NOT_UNVERIFIED` |
 
 ## University settings and target roles (`/api/institution`, university admin)
 

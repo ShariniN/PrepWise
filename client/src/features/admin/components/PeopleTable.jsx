@@ -6,7 +6,9 @@ import { Badge, Button, Card, EmptyState, Input, Modal, Select, Skeleton, Table,
 import ConfirmDialog from '../../../components/ConfirmDialog';
 import CopyLinkButton from './CopyLinkButton';
 
-const STATUS_TONE = { active: 'success', invited: 'primary', deactivated: 'neutral' };
+const STATUS_TONE = { active: 'success', invited: 'primary', unverified: 'warning', deactivated: 'neutral' };
+// A self-signup that has not clicked its verification link yet.
+const STATUS_LABEL = { unverified: 'Awaiting email verification' };
 
 const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString() : '-');
 const linkBtn = 'text-sm font-medium text-primary-700 hover:underline disabled:opacity-50';
@@ -149,10 +151,11 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
       if (kind === 'deactivate' || kind === 'cancel') res = await api.patch(`/api/institution/people/${person.id}/deactivate`);
       if (kind === 'reactivate') res = await api.patch(`/api/institution/people/${person.id}/reactivate`);
       if (kind === 'resend') res = await api.post(`/api/institution/people/${person.id}/resend-invite`);
+      if (kind === 'cancelSignup') res = await api.post(`/api/institution/people/${person.id}/cancel-signup`);
       if (kind === 'role') res = await api.patch(`/api/institution/people/${person.id}/role`, { role: pending.role });
       if (res.data.inviteLink) setLinks((l) => ({ ...l, [person.id]: res.data.inviteLink }));
       toast.success(
-        { deactivate: 'Person deactivated', cancel: 'Invitation cancelled', reactivate: 'Person reactivated', resend: 'Invitation re-sent', role: 'Role changed' }[kind]
+        { deactivate: 'Person deactivated', cancel: 'Invitation cancelled', cancelSignup: 'Sign-up cancelled', reactivate: 'Person reactivated', resend: 'Invitation re-sent', role: 'Role changed' }[kind]
       );
       setPending(null);
       onChanged();
@@ -174,6 +177,8 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
       return <ConfirmDialog {...common} danger title="Deactivate this person?" confirmLabel="Deactivate" message={`${who} will be signed out immediately and cannot log in. Their data is kept.`} />;
     if (kind === 'cancel')
       return <ConfirmDialog {...common} danger title="Cancel this invitation?" confirmLabel="Cancel invite" cancelLabel="Keep it" message={`The invitation link sent to ${person.email} stops working${person.role === 'student' ? ' and the student seat is freed' : ''}. You can reactivate ${who} later to send a new invitation.`} />;
+    if (kind === 'cancelSignup')
+      return <ConfirmDialog {...common} danger title="Cancel this sign-up?" confirmLabel="Cancel sign-up" cancelLabel="Keep it" message={`${person.email} has not verified their email yet. Their verification link stops working and the account is removed, so you can invite this address or they can sign up again.`} />;
     if (kind === 'reactivate')
       return <ConfirmDialog {...common} title="Reactivate this person?" confirmLabel="Reactivate" message={`${who} will be able to log in again. Students count toward your limit.`} />;
     if (kind === 'resend')
@@ -214,6 +219,7 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="invited">Invited</option>
+            <option value="unverified">Awaiting email verification</option>
             <option value="deactivated">Deactivated</option>
           </Select>
         </div>
@@ -260,7 +266,7 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
                   )}
                 </Td>
                 <Td>
-                  <Badge tone={STATUS_TONE[p.status] || 'neutral'}>{p.status}</Badge>
+                  <Badge tone={STATUS_TONE[p.status] || 'neutral'}>{STATUS_LABEL[p.status] || p.status}</Badge>
                   {p.status === 'invited' && p.inviteExpiresAt && <div className="mt-1 text-xs text-ink-2">expires {fmt(p.inviteExpiresAt)}</div>}
                 </Td>
                 <Td className="whitespace-nowrap">{fmt(p.lastActive)}</Td>
@@ -270,8 +276,9 @@ const PeopleTable = ({ people, loading, error, filters, setFilters, groups = [],
                     {p.status === 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'reactivate', person: p })}>Reactivate</button>}
                     {p.status === 'invited' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'resend', person: p })}>Resend invite</button>}
                     {p.status === 'invited' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'cancel', person: p })}>Cancel invite</button>}
+                    {p.status === 'unverified' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'cancelSignup', person: p })}>Cancel sign-up</button>}
                     {/* A legacy role (e.g. career_officer) was a staff role: default to lecturer, which uses no student seat. */}
-                    {p.status !== 'deactivated' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: ROLE_LABELS[p.role] ? p.role : 'lecturer' })}>Change role</button>}
+                    {p.status !== 'deactivated' && p.status !== 'unverified' && <button type="button" className={linkBtn} onClick={() => setPending({ kind: 'role', person: p, role: ROLE_LABELS[p.role] ? p.role : 'lecturer' })}>Change role</button>}
                     <CopyLinkButton link={links[p.id]} />
                   </div>
                 </Td>
