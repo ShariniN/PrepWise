@@ -7,3 +7,5 @@ for (const key of [
   'EXECUTION_PROVIDER', 'JUDGE0_URL', 'JUDGE0_API_KEY', 'JUDGE0_API_HOST',
   'JDOODLE_CLIENT_ID', 'JDOODLE_CLIENT_SECRET', 'SMTP_USER', 'SMTP_PASS',
 ]) delete process.env[key];
+// The signup mail limit counts per process, and one test file signs up more than the default 30 times.
+process.env.SIGNUP_MAIL_LIMIT = '1000';

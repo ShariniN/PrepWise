@@ -76,13 +76,14 @@ const issueLink = async (user) => {
 
 const seatsFull = async (institution) => (await seatsUsed(institution)) >= (institution.contractedStudentLimit || 0);
 
-export const startSignup = async ({ name, email, password }) => {
+// The password is chosen at verify, by whoever opens the link in the mailbox. A password sent here is
+// ignored, so someone who signs up another person's address can never choose or keep its password.
+export const startSignup = async ({ name, email }) => {
   const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (!EMAIL_RE.test(cleanEmail)) throw new SignupError(400, 'INVALID_EMAIL', 'Enter a valid email address.');
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) {
     throw new SignupError(400, 'INVALID_NAME', 'Name must be 1 to 100 characters.');
   }
-  if (!passwordOk(password)) throw new SignupError(400, 'WEAK_PASSWORD', PASSWORD_MESSAGE);
 
   const institution = await signupRepo.findSignupInstitution(cleanEmail.split('@')[1]);
   if (!institution) throw new SignupError(400, 'SIGNUP_DOMAIN_NOT_ALLOWED', DOMAIN_MESSAGE);
@@ -90,8 +91,7 @@ export const startSignup = async ({ name, email, password }) => {
   // An existing email gets the same answer as a new one, so the form cannot be used to find out who has an account.
   const existing = await signupRepo.findByEmail(cleanEmail);
   if (existing) {
-    // A fresh link for a pending signup. The password from the first attempt is kept, so a stranger
-    // who knows the address cannot choose the password of someone else's account.
+    // A fresh link for a pending signup; the old link stops working.
     return { link: existing.status === 'unverified' ? await issueLink(existing) : null };
   }
 
@@ -103,7 +103,6 @@ export const startSignup = async ({ name, email, password }) => {
     user = await signupRepo.createUser({
       name: name.trim(),
       email: cleanEmail,
-      password: await bcrypt.hash(password, 10),
       role: 'student',
       institutionId: institution._id,
       status: 'unverified',
@@ -129,8 +128,8 @@ export const resendVerification = async (email) => {
   if (user && user.status === 'unverified') await issueLink(user);
 };
 
-// Activates the account behind a link. Returns the activated user.
-export const completeVerification = async (token) => {
+// Activates the account behind a link and sets the password chosen there. Returns the activated user.
+export const completeVerification = async (token, password) => {
   const invalid = new SignupError(400, 'VERIFY_INVALID', 'This verification link is not valid. Request a new one.');
   if (typeof token !== 'string' || !/^[a-f0-9]{64}$/i.test(token)) throw invalid;
   const hash = hashToken(token);
@@ -147,11 +146,14 @@ export const completeVerification = async (token) => {
       if (!user.emailVerifyExpiresAt || new Date(user.emailVerifyExpiresAt).getTime() < Date.now()) {
         throw new SignupError(400, 'VERIFY_EXPIRED', 'This verification link has expired. Request a new one.');
       }
+      // Checked before the seat so a weak password never costs the token; nothing is saved until all checks pass.
+      if (!passwordOk(password)) throw new SignupError(400, 'WEAK_PASSWORD', PASSWORD_MESSAGE);
       const institution = await peopleRepo.getInstitution(user.institutionId);
       if (!institution || institution.status !== 'active') throw invalid;
       // The seat is taken now, not at signup, so unverified accounts never block real students.
       if (await seatsFull(institution)) throw new SignupError(409, 'SEAT_LIMIT_REACHED', SEAT_MESSAGE);
 
+      user.password = await bcrypt.hash(password, 10);
       user.status = 'active';
       user.isAccountVerified = true;
       user.emailVerifyTokenHash = '';

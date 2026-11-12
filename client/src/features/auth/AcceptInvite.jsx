@@ -2,10 +2,11 @@ import React, { useContext, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import AuthLayout from './components/AuthLayout';
+import PasswordChecklist from './components/PasswordChecklist';
 import { Button, Field, Input } from '../../components/ui';
 import { AppContext } from '../../app/AppContext';
 import api, { errorMessage, errorCode } from '../../lib/apiClient';
-import { homeForRole, passwordProblems, PASSWORD_RULES } from '../../lib/roles';
+import { homeForRole, passwordProblems } from '../../lib/roles';
 
 
 const AcceptInvite = () => {
@@ -71,13 +72,7 @@ const AcceptInvite = () => {
               <Field label="Password">
                 {(p) => <Input {...p} type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-describedby="ai-pw-rules" />}
               </Field>
-              <ul id="ai-pw-rules" className="mt-2 text-xs space-y-0.5">
-                {PASSWORD_RULES.map((r) => (
-                  <li key={r.label} className={r.test(password) ? 'text-success-700' : 'text-ink-muted'}>
-                    {r.test(password) ? '✓' : '-'} {r.label}
-                  </li>
-                ))}
-              </ul>
+              <PasswordChecklist id="ai-pw-rules" password={password} />
             </div>
             <Field label="Confirm password">
               {(p) => <Input {...p} type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />}

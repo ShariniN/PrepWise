@@ -45,17 +45,23 @@ let originalRole = null;
 try {
 // 1. Student: login form, wrong password, signed-in /login and unknown URLs
 // --- Target roles: the onboarding checks use a brand-new student, so they do not depend on what the seed or other
-// suites gave the demo students. Sign up through the API, follow the dev verification link, then use the browser.
-const signupRes = await apiClient()('POST', '/api/auth/signup', { name: 'E2E Fresh', email: freshEmail, password: freshPassword });
+// suites gave the demo students. Sign up through the API, then open the dev verification link in the browser and
+// choose the password there (sign-up itself takes no password).
+const signupRes = await apiClient()('POST', '/api/auth/signup', { name: 'E2E Fresh', email: freshEmail });
 const verifyToken = new URL(signupRes.data.devVerificationLink || 'http://x/?token=').searchParams.get('token');
 ok('sign-up gives a dev verification link', signupRes.status === 200 && !!verifyToken, `${signupRes.status} ${JSON.stringify(signupRes.data)}`);
 if (!verifyToken) throw new Error(`Sign-up of ${freshEmail} failed: ${signupRes.status} ${JSON.stringify(signupRes.data)}`);
-const verified = await apiClient()('POST', '/api/auth/verify-email', { token: verifyToken });
-ok('the verification link activates the new student', verified.status === 200, `${verified.status} ${JSON.stringify(verified.data)}`);
 
 let ctx = await newCtx();
 let p = await ctx.newPage(); watch(p, 'fresh student');
-await signIn(p, freshEmail, freshPassword);
+await p.goto(`${B}/verify-email?token=${verifyToken}`, { waitUntil: 'networkidle' });
+ok('the verification link opens a "Choose a password" form', await p.getByRole('button', { name: 'Finish signing up' }).count() === 1);
+// Opening the page must not use the link: a verify without a password is refused and leaves the token usable.
+const noPassword = await apiClient()('POST', '/api/auth/verify-email', { token: verifyToken });
+ok('opening the link does not use it, and verify without a password is refused', noPassword.status === 400 && noPassword.data.code === 'WEAK_PASSWORD', `${noPassword.status} ${JSON.stringify(noPassword.data)}`);
+await p.getByLabel('Password', { exact: true }).fill(freshPassword);
+await p.getByLabel('Confirm password').fill(freshPassword);
+await p.getByRole('button', { name: 'Finish signing up' }).click();
 await p.waitForURL(/welcome/, { timeout: 15000 }).catch(() => {});
 ok('student without a target role is sent to /welcome', /welcome/.test(p.url()), p.url());
 await p.locator('[role="radio"]').first().waitFor({ timeout: 10000 }).catch(() => {});
