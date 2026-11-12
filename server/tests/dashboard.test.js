@@ -523,3 +523,12 @@ test('studentRow tolerates missing data: no levels, no CV kind, no target role, 
   const empty = m.studentRow({ _id: newId() }, {}, new Date());
   assert.deepEqual(codes(empty), ['no_cv', 'no_interview', 'inactive_14_days']);
 });
+
+test('isTargetRoleScore ignores isNonTechRole and error results', () => {
+  const ok = { kind: 'target_role', matchPercentage: 64, scoreBreakdown: { aiAvailable: true } };
+  assert.equal(m.isTargetRoleScore(ok), true);
+  assert.equal(m.isTargetRoleScore({ ...ok, matchPercentage: 0, isNonTechRole: true }), false);
+  assert.equal(m.isTargetRoleScore({ kind: 'target_role', matchPercentage: 0, hasError: true }), false);
+  const row = m.studentRow({ _id: newId(), name: 'S' }, { cvAnalyses: [{ _id: newId(), updatedAt: new Date(), results: [{ ...ok, matchPercentage: 0, isNonTechRole: true }] }] }, new Date());
+  assert.equal(row.cvScore, null);
+});

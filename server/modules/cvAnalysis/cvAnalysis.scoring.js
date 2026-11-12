@@ -33,7 +33,29 @@ export const findSkills = (text) => {
   return [...new Set(found)];
 };
 
-export const keywordMatch = (resumeText, jobDesc) => {
+// One skill of a target role, written the way admins write them: "JavaScript or Python", "HTML and CSS",
+// "SQL basics". It is in the CV when one "or" option is, and an option is when every "and" part is.
+// A part may be singular or plural, and a trailing "basics" is ignored.
+const partRegex = (part) => {
+  const words = part.trim().toLowerCase().replace(/\s+basics?$/, '');
+  const stem = /[a-z]{3}s$/.test(words) ? words.slice(0, -1) : words;
+  return new RegExp(`(?<![a-z0-9+#])${escape(stem)}(?:s|es)?(?![a-z0-9+#])`, 'i');
+};
+const roleSkillIn = (text, skill) => skill.split(/\s+or\s+|\s*\/\s*/i).some((option) =>
+  option.split(/\s+and\s+|\s*&\s*|\s*,\s*/i).filter((p) => p.trim()).every((p) => partRegex(p).test(text)));
+
+const cleanSkills = (skills) => [...new Set((skills || []).filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim()))];
+
+// With requiredSkills (a target role's own list), those are the required skills, in the role's spelling.
+// Without them, or with an empty list, the required skills are the fixed technical terms found in the job text.
+export const keywordMatch = (resumeText, jobDesc, requiredSkills = null) => {
+  const roleSkills = cleanSkills(requiredSkills);
+  if (roleSkills.length) {
+    const text = String(resumeText || '');
+    const matched = roleSkills.filter((s) => roleSkillIn(text, s));
+    const missing = roleSkills.filter((s) => !matched.includes(s));
+    return { score: matched.length / roleSkills.length, required: roleSkills, matched, missing };
+  }
   const required = findSkills(jobDesc);
   const have = new Set(findSkills(resumeText));
   const matched = required.filter((s) => have.has(s));
@@ -53,7 +75,7 @@ export const parseScore = (raw) => {
 
 export const buildPrompt = (resumeText, jobDesc) => {
   const cut = (s) => (s.length > 4000 ? `${s.slice(0, 4000)}...` : s);
-  return `You are an experienced technical recruiter assessing a student's CV against a software internship.
+  return `You are an experienced recruiter assessing a student's CV against the internship described below.
 
 Score how well the CV fits the job, based on EVIDENCE in the CV, from 0.0 to 1.0.
 
@@ -78,8 +100,8 @@ Reply with ONLY the number, for example 0.42.`;
 
 export const AI_WEIGHT = 0.7;
 
-export const scoreResume = async ({ resumeText, jobDesc, generate }) => {
-  const kw = keywordMatch(resumeText, jobDesc);
+export const scoreResume = async ({ resumeText, jobDesc, generate, requiredSkills = null }) => {
+  const kw = keywordMatch(resumeText, jobDesc, requiredSkills);
   const base = {
     keywordScore: Number(kw.score.toFixed(3)),
     requiredSkills: kw.required,

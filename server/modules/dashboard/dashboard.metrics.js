@@ -152,9 +152,10 @@ export const countsTowardMatch = (result) => result?.scoreBreakdown?.aiAvailable
 // The result kind; documents written before results had a kind were all checked against pasted job descriptions.
 export const resultKind = (result) => (result?.kind === 'target_role' ? 'target_role' : 'job_description');
 
-// A result that counts as the student's CV score.
+// A result that counts as the student's CV score. A result flagged non-tech or failed says nothing about the CV.
 export const isTargetRoleScore = (result) => resultKind(result) === 'target_role'
-  && result?.scoreBreakdown?.aiAvailable !== false && isNum(result?.matchPercentage);
+  && result?.scoreBreakdown?.aiAvailable !== false && result?.isNonTechRole !== true && result?.hasError !== true
+  && isNum(result?.matchPercentage);
 
 // The CV controller re-analyses the same CV in place (unique userId + resumeHash), so updatedAt is the last run.
 export const cvDate = (analysis) => analysis?.updatedAt || analysis?.createdAt || null;

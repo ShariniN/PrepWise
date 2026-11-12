@@ -9,6 +9,7 @@ import CVAnalysis from '../models/CvAnalysis.js';
 import { savedResultsView } from '../modules/cvAnalysis/cvAnalysis.service.js';
 import institutionRepo from '../modules/institution/institution.repo.js';
 import { roleAsJobDescription } from '../services/targetRoles.js';
+import { DEFAULT_TARGET_ROLES } from '../config/defaultTargetRoles.js';
 import app from '../app.js';
 
 const same = (a, b) => String(a) === String(b);
@@ -368,4 +369,64 @@ test('deleting a role clears the students before the role is removed', async () 
   assert.equal(last.status, 409);
   assert.deepEqual(order, []);
   assert.equal(studentA.targetRoleId, roleBackend._id);
+});
+
+// The worst case for a non-software role: the advice model answers NON_CS_ROLE whatever it is asked.
+const stubRefusingGemini = (prompts) => mock.method(GoogleGenerativeAI.prototype, 'getGenerativeModel', () => ({
+  generateContent: async (prompt) => {
+    prompts.push(prompt);
+    let text = 'NON_CS_ROLE';
+    if (prompt.includes('extract ONLY technical skills')) text = '[]';
+    else if (prompt.includes('Reply with ONLY the number')) text = '0.6';
+    return { response: { text: () => text } };
+  },
+}));
+
+for (const title of ['Business analyst intern', 'Data analyst intern']) {
+  test(`a target-role analysis for "${title}" is scored, never 0 because of the non-CS gate`, async () => {
+    const role = { _id: newId(), ...DEFAULT_TARGET_ROLES.find((r) => r.title === title) };
+    w.institutions[IDS.instA].targetRoles = [role];
+    studentA.targetRoleId = role._id;
+    studentA.currentCV = { text: `Business student. Wrote user stories and documentation, used SQL and Excel for reports. ${'Led a club project. '.repeat(6)}`, fileName: 'cv.pdf', hash: 'h' };
+    delete process.env.GROQ_API_KEY;
+    const prompts = [];
+    stubRefusingGemini(prompts);
+    const res = await analyze({});
+    assert.equal(res.status, 200, res.text);
+    const r = res.body.analysis[0];
+    assert.equal(r.kind, 'target_role');
+    assert.equal(r.isNonTechRole, false);
+    assert.ok(r.matchPercentage > 0, `scored ${r.matchPercentage}`);
+    assert.equal(r.scoreBreakdown.aiAvailable, true);
+    assert.doesNotMatch(JSON.stringify(res.body), /Please provide a CS\/Software Engineering job description/);
+    assert.ok(!prompts.some((p) => p.includes(roleAsJobDescription(role)) && p.includes('NON_CS_ROLE')), 'the target role is never put through the non-CS check');
+    assert.equal(cvStore[0].results[0].isNonTechRole, false);
+  });
+}
+
+test('target-role missing skills come from role.skills', async () => {
+  const role = { _id: newId(), ...DEFAULT_TARGET_ROLES.find((r) => r.title === 'Business analyst intern') };
+  w.institutions[IDS.instA].targetRoles = [role];
+  studentA.targetRoleId = role._id;
+  studentA.currentCV = { text: `Wrote user stories and documentation for a club app. Used Google Sheets and SQL. ${'Volunteer work. '.repeat(8)}`, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  const b = res.body.analysis[0].scoreBreakdown;
+  assert.deepEqual(b.requiredSkills, role.skills);
+  assert.deepEqual(b.matchedSkills, ['User stories', 'Excel or Google Sheets', 'SQL basics', 'Documentation']);
+  assert.deepEqual(b.missingSkills, ['Requirements gathering', 'Process mapping', 'Stakeholder communication', 'Problem solving', 'Presentation skills']);
+});
+
+test('a pasted job description still goes through the non-CS check', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubRefusingGemini([]);
+  const res = await analyze({ jobDescriptions: JSON.stringify(['Head chef for a busy restaurant kitchen, managing a team of cooks every evening.']) });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.analysis[0].isNonTechRole, false);
+  assert.equal(res.body.analysis[1].isNonTechRole, true);
+  assert.equal(res.body.analysis[1].matchPercentage, 0);
 });

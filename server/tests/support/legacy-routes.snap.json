@@ -30,14 +30,14 @@
             "keywordScore": 0.5,
             "keywordWeight": 0.3,
             "requiredSkills": [
-              "node.js",
-              "sql"
+              "Node.js",
+              "SQL"
             ],
             "matchedSkills": [
-              "node.js"
+              "Node.js"
             ],
             "missingSkills": [
-              "sql"
+              "SQL"
             ],
             "aiError": "Unreadable AI reply: about half",
             "model": "gemini-3.6-flash"
@@ -177,14 +177,14 @@
             "keywordScore": 0.5,
             "keywordWeight": 0.3,
             "requiredSkills": [
-              "node.js",
-              "sql"
+              "Node.js",
+              "SQL"
             ],
             "matchedSkills": [
-              "node.js"
+              "Node.js"
             ],
             "missingSkills": [
-              "sql"
+              "SQL"
             ],
             "aiError": null,
             "model": "gemini-3.6-flash"

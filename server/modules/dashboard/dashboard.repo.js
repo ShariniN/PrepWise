@@ -25,7 +25,7 @@ const INTERVIEW_SUMMARY_FIELDS = [
 
 const CV_FIELDS = [
   'userId', 'createdAt', 'updatedAt', 'jobDescriptions', 'targetRoleId',
-  'results.jobIndex', 'results.kind', 'results.jobTitle', 'results.company', 'results.matchPercentage', 'results.isNonTechRole', 'results.scoreBreakdown',
+  'results.jobIndex', 'results.kind', 'results.jobTitle', 'results.company', 'results.matchPercentage', 'results.isNonTechRole', 'results.hasError', 'results.scoreBreakdown',
   'results.strengths', 'results.contentWeaknesses', 'results.structureWeaknesses', 'results.skillsMatched', 'results.skillsMissing',
 ].join(' ');
 
