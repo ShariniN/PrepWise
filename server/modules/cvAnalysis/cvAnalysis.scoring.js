@@ -1,4 +1,4 @@
-// CV-to-job match scoring. Pure functions plus one injectable AI call, so it can be tested without Gemini.
+// CV-to-job match scoring. Pure functions plus one injectable AI call, so it can be tested without a real AI.
 //
 // The score shown to students is: 70% the AI's judgement of evidence-backed fit + 30% the share of the
 // job's required skills that the CV names. Both parts are returned so the UI can explain the number.

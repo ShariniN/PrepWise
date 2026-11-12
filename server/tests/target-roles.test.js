@@ -430,3 +430,32 @@ test('a pasted job description still goes through the non-CS check', async () =>
   assert.equal(res.body.analysis[1].isNonTechRole, true);
   assert.equal(res.body.analysis[1].matchPercentage, 0);
 });
+
+test('the analyze response names no provider other than the model that scored it', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.message, 'CV analysis complete.');
+  const used = res.body.analysis[0].scoreBreakdown.model;
+  assert.ok(used, 'the scoring model is recorded');
+  assert.equal(res.body.metadata.model, used);
+  for (const label of ['apiUsed', 'geminiModel', 'realAnalysis', 'enhancedParsing']) assert.ok(!(label in res.body.metadata), label);
+  const rest = JSON.stringify(res.body).split(used).join('');
+  assert.doesNotMatch(rest, /gemini|groq|openai|hugging/i, 'no other provider is named');
+});
+
+test('without an AI score the response carries no model at all', async () => {
+  studentA.targetRoleId = roleData._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  // Over quota (429): every model is skipped at once, without the retry wait.
+  mock.method(GoogleGenerativeAI.prototype, 'getGenerativeModel', () => ({ generateContent: async () => { throw Object.assign(new Error('over quota'), { status: 429 }); } }));
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.message, 'CV analysis complete.');
+  assert.ok(!('model' in res.body.metadata));
+  assert.doesNotMatch(JSON.stringify(res.body.metadata), /gemini|groq/i);
+});

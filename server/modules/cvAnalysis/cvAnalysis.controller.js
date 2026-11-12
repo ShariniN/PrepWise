@@ -113,9 +113,12 @@ export const analyzeResume = async (req, res) => {
       targetRoleId: targetRole ? targetRole._id : null
     });
 
+    // The model that produced the score, as the scorer reported it. Nothing else names a provider.
+    const scoredBy = analysisResults.find((r) => r.scoreBreakdown?.aiAvailable && r.scoreBreakdown.model)?.scoreBreakdown.model;
+
     res.json({
       success: true,
-      message: 'Resume analysis completed successfully using enhanced Gemini API',
+      message: 'CV analysis complete.',
       analysisId: stored._id,
       resumeHash,
       resumeText: useProfileCV ? 'Profile CV content' : `Uploaded: ${resumeFileName}`,
@@ -129,9 +132,7 @@ export const analyzeResume = async (req, res) => {
         jobDescriptionCount: analysisResults.length,
         technologiesFound: extractedTechnologies.length,
         technologiesUnavailable,
-        apiUsed: 'Gemini 2.5 Flash Enhanced',
-        realAnalysis: true,
-        enhancedParsing: true
+        ...(scoredBy ? { model: scoredBy } : {})
       }
     });
   } catch (error) {
@@ -249,8 +250,7 @@ export const deleteAnalysis = async (req, res) => {
         analysisCount: analysis.results?.length || 0,
         wasSaved: analysis.isSaved,
         technologiesCount: (analysis.extractedTechnologies || []).length,
-        deletedAt: new Date().toISOString(),
-        analysisVersion: analysis.analysisMetadata?.geminiModel || 'legacy'
+        deletedAt: new Date().toISOString()
       }
     });
   } catch (error) {
