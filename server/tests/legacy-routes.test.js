@@ -183,6 +183,7 @@ test('POST /api/interviews/create: CV, target role and readiness checks, then th
   mock.method(interviewAi, 'generate', async () => { throw new Error('All AI models failed'); });
   snap('iv create no cv', await post('/api/interviews/create', {}));
   student.currentCV = { text: 'Profile CV: C++ and Qt developer with Git', fileName: 'cv.pdf' };
+  student.targetRoleId = null; // the shared setup gives every student a role; this case needs none
   snap('iv create no role', await post('/api/interviews/create', {}));
   w.institutions[IDS.instA].targetRoles = [{ _id: 'cccccccccccccccccccccccc', title: 'Systems intern', description: 'Low-level work', skills: ['C++'] }];
   student.targetRoleId = 'cccccccccccccccccccccccc';
