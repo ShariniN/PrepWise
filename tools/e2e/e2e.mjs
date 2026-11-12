@@ -29,6 +29,20 @@ const signIn = async (p, email, password) => {
 let ctx = await newCtx();
 let p = await ctx.newPage(); watch(p, 'student');
 await signIn(p, 'student@email.com', 'student@123');
+// --- Target roles (Task 4): a student without a target role is sent to /welcome, picks one and lands on home
+await p.waitForURL(/welcome/, { timeout: 15000 }).catch(() => {});
+ok('student without a target role is sent to /welcome', /welcome/.test(p.url()), p.url());
+await p.locator('[role="radio"]').first().waitFor({ timeout: 10000 }).catch(() => {});
+ok('onboarding shows role cards', (await p.locator('[role="radio"]').count()) >= 2);
+await p.screenshot({ path: 'e2e/onboarding-roles.png' });
+await p.goto(B + '/fresher-dashboard', { waitUntil: 'networkidle' });
+ok('a student still to onboard cannot open the dashboard', /welcome/.test(p.url()), p.url());
+await p.locator('[role="radio"]').first().click();
+await p.getByRole('button', { name: 'Continue' }).click();
+await p.getByRole('button', { name: 'Skip for now' }).waitFor({ timeout: 10000 }).catch(() => {});
+ok('onboarding step 2 offers a CV upload and "Skip for now"', await p.getByRole('button', { name: 'Skip for now' }).count() === 1);
+await p.getByRole('button', { name: 'Skip for now' }).click();
+// --- end Target roles
 await p.waitForURL(/fresher-dashboard/, { timeout: 15000 }).catch(() => {});
 ok('student login form -> dashboard', /fresher-dashboard/.test(p.url()), p.url());
 await p.goto(B + '/login', { waitUntil: 'networkidle' });
@@ -100,6 +114,21 @@ if (st.studentId) {
     await lp.screenshot({ path: 'e2e/staff-interview.png', fullPage: true });
   } else ok('interview link present', false, 'none');
 }
+await ctx.close();
+
+// 6a. Admin edits a target role in University settings (Task 4)
+ctx = await newCtx(); const sp = await ctx.newPage(); watch(sp, 'settings');
+await signIn(sp, 'admin@email.com', 'admin@123');
+await sp.waitForURL(/manage-people/, { timeout: 15000 }).catch(() => {});
+await sp.goto(B + '/settings', { waitUntil: 'networkidle' }); await sp.waitForTimeout(1000);
+const settingsText = await body(sp);
+ok('settings shows the read-only seat limit note', /Set in your contract. Contact us to change it./.test(settingsText));
+await sp.getByRole('button', { name: /^Edit / }).first().click();
+const editedTitle = 'E2E edited role ' + Date.now().toString(36);
+await sp.getByLabel(/^Title/).fill(editedTitle);
+await sp.getByRole('button', { name: 'Save role' }).click(); await sp.waitForTimeout(1200);
+ok('admin edits a target role', (await body(sp)).includes(editedTitle));
+await sp.screenshot({ path: 'e2e/settings.png', fullPage: true });
 await ctx.close();
 
 // 6. Admin: cancel a pending invitation in Manage people

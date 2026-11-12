@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { CV_MODELS, AI_MODELS } from '../../config/ai.js';
 import { generateWithFallback } from '../../services/geminiClient.js';
 import { scoreResume } from './cvAnalysis.scoring.js';
+import { roleAsJobDescription } from '../../services/targetRoles.js';
+import CVAnalysis from '../../models/CvAnalysis.js';
 
 export const convertMarkdownToHTML = (text) => text
   .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -273,16 +275,22 @@ export const buildJobResult = (analysisResult, jobDescForDisplay, extractedTechn
 });
 
 // The whole analysis: technologies once (for the skills self-assessment), then every job description in turn.
-export const analyzeCv = async (cvText, jobDescriptions) => {
+// With a target role, the role is scored first (kind 'target_role', written out like a job description and never
+// refused for being short); each pasted job description follows as kind 'job_description'.
+export const analyzeCv = async (cvText, jobDescriptions, { targetRole = null } = {}) => {
   const analysis = [];
   const { technologies: extractedTechnologies, unavailable: technologiesUnavailable } = await extractTechnologiesFromResume(cvText);
 
-  for (let i = 0; i < jobDescriptions.length; i++) {
-    const rawJobDesc = jobDescriptions[i];
+  const jobs = jobDescriptions.map((raw) => ({ raw, kind: 'job_description' }));
+  if (targetRole) jobs.unshift({ raw: roleAsJobDescription(targetRole), kind: 'target_role', targetRoleId: String(targetRole._id) });
+
+  for (let i = 0; i < jobs.length; i++) {
+    const { raw: rawJobDesc, kind, targetRoleId } = jobs[i];
+    const tag = targetRoleId ? { kind, targetRoleId } : { kind };
     try {
-      validateJobDescription(rawJobDesc);
+      if (kind === 'job_description') validateJobDescription(rawJobDesc);
       const analysisResult = await analyzeResumeMatch(cvText, stripHTMLToText(rawJobDesc));
-      analysis.push(buildJobResult(analysisResult, convertMarkdownToHTML(rawJobDesc), extractedTechnologies));
+      analysis.push({ ...buildJobResult(analysisResult, convertMarkdownToHTML(rawJobDesc), extractedTechnologies), ...tag });
     } catch (error) {
       console.error(`Analysis error for JD ${i + 1}:`, error.message);
       analysis.push({
@@ -291,12 +299,34 @@ export const analyzeCv = async (cvText, jobDescriptions) => {
         hasError: true,
         message: 'Analysis failed: ' + error.message,
         jobDescription: convertMarkdownToHTML(rawJobDesc),
-        extractedTechnologies: []
+        extractedTechnologies: [],
+        ...tag
       });
     }
   }
 
   return { analysis, extractedTechnologies, technologiesUnavailable };
+};
+
+// Stores what the server computed for this CV (one document per user and CV). Re-analysing the same CV replaces
+// the results and keeps isSaved as it was. Nothing here comes from the client's own scores.
+export const storeAnalysis = async ({ user, resumeHash, resumeText, jobDescriptions, results, extractedTechnologies, usedProfileCV, targetRoleId }) => {
+  const fields = {
+    institutionId: user.institutionId,
+    targetRoleId: targetRoleId || null,
+    resumeText: resumeText.substring(0, 15000),
+    jobDescriptions,
+    results,
+    extractedTechnologies,
+    usedProfileCV: !!usedProfileCV,
+  };
+  const existing = await CVAnalysis.findOne({ userId: user.id, resumeHash });
+  if (existing) {
+    existing.set(fields);
+    existing.updatedAt = new Date();
+    return existing.save();
+  }
+  return new CVAnalysis({ userId: user.id, resumeHash, isSaved: false, ...fields }).save();
 };
 
 const averageMatch = (results) => (results.length > 0
@@ -344,6 +374,8 @@ export const savedAnalysisView = (analysis) => {
 
 // The stored results as reported back after a save (each value checked and clamped).
 export const savedResultsView = (results = []) => results.map((result) => ({
+  kind: result.kind === 'target_role' ? 'target_role' : 'job_description',
+  targetRoleId: result.targetRoleId ? String(result.targetRoleId) : null,
   matchPercentage: typeof result.matchPercentage === 'number' ? Math.max(0, Math.min(100, result.matchPercentage)) : 0,
   scoreBreakdown: result.scoreBreakdown || null,
   isNonTechRole: typeof result.isNonTechRole === 'boolean' ? result.isNonTechRole : false,

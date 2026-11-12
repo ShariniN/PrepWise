@@ -9,6 +9,7 @@ import { audit } from "../../services/audit.js";
 import { isKnownRole } from "../../config/roles.js";
 import { passwordOk, PASSWORD_MESSAGE } from "../../services/accountRules.js";
 import { startSignup, resendVerification, completeVerification, exposeVerifyLinks, SignupError, SIGNUP_MESSAGE, RESEND_MESSAGE } from "./auth.signup.js";
+import { targetRoleTitleFor } from "../institution/institution.service.js";
 
 const cookieOptions = () => ({
   httpOnly: true,
@@ -220,6 +221,8 @@ export const isAuthenticated = async (req, res) => {
       return res.json({ success: false, message: "User not found" });
     }
 
+    const targetRoleId = user.targetRoleId || null;
+
     return res.json({
       success: true,
       user: {
@@ -230,6 +233,9 @@ export const isAuthenticated = async (req, res) => {
         role: user.role,
         institutionId: user.institutionId,
         status: user.status,
+        targetRoleId,
+        targetRoleTitle: await targetRoleTitleFor(user),
+        needsOnboarding: user.role === "student" && !targetRoleId,
         isAccountVerified: user.isAccountVerified || false,
         phoneNumber: user.phoneNumber,
         lastActive: user.lastActive || user.updatedAt,

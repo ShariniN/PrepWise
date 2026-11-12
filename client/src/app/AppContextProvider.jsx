@@ -13,10 +13,44 @@ export const AppContextProvider = (props) => {
     const [role, setRole] = useState(null);
     const [institutionId, setInstitutionId] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);
+    // null until the server has said whether this student still has to pick a target role.
+    const [needsOnboarding, setNeedsOnboarding] = useState(null);
+    const [targetRoleTitle, setTargetRoleTitle] = useState(null);
+    const [targetRoleId, setTargetRoleId] = useState(null);
+
+    const setOnboardingInfo = (user) => {
+        setNeedsOnboarding(!!user?.needsOnboarding);
+        setTargetRoleTitle(user?.targetRoleTitle || null);
+        setTargetRoleId(user?.targetRoleId || null);
+    };
+
+    // Called after the student picks a role (onboarding or profile settings).
+    const setTargetRole = (title, id) => {
+        setNeedsOnboarding(false);
+        setTargetRoleTitle(title);
+        setTargetRoleId(id || null);
+    };
+
+    // Asks the server again who we are, e.g. when a call says the target role is gone (the admin deleted it):
+    // needsOnboarding flips and ProtectedRoute sends the student to /welcome.
+    const refreshAuth = () => axios.get(backendUrl + '/api/auth/is-auth')
+        .then(({ data }) => { if (data.success) setOnboardingInfo(data.user); })
+        .catch(() => {});
 
     const setAuth = (info) => {
         setRole(info?.role || null);
         setInstitutionId(info?.institutionId || null);
+        if (info?.needsOnboarding !== undefined) {
+            setOnboardingInfo(info);
+        } else if (info?.role === 'student') {
+            // The login answer does not say whether a target role is chosen; ask who-am-I.
+            setNeedsOnboarding(null);
+            axios.get(backendUrl + '/api/auth/is-auth')
+                .then(({ data }) => setOnboardingInfo(data.success ? data.user : null))
+                .catch(() => setOnboardingInfo(null));
+        } else {
+            setOnboardingInfo(null);
+        }
     };
 
     const clearAuth = () => {
@@ -24,6 +58,9 @@ export const AppContextProvider = (props) => {
         setUserData(false);
         setRole(null);
         setInstitutionId(null);
+        setNeedsOnboarding(null);
+        setTargetRoleTitle(null);
+        setTargetRoleId(null);
     };
 
     const getAuthState = async () => {
@@ -82,6 +119,11 @@ export const AppContextProvider = (props) => {
         role,
         institutionId,
         authLoading,
+        needsOnboarding,
+        targetRoleTitle,
+        targetRoleId,
+        setTargetRole,
+        refreshAuth,
         setAuth,
         clearAuth
     };

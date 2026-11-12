@@ -92,7 +92,7 @@ const StructuredRecommendations = ({ result, index }) => {
   return (
     <div className="bg-surface p-4 md:p-6 shadow-soft border border-line rounded-3xl hover:shadow-card transition-all">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <h3 className="text-xl font-bold text-ink">Job Description {index + 1}</h3>
+        <h3 className="text-xl font-bold text-ink">{result.kind === 'target_role' ? 'Your target role' : `Job description ${index}`}</h3>
         <span
           className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm ${
             result.scoreBreakdown && result.scoreBreakdown.aiAvailable === false

@@ -1,8 +1,10 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useContext } from "react";
+import { Link } from "react-router-dom";
+import { AppContext } from "../../app/AppContext.js";
 import ScoreBreakdown from './components/ScoreBreakdown';
 import CircularProgress from './components/CircularProgress';
 import StructuredRecommendations from './components/StructuredRecommendations';
-import { CheckCircle, XCircle, FileText, Target, BarChart3, Star, Upload, Plus, Trash2, Save, RefreshCw, User } from "lucide-react";
+import { CheckCircle, XCircle, FileText, Target, BarChart3, Star, Upload, Save, RefreshCw, User } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { backendUrl } from '../../lib/apiClient';
 
@@ -15,10 +17,16 @@ const API_ENDPOINTS = {
   getCurrentCV: `${API_BASE_URL}/api/user/cv`,
 };
 
+// The target role is always the first result; pasted job descriptions follow.
+const resultLabel = (result, index) => (result.kind === 'target_role' ? 'Target role' : `Job description ${index}`);
+
 const CVAnalyzer = () => {
+  const { targetRoleTitle, refreshAuth } = useContext(AppContext);
   // State management
   const [resumeFile, setResumeFile] = useState(null);
-  const [jobDescriptions, setJobDescriptions] = useState([""]);
+  // Optional: the CV is always scored against the target role; this adds one pasted job description.
+  const [jobDescription, setJobDescription] = useState("");
+  const pastedJDs = jobDescription.trim() ? [jobDescription.trim()] : [];
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -132,26 +140,10 @@ const CVAnalyzer = () => {
     }
   }, []);
 
-  // Job description handlers
-  const handleJDChange = (index, value) => {
-    const updated = [...jobDescriptions];
-    updated[index] = value;
-    setJobDescriptions(updated);
-
+  const handleJDChange = (value) => {
+    setJobDescription(value);
     if (error && value.trim()) {
       setError(null);
-    }
-  };
-
-  const addJD = () => {
-    if (jobDescriptions.length < 5) {
-      setJobDescriptions([...jobDescriptions, ""]);
-    }
-  };
-
-  const removeJD = (index) => {
-    if (jobDescriptions.length > 1) {
-      setJobDescriptions(jobDescriptions.filter((_, i) => i !== index));
     }
   };
 
@@ -167,13 +159,8 @@ const CVAnalyzer = () => {
       return false;
     }
 
-    if (jobDescriptions.some((jd) => jd.trim() === "")) {
-      setError("Please fill in all job descriptions");
-      return false;
-    }
-
-    if (jobDescriptions.some((jd) => jd.trim().length < 50)) {
-      setError("Job descriptions should be at least 50 characters long");
+    if (pastedJDs.length > 0 && pastedJDs[0].length < 50) {
+      setError("A job description should be at least 50 characters long, or leave it empty");
       return false;
     }
 
@@ -192,7 +179,7 @@ const CVAnalyzer = () => {
       const formData = new FormData();
 
       // Add job descriptions
-      formData.append('jobDescriptions', JSON.stringify(jobDescriptions.filter(jd => jd.trim())));
+      formData.append('jobDescriptions', JSON.stringify(pastedJDs));
 
       // Add CV source information
       if (useProfileCV) {
@@ -215,6 +202,8 @@ const CVAnalyzer = () => {
           if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             errorMessage = errorData.message || errorData.error || errorMessage;
+            // The role was deleted while signed in: refresh who we are so the student is sent to choose again.
+            if (errorData.code === 'TARGET_ROLE_REQUIRED') refreshAuth();
           } else {
             const errorText = await response.text();
             if (errorText) {
@@ -255,7 +244,8 @@ const CVAnalyzer = () => {
       setResumeData({
         resumeText: data.resumeText || (useProfileCV ? 'Profile CV' : `Resume: ${resumeFile?.name}`),
         resumeHash: resumeHash,
-        jobDescriptions: jobDescriptions.filter(jd => jd.trim()),
+        analysisId: data.analysisId,
+        jobDescriptions: pastedJDs,
         extractedTechnologies: data.extractedTechnologies || [],
         // The AI could not extract technologies right now (not the same as "none on the CV")
         technologiesUnavailable: !!data.technologiesUnavailable,
@@ -296,15 +286,8 @@ const handleSaveIndividualAnalysis = async (index) => {
   if ((!resumeFile && !useProfileCV) || !results[index] || savedIndices.includes(index)) return;
 
   try {
-    const saveData = {
-      // Use resumeText instead of resumeName - this is what the server expects
-      resumeText: resumeData?.resumeText || (useProfileCV ? 'Profile CV content' : resumeFile?.name || 'Resume content'),
-      jobDescriptions: jobDescriptions.filter(jd => jd.trim()),
-      results: [results[index]], // Send only the specific result we're saving
-      resumeHash: resumeData?.resumeHash,
-      usedProfileCV: useProfileCV,
-      extractedTechnologies: resumeData?.extractedTechnologies || [] // Include extracted technologies
-    };
+    // The server stored the scores when it analysed the CV; saving only marks that analysis as saved.
+    const saveData = { id: resumeData?.analysisId, resumeHash: resumeData?.resumeHash, shouldSave: true };
 
     const response = await fetch(API_ENDPOINTS.saveAnalysis, {
       method: 'POST',
@@ -345,7 +328,7 @@ const handleSaveIndividualAnalysis = async (index) => {
   // Clear all data
   const handleClear = () => {
     setResumeFile(null);
-    setJobDescriptions([""]);
+    setJobDescription("");
     setResults([]);
     setError(null);
     setResumeData(null);
@@ -558,7 +541,7 @@ const handleSaveIndividualAnalysis = async (index) => {
       width="wide"
       eyebrow="AI-Powered Analysis"
       title="CV Analyzer"
-      subtitle="Upload your resume and compare it against job descriptions"
+      subtitle="Upload your resume and see how well it fits the role you are preparing for"
     >
       <div>
       <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -580,67 +563,39 @@ const handleSaveIndividualAnalysis = async (index) => {
               {/* CV Source Selection */}
               {renderCVSourceSelection()}
 
-              {/* Job Descriptions */}
+              {/* Target role and an optional job description */}
               <div className="bg-surface rounded-3xl border border-line p-4 md:p-6 shadow-soft">
-                <div className="flex justify-between items-center mb-4">
-                  <label className="block font-bold text-ink">
-                    Job Descriptions
-                  </label>
-                  <span className="text-sm text-ink-muted bg-surface px-3 py-1 rounded-full shadow-sm border border-line font-medium">
-                    {jobDescriptions.length}/5
-                  </span>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-bold text-ink">
+                    Scored against: <span className="text-primary-700">{targetRoleTitle || 'your target role'}</span>
+                  </p>
+                  <Link to="/profile-settings" className="text-sm font-semibold text-primary-700 underline-offset-2 hover:underline">
+                    Change
+                  </Link>
                 </div>
-
-                <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
-                  {jobDescriptions.map((jd, index) => (
-                    <div key={index} className="relative">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <textarea
-                            className="w-full p-4 border border-line rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none shadow-sm hover:shadow-md bg-surface"
-                            rows="4"
-                            placeholder={`Enter job description ${index + 1}...`}
-                            value={jd}
-                            onChange={(e) => handleJDChange(index, e.target.value)}
-                          />
-                          <div className="flex justify-between mt-2">
-                            <span className="text-xs text-ink-muted font-medium bg-sand px-2 py-1 rounded">
-                              JD {index + 1}
-                            </span>
-                            <span
-                              className={`text-xs font-medium px-2 py-1 rounded ${
-                                jd.length < 50
-                                  ? "text-sun-600 bg-sun-100"
-                                  : "text-success-600 bg-success-100"
-                              }`}
-                            >
-                              {jd.length} chars
-                            </span>
-                          </div>
-                        </div>
-
-                        {jobDescriptions.length > 1 && (
-                          <button
-                            onClick={() => removeJD(index)}
-                            className="self-start mt-1 p-2 text-danger-500 hover:text-danger-700 hover:bg-danger-50 rounded-2xl transition-all shadow-sm hover:shadow-md"
-                            title="Remove this job description"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {jobDescriptions.length < 5 && (
-                  <button
-                    onClick={addJD}
-                    className="w-full mt-4 p-3 text-sm bg-surface text-primary-700 border-2 border-primary-200 rounded-2xl hover:bg-primary-50 transition-all font-medium shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Another Job Description
-                  </button>
+                <label htmlFor="extra-jd" className="mb-2 block text-sm font-semibold text-ink-2">
+                  Also check against a specific job description (optional)
+                </label>
+                <textarea
+                  id="extra-jd"
+                  className="w-full p-4 border border-line rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none shadow-sm hover:shadow-md bg-surface"
+                  rows="4"
+                  placeholder="Paste a job description here..."
+                  value={jobDescription}
+                  onChange={(e) => handleJDChange(e.target.value)}
+                />
+                {jobDescription.length > 0 && (
+                  <div className="mt-2 flex justify-end">
+                    <span
+                      className={`text-xs font-medium px-2 py-1 rounded ${
+                        jobDescription.trim().length < 50
+                          ? "text-sun-600 bg-sun-100"
+                          : "text-success-600 bg-success-100"
+                      }`}
+                    >
+                      {jobDescription.length} chars
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -651,14 +606,12 @@ const handleSaveIndividualAnalysis = async (index) => {
                   disabled={
                     loading ||
                     (!useProfileCV && !resumeFile) ||
-                    (useProfileCV && !profileCV) ||
-                    jobDescriptions.some((jd) => jd.trim() === "")
+                    (useProfileCV && !profileCV)
                   }
                   className={`w-full px-6 py-4 rounded-2xl font-bold transition-all text-lg shadow-soft ${
                     loading ||
                     (!useProfileCV && !resumeFile) ||
-                    (useProfileCV && !profileCV) ||
-                    jobDescriptions.some((jd) => jd.trim() === "")
+                    (useProfileCV && !profileCV)
                       ? "bg-line text-ink-muted cursor-not-allowed"
                       : "bg-surface text-primary-600 border-2 border-primary-600 hover:bg-primary-50 active:scale-95 shadow-card hover:shadow-float"
                   }`}
@@ -676,7 +629,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                   )}
                 </button>
 
-                {((resumeFile || useProfileCV) || jobDescriptions.some((jd) => jd.trim())) && (
+                {((resumeFile || useProfileCV) || jobDescription.trim()) && (
                   <button
                     onClick={handleClear}
                     disabled={loading}
@@ -724,7 +677,7 @@ const handleSaveIndividualAnalysis = async (index) => {
                           key={idx}
                           percentage={res.matchPercentage || 0}
                           unavailable={!!(res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false)}
-                          label={res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false ? `Job Description ${idx + 1} (AI unavailable)` : `Job Description ${idx + 1}`}
+                          label={`${resultLabel(res, idx)}${res.scoreBreakdown && res.scoreBreakdown.aiAvailable === false ? ' (AI unavailable)' : ''}`}
                           colorIndex={idx}
                         />
                       ))}
