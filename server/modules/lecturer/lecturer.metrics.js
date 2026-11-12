@@ -10,9 +10,23 @@
 // - A CV result counts only when its scoreBreakdown.aiAvailable !== false.
 // - Averages across students are means of per-student values, so a student with many interviews does not dominate.
 //   A value is shown only when at least MIN_N students have it; otherwise it is null with a notice.
-import { partitionAttempts, MIN_N, DAY_MS, round, mean } from '../analytics/analytics.aggregate.js';
+export const MIN_N = 5;
+export const DAY_MS = 24 * 60 * 60 * 1000;
+export const round = (n, p = 1) => (n == null || Number.isNaN(n) ? null : Math.round(n * 10 ** p) / 10 ** p);
+export const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
-export { MIN_N };
+// Practice score eligibility: only submitted attempts with a numeric score whose scoreSource is not 'ai' or 'fallback'.
+const isScored = (a) => a.runKind === 'submit' && typeof a.score === 'number';
+const isExcluded = (a) => isScored(a) && (a.scoreSource === 'ai' || a.scoreSource === 'fallback');
+export const partitionAttempts = (attempts) => {
+  const eligible = [];
+  let excluded = 0;
+  for (const a of attempts) {
+    if (isExcluded(a)) excluded += 1;
+    else if (isScored(a)) eligible.push(a);
+  }
+  return { eligible, excluded };
+};
 const sid = (v) => String(v);
 const t = (d) => (d ? new Date(d).getTime() : NaN);
 const latestDate = (...ds) => {

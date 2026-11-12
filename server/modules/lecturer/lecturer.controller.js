@@ -4,8 +4,8 @@
 import { institutionOf } from '../../middleware/tenancy.js';
 import { audit } from '../../services/audit.js';
 import { cleanGroup, PeopleError } from '../people/people.service.js';
-import { fail, isId, intParam } from '../analytics/analytics.request.js';
-import { toCsv } from '../analytics/analytics.aggregate.js';
+import { fail, isId, intParam } from '../../services/http.js';
+import { toCsv } from '../../services/csv.js';
 import lecturerRepo from './lecturer.repo.js';
 import * as m from './lecturer.metrics.js';
 
