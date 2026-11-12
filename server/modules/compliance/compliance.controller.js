@@ -24,7 +24,7 @@ const profileOf = (u) => ({
 export const exportMyData = async (req, res) => {
   const user = await complianceRepo.findUser(req.user.id);
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  const data = await complianceRepo.collect(user._id);
+  const data = await complianceRepo.collect(user._id, user.institutionId);
   await audit({ actor: user._id, action: 'user.export', target: user._id, institutionId: user.institutionId });
   res.setHeader('Content-Disposition', 'attachment; filename="prepwise-my-data.json"');
   res.json({ exportedAt: new Date().toISOString(), profile: profileOf(user), ...data });
@@ -46,7 +46,7 @@ export const deleteMyAccount = async (req, res) => {
 
   // Written first, and it holds ids only, so it survives the deletion without keeping personal data.
   await audit({ actor: user._id, action: 'user.delete', target: user._id, institutionId: user.institutionId, meta: { role: user.role } });
-  const deleted = await complianceRepo.deleteAll(user._id);
+  const deleted = await complianceRepo.deleteAll(user._id, user.institutionId);
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

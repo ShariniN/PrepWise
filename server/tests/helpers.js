@@ -41,6 +41,7 @@ export const makeWorld = () => {
     users: [],
     interviews: [],
     consents: [],
+    attempts: [],
     audit: [],
     mails: [],
     saves: 0,
@@ -122,18 +123,22 @@ export const makeWorld = () => {
       world.users.filter((u) => same(u.institutionId, institutionId) && ids.some((i) => same(i, u._id))));
 
     mock.method(complianceRepo, 'findUser', async (id) => world.users.find((u) => same(u._id, id)) || null);
-    mock.method(complianceRepo, 'collect', async (userId) => ({
+    const ownAttempt = (a, userId, institutionId) => same(a.userId, userId) && same(a.institutionId, institutionId);
+    mock.method(complianceRepo, 'collect', async (userId, institutionId) => ({
       interviews: world.interviews.filter((i) => same(i.userId, userId)),
       analyses: [], skills: [],
       consents: world.consents.filter((c) => same(c.userId, userId)),
+      attempts: world.attempts.filter((a) => ownAttempt(a, userId, institutionId)),
     }));
-    mock.method(complianceRepo, 'deleteAll', async (userId) => {
-      const before = { interviews: world.interviews.length, consents: world.consents.length };
+    mock.method(complianceRepo, 'deleteAll', async (userId, institutionId) => {
+      const before = { interviews: world.interviews.length, consents: world.consents.length, attempts: world.attempts.length };
       world.interviews = world.interviews.filter((i) => !same(i.userId, userId));
       world.consents = world.consents.filter((c) => !same(c.userId, userId));
+      world.attempts = world.attempts.filter((a) => !ownAttempt(a, userId, institutionId));
       world.users = world.users.filter((u) => !same(u._id, userId));
       return {
         interviews: before.interviews - world.interviews.length, consents: before.consents - world.consents.length,
+        attempts: before.attempts - world.attempts.length,
       };
     });
     mock.method(complianceRepo, 'addConsent', async (d) => { world.consents.push(d); return d; });
