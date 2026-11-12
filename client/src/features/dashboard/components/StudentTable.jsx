@@ -96,7 +96,7 @@ const StudentTable = ({ data, loading, sort, onSort, onPage }) => {
               </Td>
               <Td className="whitespace-nowrap text-right tabular-nums">
                 {fmtNum(s.lastInterviewScore)}
-                {LEVEL_LABELS[s.lastLevelReached] && <span className="block text-xs text-ink-2">reached {LEVEL_LABELS[s.lastLevelReached]}</span>}
+                {LEVEL_LABELS[s.lastLevelReached] && <span className="block text-xs text-ink-2">Next level: {LEVEL_LABELS[s.lastLevelReached]}</span>}
               </Td>
               <Td><Sparkline values={s.trend} /></Td>
               <Td className="text-right tabular-nums">{s.practiceSolved}</Td>

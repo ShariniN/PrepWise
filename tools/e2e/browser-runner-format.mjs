@@ -1,11 +1,11 @@
-// Checks the in-browser JavaScript runner's console.log formatting (client/src/utils/browserRunner/nodeFormat.js)
+// Checks the in-browser JavaScript runner's console.log formatting (client/src/features/practice/browserRunner/nodeFormat.js)
 // against the real util.format of this Node. Every value it claims to support must format byte for byte the same;
 // anything else must be refused (the runner then uses the server). No browser, no server.
 // Usage: node browser-runner-format.mjs [cases=30000]
 import fs from 'node:fs';
 import util from 'node:util';
 
-const src = fs.readFileSync(new URL('../../client/src/utils/browserRunner/nodeFormat.js', import.meta.url), 'utf8');
+const src = fs.readFileSync(new URL('../../client/src/features/practice/browserRunner/nodeFormat.js', import.meta.url), 'utf8');
 new Function(src)(); // defines globalThis.PrepwiseNodeFormat in this realm
 const F = globalThis.PrepwiseNodeFormat;
 

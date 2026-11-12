@@ -11,7 +11,6 @@ const MAX_REQUESTS_PER_MINUTE = 10;
 setInterval(() => {
   requestCount = 0;
   lastResetTime = Date.now();
-  console.log('🔄 Rate limit counter reset');
 }, 60000).unref();
 
 
@@ -19,7 +18,7 @@ const checkRateLimit = async () => {
   if (requestCount >= MAX_REQUESTS_PER_MINUTE) {
     const waitTime = 60000 - (Date.now() - lastResetTime);
     if (waitTime > 0) {
-      console.log(`⏳ Rate limit reached, waiting ${waitTime}ms`);
+      console.log(`AI rate limit reached, waiting ${waitTime}ms`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       requestCount = 0;
       lastResetTime = Date.now();
@@ -31,9 +30,6 @@ const checkRateLimit = async () => {
 
 
 export const parseAIResponse = (rawText) => {
-  console.log('🔧 Parsing AI response...');
-  console.log('📏 Raw text length:', rawText.length);
-  
   let cleanedText = rawText
     .trim()
     .replace(/```json\s*/gi, '')
@@ -43,13 +39,9 @@ export const parseAIResponse = (rawText) => {
     .replace(/```$/gm, '')
     .replace(/^\s*[\r\n]/gm, '');
 
-  console.log('🧹 After basic cleanup, length:', cleanedText.length);
-
   const arrayStart = cleanedText.indexOf('[');
   const arrayEnd = cleanedText.lastIndexOf(']');
-  
-  console.log('🔍 Array bounds:', { arrayStart, arrayEnd });
-  
+
   if (arrayStart === -1 || arrayEnd === -1) {
     // If not array, check for object (overall feedback or single question evaluation)
     const objStart = cleanedText.indexOf('{');
@@ -62,7 +54,7 @@ export const parseAIResponse = (rawText) => {
         console.error('Failed to parse object fallback:', e.message);
       }
     }
-    console.error('❌ No JSON found in response');
+    console.error('No JSON found in the AI response');
     console.error('Response preview:', cleanedText.substring(0, 500));
     throw new Error('No JSON found in response');
   }
@@ -75,15 +67,10 @@ export const parseAIResponse = (rawText) => {
     .replace(/"\s*:\s*"/g, '": "')
     .replace(/",\s*"/g, '", "');
 
-  console.log('📦 JSON text extracted, length:', jsonText.length);
-
   try {
-    const parsed = JSON.parse(jsonText);
-    console.log('✅ JSON parsed successfully, items:', parsed.length);
-    return parsed;
+    return JSON.parse(jsonText);
   } catch (parseError) {
-    console.error('❌ Initial JSON parse failed:', parseError.message);
-    console.log('🔧 Attempting to fix JSON...');
+    console.error('AI response JSON parse failed, trying to repair it:', parseError.message);
     
     let fixedJson = jsonText
       .replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":');
@@ -96,11 +83,9 @@ export const parseAIResponse = (rawText) => {
     }
     
     try {
-      const parsed = JSON.parse(fixedJson);
-      console.log('✅ Fixed JSON parsed successfully, items:', parsed.length);
-      return parsed;
+      return JSON.parse(fixedJson);
     } catch (fixError) {
-      console.error('❌ Failed to fix JSON:', fixError.message);
+      console.error('Could not repair the AI response JSON:', fixError.message);
       console.error('Problematic JSON (first 500 chars):', jsonText.substring(0, 500));
       throw new Error('Could not parse AI response as JSON: ' + fixError.message);
     }

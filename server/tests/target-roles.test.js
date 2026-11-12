@@ -459,3 +459,16 @@ test('without an AI score the response carries no model at all', async () => {
   assert.ok(!('model' in res.body.metadata));
   assert.doesNotMatch(JSON.stringify(res.body.metadata), /gemini|groq/i);
 });
+
+test('analyze-resume is for students only: lecturers and admins get 403 and nothing is analysed', async () => {
+  const prompts = [];
+  stubGemini(prompts);
+  for (const user of [lecturerA, adminA]) {
+    user.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+    const res = await request(app).post('/api/analyze/analyze-resume').set(as(user))
+      .send({ useProfileCV: 'true', jobDescriptions: JSON.stringify(['Backend intern: Node.js, SQL and Git, building REST APIs with the team.']) });
+    assert.equal(res.status, 403, `${user.role}: ${res.text}`);
+  }
+  assert.equal(prompts.length, 0);
+  assert.equal(cvStore.length, 0);
+});

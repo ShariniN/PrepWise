@@ -7,14 +7,16 @@ import {
   deleteAnalysis,
 } from './cvAnalysis.controller.js';
 import userAuth from '../../middleware/userAuth.js';
+import requireRole from '../../middleware/requireRole.js';
 
 const analysisRouter = express.Router();
 
 // All routes require authentication
 analysisRouter.use(userAuth);
 
-// POST /api/analyze/analyze-resume - Analyze resume against job descriptions (with uploaded file)
-analysisRouter.post('/analyze-resume', pdfUpload('resume'), analyzeResume);
+// POST /api/analyze/analyze-resume - Analyze resume against job descriptions (with uploaded file). Students only:
+// the score is against the student's target role, and staff have none.
+analysisRouter.post('/analyze-resume', requireRole('student'), pdfUpload('resume'), analyzeResume);
 
 // POST /api/analyze/save - Save analysis results
 analysisRouter.post('/save', saveAnalysis);

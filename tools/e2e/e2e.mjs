@@ -167,7 +167,7 @@ if (/No CV yet|No target role yet/.test(iv)) {
   }
   ok('five questions, each with a level badge', seen.length === 5 && seen.every(Boolean), JSON.stringify(seen));
   iv = await body(p);
-  ok('results show "Reached" a level and each question with its level', /Interview complete/.test(iv) && /Reached\s*(Easy|Medium|Hard)/.test(iv) && (iv.match(/Question \d\n/g) || []).length === 5, iv.slice(0, 300));
+  ok('results show "Next interview starts at" a level and each question with its level', /Interview complete/.test(iv) && /Next interview starts at\s*(Easy|Medium|Hard)/.test(iv) && (iv.match(/Question \d\n/g) || []).length === 5, iv.slice(0, 300));
   await p.screenshot({ path: 'e2e/interview-results.png', fullPage: true });
 }
 // ---------------------------------------------------------------- end of Task 6
@@ -180,7 +180,7 @@ await lp.waitForURL(/\/dashboard/, { timeout: 15000 }).catch(() => {});
 ok('lecturer login -> /dashboard', /\/dashboard/.test(lp.url()), lp.url());
 await lp.waitForTimeout(1500);
 const ov = await body(lp);
-ok('overview shows CV score, interview score and level reached', /Average CV score/.test(ov) && /Average interview score/.test(ov) && /Level reached/.test(ov));
+ok('overview shows CV score, interview score and next interview level', /Average CV score/.test(ov) && /Average interview score/.test(ov) && /Next interview level/.test(ov));
 ok('student table has the new columns', /Target role/i.test(ov) && /CV score/i.test(ov) && /Trend/i.test(ov));
 ok('lecturer sees only Group 1', /Group 1/.test(ov) && !/Group 2/.test(ov) && !/Student seats/.test(ov));
 await lp.screenshot({ path: 'e2e/dashboard-lecturer.png', fullPage: true });

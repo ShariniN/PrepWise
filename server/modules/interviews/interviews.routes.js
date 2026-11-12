@@ -3,6 +3,7 @@ import multer from 'multer';
 import userAuth from '../../middleware/userAuth.js';
 import rateLimit from 'express-rate-limit';
 import { transcriptionService, TranscriptionUnavailableError } from '../../services/transcription.js';
+import { consumeAi, AiLimitError } from '../../services/aiUsage.js';
 
 import {
   startInterview,
@@ -46,6 +47,13 @@ const requireTranscriptionKey = (req, res, next) => (process.env.GROQ_API_KEY ? 
 export const transcribeAudio = async (req, res) => {
   if (!req.file?.buffer?.length) {
     return res.status(400).json({ success: false, error: 'No audio file provided', message: 'No audio file provided' });
+  }
+  // Each recording is one AI call against the university's monthly cap, like the interview pool and feedback.
+  try {
+    await consumeAi(req.user?.institutionId); // explicit: the tenant context does not survive the multer upload
+  } catch (error) {
+    if (error instanceof AiLimitError) return transcriptionUnavailable(res);
+    throw error;
   }
   try {
     const { text, durationSec } = await transcriptionService.transcribe(req.file.buffer, {

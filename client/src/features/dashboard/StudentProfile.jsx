@@ -28,7 +28,7 @@ const Interviews = ({ student, interviews, delivery, from }) => {
           <Tr>
             <Th>Date</Th><Th>Role</Th><Th>Status</Th><Th className="text-right">Score</Th>
             {CATEGORIES.map((c) => <Th key={c.key} className="text-right">{c.label}</Th>)}
-            <Th>Level reached</Th>
+            <Th>Next level</Th>
             <Th>Readiness</Th>
           </Tr>
         </THead>
@@ -188,7 +188,7 @@ const StudentProfile = () => {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <MetricTile label="CV score" value={summary.cvScore} suffix="%" hint={summary.cvNotScored ? 'CV on file, not scored against the target role yet' : 'Against the target role'} />
             <MetricTile label="Last interview score" value={summary.lastInterviewScore}
-              hint={LEVEL_LABELS[summary.lastLevelReached] ? `Reached ${LEVEL_LABELS[summary.lastLevelReached]}` : `Trend: ${summary.trend.length ? summary.trend.join(', ') : '-'}`} />
+              hint={LEVEL_LABELS[summary.lastLevelReached] ? `Next level: ${LEVEL_LABELS[summary.lastLevelReached]}` : `Trend: ${summary.trend.length ? summary.trend.join(', ') : '-'}`} />
             <MetricTile label="Interviews completed" value={interviews.filter((iv) => iv.status === 'completed').length} />
             <MetricTile label="Practice solved" value={summary.practiceSolved} />
           </div>

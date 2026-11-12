@@ -36,21 +36,14 @@ export const analyzeResume = async (req, res) => {
     }
     jobDescriptions = jobDescriptions.filter((jd) => typeof jd === 'string' && jd.trim());
 
-    // A student is always scored against their target role, so pasted job descriptions are optional for them.
-    let targetRole = null;
-    if (req.user.role === 'student') {
-      targetRole = await targetRoleOf(req.user);
-      if (!targetRole) {
-        return res.status(409).json({
-          success: false,
-          code: 'TARGET_ROLE_REQUIRED',
-          message: 'Choose the role you are preparing for before analysing your CV.'
-        });
-      }
-    } else if (jobDescriptions.length === 0) {
-      return res.status(400).json({
+    // Only students reach this (see the route). They are always scored against their target role, so pasted job
+    // descriptions are optional.
+    const targetRole = await targetRoleOf(req.user);
+    if (!targetRole) {
+      return res.status(409).json({
         success: false,
-        message: 'At least one job description is required'
+        code: 'TARGET_ROLE_REQUIRED',
+        message: 'Choose the role you are preparing for before analysing your CV.'
       });
     }
 
