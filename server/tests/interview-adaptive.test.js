@@ -11,6 +11,7 @@ import { interviewAi } from '../modules/interviews/interviews.controller.js';
 import { nextLevel, startLevelFor, SLOT_TYPES, LEVELS, READINESS_LEVEL } from '../modules/interviews/interviews.adaptive.js';
 import { buildPool } from '../modules/interviews/interviews.pool.js';
 import { fallbackSlot } from '../modules/interviews/interviews.questions.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 // ---------------------------------------------------------------- pure rules
@@ -85,9 +86,11 @@ test('invalid AI JSON fills missing slots from the fallback pool and flags usedF
   assert.deepEqual(r.pool[3], fallbackSlot(3));
   assert.deepEqual(r.pool[4], fallbackSlot(4));
 
-  const broken = await buildPool({ resumeText: 'cv', role: { title: 'R', description: 'd', skills: [] }, generate: async () => { throw new Error('All AI models failed'); } });
-  assert.equal(broken.usedFallbackQuestions, true);
-  for (const slot of [0, 1, 3, 4]) assert.deepEqual(broken.pool[slot], fallbackSlot(slot));
+  for (const generate of [async () => { throw new Error('All AI models failed'); }, async () => ({ text: 'not json at all' }), async () => 'Sorry, I cannot help {with} that']) {
+    const broken = await buildPool({ resumeText: 'cv', role: { title: 'R', description: 'd', skills: [] }, generate });
+    assert.equal(broken.usedFallbackQuestions, true);
+    for (const slot of [0, 1, 3, 4]) assert.deepEqual(broken.pool[slot], fallbackSlot(slot), `slot ${slot} comes from the fallback pool`);
+  }
 });
 
 test('the fallback pool has 12 distinct questions with unique ids', () => {
@@ -103,26 +106,30 @@ const ROLE_ID = 'cccccccccccccccccccccccc';
 const CV = 'Amara Adams. BSc Computer Science. Built a REST API in Node.js with MongoDB and Jest tests. Skills: JavaScript, Git.';
 const same = (a, b) => String(a) === String(b);
 
-let w, student, store, previous, scores, aiCalls, bank, testsByQuestion;
+let w, student, store, previous, scores, aiCalls, bank, testsByQuestion, calls;
 beforeEach(() => {
   w = makeWorld(); w.install();
   w.institutions[IDS.instA].targetRoles = [{ _id: ROLE_ID, title: 'Software engineer intern', description: 'Builds features', skills: ['JavaScript', 'Git'] }];
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA, targetRoleId: ROLE_ID, currentCV: { text: CV, fileName: 'cv.pdf' } });
-  store = []; previous = []; aiCalls = []; scores = [];
+  store = []; previous = []; aiCalls = []; scores = []; calls = { score: 0, overall: 0 };
 
+  // Honours the filter the controller sends, institution included, so an unscoped lookup finds nothing.
   mock.method(InterviewModel, 'findOne', async (filter) => {
-    if (filter._id) return store.find((d) => same(d._id, filter._id) && same(d.userId, filter.userId)) || null;
+    if (filter._id) return store.find((d) => same(d._id, filter._id) && same(d.userId, filter.userId) && same(d.institutionId, filter.institutionId)) || null;
     return previous.find((d) => same(d.userId, filter.userId) && d.status === 'completed' && d.levelReached) || null;
   });
   mock.method(InterviewModel.prototype, 'save', async function save() { if (!store.includes(this)) store.push(this); return this; });
+  installAnswerClaims((id) => store.find((d) => same(d._id, id)) || null);
 
   mock.method(interviewAi, 'generate', async (prompt) => { aiCalls.push(prompt); return { text: JSON.stringify(FULL_POOL), model: 'stub' }; });
   mock.method(interviewAi, 'scoreAnswer', async () => {
+    calls.score += 1;
+    await new Promise((r) => setTimeout(r, 5)); // scoring takes time: concurrent submits overlap here
     const s = scores.shift();
     if (s === 'down') throw new Error('AI unavailable');
     return { score: s ?? 60, strengths: [], improvements: [] };
   });
-  mock.method(interviewAi, 'overallFeedback', async () => ({ score: 70, feedback: { readinessLevel: 'Nearly Ready', strengths: [], improvements: [], recommendations: ['r'], generalFeedback: 'g' } }));
+  mock.method(interviewAi, 'overallFeedback', async () => (calls.overall += 1, { score: 70, feedback: { readinessLevel: 'Nearly Ready', strengths: [], improvements: [], recommendations: ['r'], generalFeedback: 'g' } }));
 
   bank = [];
   testsByQuestion = {};
@@ -364,4 +371,85 @@ test('after slot 4 status is completed and levelReached is set', async () => {
   assert.deepEqual(fb.body.feedback.responses.map((r) => r.level), ['medium', 'hard', 'hard', 'medium', 'hard']);
   const late = await answer(id, q?.questionId || 's9-easy');
   assert.notEqual(late.status, 200);
+});
+
+// ---------------------------------------------------------------- fixes: start, concurrency, completion
+
+test('start never sends hidden tests of an older interview', async () => {
+  const legacy = new InterviewModel({
+    userId: student._id, institutionId: IDS.instA, jobDescription: 'JD', resumeText: 'CV', status: 'created',
+    questions: [{ questionId: 'c1', type: 'coding', question: 'Double it', category: 'c', difficulty: 'easy', tests: [{ input: '2', expectedOutput: 'CANARY_EXPECTED_OUTPUT' }] }],
+  });
+  store.push(legacy);
+  const res = await request(app).put(`/api/interviews/${legacy._id}/start`).set(as());
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.firstQuestion.questionId, 'c1');
+  assert.equal(res.body.questions.length, 1);
+  assert.ok(!JSON.stringify(res.body).includes('CANARY_EXPECTED_OUTPUT'), 'hidden expected output leaked');
+  assert.ok(!('tests' in res.body.firstQuestion));
+});
+
+test('two submits of the same answer at the same time are stored, scored and stepped once', async () => {
+  const c = await create({ readiness: 'some_practice' });
+  const id = c.body.interview.id;
+  const qid = c.body.interview.questions[0].questionId;
+  scores.push(80, 80);
+  const [a, b] = await Promise.all([answer(id, qid), answer(id, qid)]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 409], `${a.text} | ${b.text}`);
+  assert.equal([a, b].find((r) => r.status === 409).body.code, 'ALREADY_ANSWERED');
+  assert.equal(calls.score, 1, 'scored once');
+  assert.equal(store[0].responses.length, 1);
+  assert.equal(store[0].questions.length, 2, 'one next question appended');
+  assert.equal(store[0].questions[1].level, 'hard', 'one level step');
+});
+
+test('two submits of the last answer at the same time finalise the interview once', async () => {
+  addCoding('easy'); addCoding('medium'); addCoding('hard');
+  const c = await create({ readiness: 'some_practice' });
+  const id = c.body.interview.id;
+  let q = c.body.interview.questions[0];
+  for (let n = 0; n < 4; n++) q = (await answer(id, q.questionId, { skipped: true })).body.nextQuestion;
+  assert.equal(q.slot, 4);
+  scores.push(90, 90);
+  const both = await Promise.all([answer(id, q.questionId), answer(id, q.questionId)]);
+  assert.deepEqual(both.map((r) => r.status).sort(), [200, 409]);
+  assert.equal(calls.overall, 1, 'finalised once');
+  assert.equal(store[0].responses.length, 5);
+  assert.equal(store[0].status, 'completed');
+  assert.equal(store[0].levelReached, 'medium', 'easy after four skips, one step up');
+});
+
+test('after PUT /complete the pending question is 409 INTERVIEW_COMPLETED and levelReached does not change', async () => {
+  const c = await create({ readiness: 'some_practice' });
+  const id = c.body.interview.id;
+  scores.push(90);
+  const first = await answer(id, c.body.interview.questions[0].questionId);
+  const pending = first.body.nextQuestion;
+  const done = await request(app).put(`/api/interviews/${id}/complete`).set(as());
+  assert.equal(done.status, 200, done.text);
+  const reached = store[0].levelReached;
+  assert.equal(reached, 'hard');
+  scores.push(10);
+  const late = await answer(id, pending.questionId);
+  assert.equal(late.status, 409, late.text);
+  assert.equal(late.body.code, 'INTERVIEW_COMPLETED');
+  assert.equal(late.body.message, 'This interview is finished.');
+  assert.equal(store[0].levelReached, reached);
+  assert.equal(store[0].responses.length, 1);
+  assert.equal(calls.score, 1, 'the late answer is not scored');
+});
+
+test('when recording an answer fails, its claim is released and the answer can be sent again', async () => {
+  const c = await create({ readiness: 'some_practice' });
+  const id = c.body.interview.id;
+  const qid = c.body.interview.questions[0].questionId;
+  InterviewModel.prototype.save.mock.mockImplementationOnce(async () => { throw new Error('database unavailable'); });
+  const failed = await answer(id, qid);
+  assert.equal(failed.status, 500, failed.text);
+  assert.deepEqual([...(store[0].claimedAnswers || [])], [], 'claim released');
+  store[0].responses.splice(0); // the failed save stored nothing in the database
+  store[0].questions.splice(1);
+  const again = await answer(id, qid);
+  assert.equal(again.status, 200, again.text);
+  assert.equal(store[0].responses.length, 1);
 });

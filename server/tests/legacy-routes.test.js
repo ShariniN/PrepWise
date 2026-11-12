@@ -13,6 +13,7 @@ import CVAnalysis from '../models/CvAnalysis.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import { interviewAi } from '../modules/interviews/interviews.controller.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 const SNAP_FILE = new URL('./support/legacy-routes.snap.json', import.meta.url);
@@ -75,6 +76,7 @@ beforeEach(() => {
   mock.method(InterviewModel, 'find', (q) => chain(() => ivStore.filter((d) => matches(d, q))));
   mock.method(InterviewModel, 'countDocuments', async (q) => ivStore.filter((d) => matches(d, q)).length);
   mock.method(InterviewModel.prototype, 'save', async function save() { if (!ivStore.includes(this)) ivStore.push(this); return this; });
+  installAnswerClaims((id) => ivStore.find((d) => same(d._id, id)) || null);
 
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);

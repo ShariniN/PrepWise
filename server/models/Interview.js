@@ -26,6 +26,7 @@ const questionSchema = new mongoose.Schema({
   visibleTests: { type: [new mongoose.Schema({ id: String, input: String, expectedOutput: String, comparison: String }, { _id: false })], default: undefined },
   hiddenTestCount: { type: Number, default: undefined },
   timeLimitMs: { type: Number, default: undefined },
+  memoryLimitKb: { type: Number, default: undefined },
   // Hidden tests of older interview questions. Never sent to the client.
   tests: { type: [new mongoose.Schema({ input: String, expectedOutput: String, comparison: String }, { _id: true })], default: undefined },
   followUpQuestions: [{ type: String }],
@@ -135,6 +136,9 @@ const interviewSchema = new mongoose.Schema({
   readiness: { type: String, enum: ['just_starting', 'some_practice', 'ready', null], default: null },
   // Server-side question bank for the adaptive flow. Never sent to the client.
   pool: { type: mongoose.Schema.Types.Mixed, select: false },
+  // questionIds whose answer is being or has been recorded. Claimed with one conditional update before scoring, so
+  // an answer sent twice at the same time (double click, two tabs) is stored and scored once.
+  claimedAnswers: { type: [String], select: false, default: undefined },
   currentQuestionIndex: { type: Number, default: 0 },
   
   status: { 
@@ -243,6 +247,7 @@ interviewSchema.set('toJSON', {
   transform: function(doc, ret) {
     delete ret.__v;
     delete ret.pool;
+    delete ret.claimedAnswers;
     return ret;
   }
 });

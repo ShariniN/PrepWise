@@ -38,13 +38,22 @@ const audioUpload = multer({
 });
 
 const TRANSCRIPTION_UNAVAILABLE = "Voice answers aren't available right now. Type your answer instead.";
+const transcriptionUnavailable = (res) =>
+  res.status(503).json({ success: false, code: 'TRANSCRIPTION_UNAVAILABLE', message: TRANSCRIPTION_UNAVAILABLE, error: TRANSCRIPTION_UNAVAILABLE });
+
+// Speech to text costs a provider call per recording.
+const transcriptionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 20,
+  message: { success: false, error: 'Too many voice answers in a minute. Wait a moment, or type your answer.', message: 'Too many voice answers in a minute. Wait a moment, or type your answer.' }
+});
+
+// Without a key there is nothing to send the audio to, so the upload is refused before it is read into memory.
+const requireTranscriptionKey = (req, res, next) => (process.env.GROQ_API_KEY ? next() : transcriptionUnavailable(res));
 
 export const transcribeAudio = async (req, res) => {
   if (!req.file?.buffer?.length) {
     return res.status(400).json({ success: false, error: 'No audio file provided', message: 'No audio file provided' });
-  }
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(503).json({ success: false, code: 'TRANSCRIPTION_UNAVAILABLE', message: TRANSCRIPTION_UNAVAILABLE, error: TRANSCRIPTION_UNAVAILABLE });
   }
   try {
     const { text, durationSec } = await transcriptionService.transcribe(req.file.buffer, {
@@ -54,14 +63,14 @@ export const transcribeAudio = async (req, res) => {
   } catch (error) {
     if (!(error instanceof TranscriptionUnavailableError)) console.error('Transcription error:', error);
     else console.error(error.message);
-    res.status(503).json({ success: false, code: 'TRANSCRIPTION_UNAVAILABLE', message: TRANSCRIPTION_UNAVAILABLE, error: TRANSCRIPTION_UNAVAILABLE });
+    transcriptionUnavailable(res);
   }
 };
 
 // All interview routes require authentication
 interviewRouter.use(userAuth);
 
-interviewRouter.post('/transcribe', audioUpload.single('audio'), transcribeAudio);
+interviewRouter.post('/transcribe', transcriptionLimiter, requireTranscriptionKey, audioUpload.single('audio'), transcribeAudio);
 
 // Old path kept for older clients; same single execution service as /api/code/execute
 interviewRouter.post('/execute-code', codeExecutionLimiter, executeCode);

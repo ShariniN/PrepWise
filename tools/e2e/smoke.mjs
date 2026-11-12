@@ -254,8 +254,19 @@ if (!SKIP_AI) {
     check('deliveryMetrics stored on the interview', stored?.cameraUsed === false && stored?.fillerWordCount === 3 && stored?.durationSec === 41, short(stored));
     const fb = await stuA.req('GET', `/api/interviews/${iv.id}/feedback`);
     check('feedback reports excluded fallback answers and the levels', fb.status === 200 && typeof fb.data.feedback?.excludedFallbackAnswers === 'number' && fb.data.feedback?.levelReached === g.data.interview?.levelReached && fb.data.feedback?.responses?.every((x) => LEVELS.includes(x.level)), short(fb.data.feedback));
+    const late = await stuA.req('POST', `/api/interviews/${iv.id}/submit-answer`, { questionId: asked[4].questionId, skipped: true });
+    check('an answer to a finished interview is 409 INTERVIEW_COMPLETED', late.status === 409 && late.data.code === 'INTERVIEW_COMPLETED', `${late.status} ${short(late.data)}`);
     const next = await create();
     check('the next interview starts at the level reached, without asking readiness', next.status === 201 && next.data.interview?.startLevel === g.data.interview?.levelReached, `${next.status} ${short(next.data)}`);
+    const nq = next.data.interview?.questions?.[0];
+    if (nq) {
+      // Two copies of the same answer at the same time (a double click): the database's conditional update lets one in.
+      const body = { questionId: nq.questionId, answerMode: 'text', responseTime: 30, responseText: 'I led a small team project, split the work by feature and reviewed every pull request together.' };
+      const both = await Promise.all([1, 2].map(() => stuA.req('POST', `/api/interviews/${next.data.interview.id}/submit-answer`, body)));
+      const after = await stuA.req('GET', `/api/interviews/${next.data.interview.id}`);
+      check('the same answer sent twice at once is stored once', both.map((x) => x.status).sort().join() === '200,409' && after.data.interview?.responses?.length === 1 && after.data.interview?.questions?.length === 2,
+        short({ statuses: both.map((x) => x.status), responses: after.data.interview?.responses?.length, questions: after.data.interview?.questions?.length }));
+    }
   }
   r = await stuA.req('POST', '/api/interviews/create-with-profile-cv', { jobDescription: 'x' }); check('create-with-profile-cv is 404', r.status === 404, String(r.status));
   r = await stuA.req('GET', `/api/interviews/${'0'.repeat(24)}/next-question`); check('next-question is 404', r.status === 404, String(r.status));
@@ -266,7 +277,8 @@ if (!SKIP_AI) {
   // With no GROQ_API_KEY this is the honest "unavailable" answer; with a key, Groq refuses the fake audio the same way.
   check('voice answers report TRANSCRIPTION_UNAVAILABLE with the type-instead message', t.status === 503 && t.data.code === 'TRANSCRIPTION_UNAVAILABLE' && t.data.message === "Voice answers aren't available right now. Type your answer instead.", `${t.status} ${short(t.data)}`);
   const none = await stuA.raw('POST', '/api/interviews/transcribe', { body: new FormData() });
-  check('transcription without an audio file is 400', none.status === 400, `${none.status} ${short(none.data)}`);
+  // The key is checked before the upload is read: without a key this is 503 too; with a key, a missing file is 400.
+  check('transcription without an audio file is refused', none.status === 400 || (none.status === 503 && none.data.code === 'TRANSCRIPTION_UNAVAILABLE'), `${none.status} ${short(none.data)}`);
 }
 // ---------------------------------------------------------------- end of Task 6
 

@@ -251,7 +251,7 @@ const Interview = () => {
 
       await afterAnswer(result);
     } catch (err) {
-      setError(err.code === 'ALREADY_ANSWERED' ? err.message : `Failed to submit answer: ${err.message}`);
+      setError(['ALREADY_ANSWERED', 'INTERVIEW_COMPLETED'].includes(err.code) ? err.message : `Failed to submit answer: ${err.message}`);
     } finally {
       setLoading(false);
     }

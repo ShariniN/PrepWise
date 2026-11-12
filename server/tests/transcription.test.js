@@ -26,6 +26,10 @@ test('no GROQ_API_KEY → 503 TRANSCRIPTION_UNAVAILABLE', async () => {
   assert.equal(res.body.code, 'TRANSCRIPTION_UNAVAILABLE');
   assert.equal(res.body.message, MESSAGE);
   await assert.rejects(transcribe(Buffer.from('x'), { filename: 'a.webm', mimetype: 'audio/webm' }), TranscriptionUnavailableError);
+  // checked before the upload is read: no file at all gives the same answer
+  const noFile = await upload().send({});
+  assert.equal(noFile.status, 503, noFile.text);
+  assert.equal(noFile.body.code, 'TRANSCRIPTION_UNAVAILABLE');
 });
 
 test('stub client receives model whisper-large-v3-turbo and the filler prompt', async () => {
@@ -73,4 +77,13 @@ test('a non-audio upload is refused with 400', async () => {
   process.env.GROQ_API_KEY = 'test-key';
   const res = await upload().attach('audio', Buffer.from('text'), { filename: 'a.txt', contentType: 'text/plain' });
   assert.equal(res.status, 400, res.text);
+});
+
+// Last in this file: it uses up the per-minute allowance.
+test('voice answers are rate limited to 20 a minute', async () => {
+  const statuses = [];
+  for (let i = 0; i < 25; i++) statuses.push((await upload().attach('audio', Buffer.from('x'), { filename: 'a.webm', contentType: 'audio/webm' })).status);
+  const first429 = statuses.indexOf(429);
+  assert.ok(first429 > 0 && first429 <= 20, statuses.join(','));
+  assert.ok(statuses.slice(first429).every((st) => st === 429), statuses.join(','));
 });

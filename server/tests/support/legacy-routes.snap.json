@@ -940,8 +940,7 @@
         "expectedDuration": 120,
         "followUpQuestions": [],
         "starterCode": null,
-        "language": null,
-        "_id": "<id>"
+        "language": null
       },
       "totalQuestions": 2,
       "questions": [
@@ -954,8 +953,7 @@
           "expectedDuration": 120,
           "followUpQuestions": [],
           "starterCode": null,
-          "language": null,
-          "_id": "<id>"
+          "language": null
         },
         {
           "questionId": "c1",
@@ -964,17 +962,9 @@
           "category": "c",
           "difficulty": "easy",
           "expectedDuration": 120,
-          "tests": [
-            {
-              "input": "1",
-              "expectedOutput": "2",
-              "_id": "<id>"
-            }
-          ],
           "followUpQuestions": [],
           "starterCode": null,
-          "language": "javascript",
-          "_id": "<id>"
+          "language": "javascript"
         }
       ]
     }

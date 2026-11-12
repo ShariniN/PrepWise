@@ -44,9 +44,12 @@ const MESSAGES = {
   TARGET_ROLE_REQUIRED: 'Choose your target role in your profile before you start a mock interview.',
   READINESS_REQUIRED: 'Tell us how ready you feel, so the first question is at the right level.',
   ALREADY_ANSWERED: 'You have already answered this question.',
+  INTERVIEW_COMPLETED: 'This interview is finished.',
 };
 
 const userIdOf = (req) => req.user?.userId || req.user?.id || req.user?._id;
+// The interview lookup for this student, always within their institution.
+const ownInterview = (req) => ({ _id: req.params.interviewId, userId: userIdOf(req), institutionId: req.user?.institutionId });
 
 // Delivery coaching metrics (camera + speech), measured in the browser. Numbers only, never video.
 // Strict: wrong types become null, numbers are clamped, unknown keys are dropped, nothing is rejected.
@@ -156,6 +159,7 @@ const codingQuestionAt = async (level, institutionId) => {
       language: DEFAULT_CODING_LANGUAGE,
       starterCode: picked.starterCode instanceof Map ? Object.fromEntries(picked.starterCode) : (picked.starterCode || null),
       timeLimitMs: picked.timeLimitMs,
+      memoryLimitKb: picked.memoryLimitKb,
       visibleTests: tests.filter((t) => t.visible).map((t) => ({ id: String(t._id), input: t.input, expectedOutput: t.expectedOutput, comparison: t.comparison || 'trim' })),
       hiddenTestCount: tests.filter((t) => !t.visible).length,
     };
@@ -257,10 +261,7 @@ export const createInterview = async (req, res) => {
 // Interview Operations
 export const startInterview = async (req, res) => {
   try {
-    const { interviewId } = req.params;
-    const userId = req.user?.userId || req.user?.id || req.user?._id;
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId });
+    const interview = await InterviewModel.findOne(ownInterview(req));
 
     if (!interview) {
       return res.status(404).json({ success: false, error: 'Interview not found' });
@@ -278,9 +279,9 @@ export const startInterview = async (req, res) => {
     res.json({
       success: true,
       message: 'Interview started successfully',
-      firstQuestion: interview.questions[0],
+      firstQuestion: clientQuestion(interview.questions[0]),
       totalQuestions: interview.questions.length,
-      questions: interview.questions
+      questions: interview.questions.map(clientQuestion)
     });
   } catch (error) {
     console.error('Start interview error:', error);
@@ -290,6 +291,34 @@ export const startInterview = async (req, res) => {
 
 // ---------------------------------------------------------------- answers
 
+// The basic estimate must not reward an empty answer or the starting code handed back unchanged.
+const squash = (s) => String(s ?? '').replace(/\s+/g, '');
+const noCodeWritten = (question, code, language) => {
+  const starter = question.starterCode?.[language];
+  return !squash(code) || (typeof starter === 'string' && squash(code) === squash(starter));
+};
+const NO_CODE_ESTIMATE = {
+  score: 0, responseType: 'completely-off-topic', strengths: [],
+  improvements: ['No code was written. Change the starting code to solve the problem, then submit.'],
+  detailedAnalysis: 'No code was written.', overallAssessment: 'No code was written.',
+};
+
+// Claims the answer to questionId with one conditional update: it matches only while the interview is not finished
+// and the question has no answer and no claim yet. Two submits of the same answer at the same time cannot both match.
+const claimAnswer = async (interview, questionId) => {
+  const r = await InterviewModel.updateOne(
+    {
+      _id: interview._id, userId: interview.userId, institutionId: interview.institutionId,
+      status: { $ne: 'completed' }, claimedAnswers: { $ne: questionId }, 'responses.questionId': { $ne: questionId },
+    },
+    { $push: { claimedAnswers: questionId } },
+  );
+  return r.modifiedCount === 1;
+};
+// Frees the claim when recording the answer failed, so the student can send it again.
+const releaseAnswer = (interview, questionId) =>
+  InterviewModel.updateOne({ _id: interview._id }, { $pull: { claimedAnswers: questionId } }).catch((e) => console.error('Could not release an answer claim:', e.message));
+
 // Scores one answer exactly as before: the server runs coding answers itself, the AI scores, and the basic
 // fallback (feedback.source 'fallback') is used when the AI is unavailable.
 const scoreAnswer = async (question, { responseText, code, language }) => {
@@ -298,7 +327,10 @@ const scoreAnswer = async (question, { responseText, code, language }) => {
     // The adaptive coding slot is marked against all of its practice question's tests, loaded here on the server.
     const tests = question.practiceQuestionId ? await practiceRepo.listTests(question.practiceQuestionId) : undefined;
     const marked = tests ? { ...plain(question), tests } : question;
-    codeCheck = await verifyCodeServerSide({ question: marked, code, language });
+    const limits = question.practiceQuestionId
+      ? Object.fromEntries(Object.entries({ timeMs: question.timeLimitMs, memoryKb: question.memoryLimitKb }).filter(([, v]) => v != null))
+      : {};
+    codeCheck = await verifyCodeServerSide({ question: marked, code, language, limits });
   }
   let analysis;
   try {
@@ -310,6 +342,7 @@ const scoreAnswer = async (question, { responseText, code, language }) => {
   } catch (error) {
     console.error('AI feedback failed:', error.message);
     analysis = { ...generateFallbackFeedback(question.type, responseText, code, language, codeCheck.forFeedback), source: 'fallback' };
+    if (question.type === 'coding' && noCodeWritten(question, code, language)) analysis = { ...analysis, ...NO_CODE_ESTIMATE };
   }
   analysis.executionSource = codeCheck.executionSource;
   return { analysis, executionResults: codeCheck.executionResults };
@@ -317,16 +350,16 @@ const scoreAnswer = async (question, { responseText, code, language }) => {
 
 export const submitAnswer = async (req, res) => {
   try {
-    const { interviewId } = req.params;
     const { questionId, responseTime, answerMode, responseText, code, language, skipped } = req.body;
     // req.body.executionResults is deliberately never read: only the server's own sandbox run counts.
     // req.body.deliveryMetrics is stored for the student's coaching only; it never reaches the AI or the score.
     const deliveryMetrics = sanitizeDeliveryMetrics(req.body?.deliveryMetrics);
-    const userId = userIdOf(req);
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId }, '+pool');
+    const interview = await InterviewModel.findOne(ownInterview(req), '+pool');
     if (!interview) {
       return res.status(404).json({ success: false, error: 'Interview not found' });
+    }
+    if (interview.status === 'completed') {
+      return fail(res, 409, 'INTERVIEW_COMPLETED', MESSAGES.INTERVIEW_COMPLETED);
     }
 
     const question = interview.questions.find(q => q.questionId === questionId);
@@ -337,29 +370,14 @@ export const submitAnswer = async (req, res) => {
       return fail(res, 409, 'ALREADY_ANSWERED', MESSAGES.ALREADY_ANSWERED);
     }
 
-    let response;
-    if (skipped) {
-      response = {
-        questionId,
-        question: question.question,
-        questionType: question.type,
-        level: question.level,
-        transcription: null,
-        textResponse: 'Question skipped',
-        code: null,
-        language: null,
-        responseTime: parseInt(responseTime) || 0,
-        submittedAt: new Date(),
-        feedback: null,
-        skipped: true
-      };
-    } else {
-      const sanitizedResponseText = validateAndSanitizeInput(responseText);
-      const sanitizedCode = validateAndSanitizeInput(code);
+    // Input is checked before the answer is claimed, so a refused answer leaves nothing behind.
+    const sanitizedResponseText = validateAndSanitizeInput(responseText);
+    const sanitizedCode = validateAndSanitizeInput(code);
+    let validatedLanguage = validateLanguage(language);
+    if (!skipped) {
       if (!sanitizedResponseText || sanitizedResponseText.length === 0) {
         return res.status(400).json({ success: false, error: 'Response text is required' });
       }
-      let validatedLanguage = validateLanguage(language);
       if (question.type === 'coding' && question.practiceQuestionId) {
         validatedLanguage = normalizeLanguage(language) || DEFAULT_CODING_LANGUAGE;
         const allowed = question.languages?.length ? question.languages : CODING_LANGUAGES;
@@ -367,54 +385,83 @@ export const submitAnswer = async (req, res) => {
           return res.status(400).json({ success: false, error: 'Answer this question in JavaScript, Python or Java.' });
         }
       }
-      const { analysis, executionResults } = await scoreAnswer(question, {
-        responseText: sanitizedResponseText, code: sanitizedCode, language: validatedLanguage,
-      });
-      response = {
-        questionId,
-        question: question.question,
-        questionType: question.type,
-        level: question.level,
-        transcription: answerMode === 'audio' ? sanitizedResponseText : null,
-        textResponse: sanitizedResponseText,
-        code: sanitizedCode || null,
-        language: question.type === 'coding' ? validatedLanguage : null,
-        responseTime: parseInt(responseTime) || 0,
-        recordingDuration: answerMode === 'audio' ? parseInt(responseTime) : null,
-        submittedAt: new Date(),
-        feedback: analysis,
-        skipped: false,
-        executionResults,
-        deliveryMetrics
-      };
     }
 
-    interview.responses.push(response);
-    interview.currentQuestionIndex = interview.responses.length;
-    interview.updatedAt = new Date();
-    if (interview.status === 'created') {
-      interview.status = 'in_progress';
-      interview.startedAt = new Date();
+    if (!(await claimAnswer(interview, questionId))) {
+      return fail(res, 409, 'ALREADY_ANSWERED', MESSAGES.ALREADY_ANSWERED);
     }
 
-    // Adaptive interviews: the next slot's question at the adapted level, or the end of the interview.
+    let response;
     let nextQuestion = null;
     let level = null;
-    let done = interview.responses.length >= interview.questions.length;
-    if (isAdaptive(interview) && typeof question.slot === 'number') {
-      level = nextLevel(question.level, adaptiveScore(response));
-      if (question.slot < TOTAL_SLOTS - 1) {
-        nextQuestion = await questionFor(interview, question.slot + 1, level);
-        interview.questions.push(nextQuestion);
-        done = false;
+    let done;
+    try {
+      if (skipped) {
+        response = {
+          questionId,
+          question: question.question,
+          questionType: question.type,
+          level: question.level,
+          transcription: null,
+          textResponse: 'Question skipped',
+          code: null,
+          language: null,
+          responseTime: parseInt(responseTime) || 0,
+          submittedAt: new Date(),
+          feedback: null,
+          skipped: true
+        };
       } else {
-        interview.levelReached = level;
-        await finalizeInterview(interview);
-        done = true;
+        const { analysis, executionResults } = await scoreAnswer(question, {
+          responseText: sanitizedResponseText, code: sanitizedCode, language: validatedLanguage,
+        });
+        response = {
+          questionId,
+          question: question.question,
+          questionType: question.type,
+          level: question.level,
+          transcription: answerMode === 'audio' ? sanitizedResponseText : null,
+          textResponse: sanitizedResponseText,
+          code: sanitizedCode || null,
+          language: question.type === 'coding' ? validatedLanguage : null,
+          responseTime: parseInt(responseTime) || 0,
+          recordingDuration: answerMode === 'audio' ? parseInt(responseTime) : null,
+          submittedAt: new Date(),
+          feedback: analysis,
+          skipped: false,
+          executionResults,
+          deliveryMetrics
+        };
       }
-    }
 
-    await interview.save();
+      interview.responses.push(response);
+      interview.currentQuestionIndex = interview.responses.length;
+      interview.updatedAt = new Date();
+      if (interview.status === 'created') {
+        interview.status = 'in_progress';
+        interview.startedAt = new Date();
+      }
+
+      // Adaptive interviews: the next slot's question at the adapted level, or the end of the interview.
+      done = interview.responses.length >= interview.questions.length;
+      if (isAdaptive(interview) && typeof question.slot === 'number') {
+        level = nextLevel(question.level, adaptiveScore(response));
+        if (question.slot < TOTAL_SLOTS - 1) {
+          nextQuestion = await questionFor(interview, question.slot + 1, level);
+          interview.questions.push(nextQuestion);
+          done = false;
+        } else {
+          interview.levelReached = level;
+          await finalizeInterview(interview);
+          done = true;
+        }
+      }
+
+      await interview.save();
+    } catch (error) {
+      await releaseAnswer(interview, questionId);
+      throw error;
+    }
 
     res.json({
       success: true,
@@ -485,10 +532,7 @@ const levelsOf = (interview) => ({ startLevel: interview.startLevel ?? null, lev
 
 export const completeInterview = async (req, res) => {
   try {
-    const { interviewId } = req.params;
-    const userId = userIdOf(req);
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId });
+    const interview = await InterviewModel.findOne(ownInterview(req));
 
     if (!interview) {
       return res.status(404).json({ success: false, error: 'Interview not found' });
@@ -587,10 +631,7 @@ const calculateCategoryScores = (responses) => {
 // Interview Retrieval
 export const getInterviewFeedback = async (req, res) => {
   try {
-    const { interviewId } = req.params;
-    const userId = userIdOf(req);
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId });
+    const interview = await InterviewModel.findOne(ownInterview(req));
 
     if (!interview) {
       return res.status(404).json({ success: false, error: 'Interview not found' });
@@ -620,13 +661,13 @@ export const getUserInterviews = async (req, res) => {
     const userId = req.user?.userId || req.user?.id || req.user?._id;
     const { page = 1, limit = 10 } = req.query;
 
-    const interviews = await InterviewModel.find({ userId })
+    const interviews = await InterviewModel.find({ userId, institutionId: req.user?.institutionId })
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .select('status overallFeedback createdAt completedAt totalDuration');
 
-    const total = await InterviewModel.countDocuments({ userId });
+    const total = await InterviewModel.countDocuments({ userId, institutionId: req.user?.institutionId });
 
     res.json({
       success: true,
@@ -647,10 +688,7 @@ export const getUserInterviews = async (req, res) => {
 // The interview with the questions asked so far. The pool is never loaded here (select: false) and never sent.
 export const getInterview = async (req, res) => {
   try {
-    const { interviewId } = req.params;
-    const userId = userIdOf(req);
-
-    const interview = await InterviewModel.findOne({ _id: interviewId, userId });
+    const interview = await InterviewModel.findOne(ownInterview(req));
 
     if (!interview) {
       return res.status(404).json({ success: false, error: 'Interview not found' });

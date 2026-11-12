@@ -9,6 +9,7 @@ import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import * as exec from '../services/execution/index.js';
 import { VmProvider } from './support/vmChecker.js';
 import practiceRepo from '../modules/practice/practice.repo.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 let w, student, interview, provider, aiPrompts;
@@ -28,6 +29,7 @@ beforeEach(() => {
     async save() { return this; },
   };
   mock.method(InterviewModel, 'findOne', async () => interview);
+  installAnswerClaims((id) => (String(id) === String(interview._id) ? interview : null));
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiPrompts = [];
@@ -72,7 +74,7 @@ test('questions with tests are marked against them and the tests never reach the
   assert.equal(right.status, 200, right.text);
   assert.equal(interview.responses[0].executionResults.testsPassed, 2);
   assert.equal(interview.responses[0].executionResults.success, true);
-  interview.responses = []; // the same question can be answered only once
+  interview.responses = []; interview.claimedAnswers = []; // the same question can be answered only once
   const wrong = await answer({ questionId: 'c2', code: 'console.log(0)', executionResults: FAKE_CLAIM });
   assert.equal(wrong.status, 200);
   assert.equal(interview.responses[0].executionResults.success, false);
@@ -115,7 +117,11 @@ test('the adaptive coding slot is marked against all of its practice question te
   interview.questions.push({
     questionId: 's2-easy', slot: 2, level: 'easy', type: 'coding', question: 'Double it', statement: 'Read n, print 2n.',
     practiceQuestionId, languages: ['javascript', 'python', 'java'], visibleTests: [{ id: 't1', input: '2', expectedOutput: '4' }],
+    timeLimitMs: 1234, memoryLimitKb: 65536,
   });
+  const limitsSeen = [];
+  const run = provider.run.bind(provider);
+  provider.run = async (req) => { limitsSeen.push(req.limits); return run(req); };
   const res = await answer({ questionId: 's2-easy', code: 'const n=parseInt(require("fs").readFileSync(0,"utf8"),10);console.log(n*2)' });
   assert.equal(res.status, 200, res.text);
   assert.deepEqual(loaded, [practiceQuestionId]);
@@ -124,10 +130,29 @@ test('the adaptive coding slot is marked against all of its practice question te
   assert.equal(saved.testsTotal, 3, 'hidden tests count too');
   assert.equal(saved.serverVerified, true);
   assert.ok(!JSON.stringify(res.body).includes('"14"'));
+  assert.equal(limitsSeen.length, 3);
+  for (const l of limitsSeen) assert.deepEqual([l.timeMs, l.memoryKb], [1234, 65536], 'the practice question limits are used');
 
   const cobol = await answer({ questionId: 's2-easy', code: 'x', language: 'cobol' });
   assert.equal(cobol.status, 409, 'already answered');
-  interview.responses = [];
+  interview.responses = []; interview.claimedAnswers = [];
   const bad = await answer({ questionId: 's2-easy', code: 'print(1)', language: 'cpp' });
   assert.equal(bad.status, 400, 'only the slot languages are accepted');
+});
+
+test('the basic estimate gives 0 for code that is empty or the unchanged starting code', async () => {
+  mock.method(axios, 'post', async () => ({ data: { generated_text: 'Sorry, I cannot help with that right now.' } })); // AI unusable
+  const starter = 'function solve(n) {\n  // TODO: write your solution here\n}\nconsole.log(solve(1));\n';
+  interview.questions.push({ questionId: 's2-medium', slot: 2, level: 'medium', type: 'coding', question: 'Solve it', practiceQuestionId: 'dddddddddddddddddddddddd', languages: ['javascript', 'python', 'java'], starterCode: { javascript: starter } });
+  mock.method(practiceRepo, 'listTests', async () => [{ _id: 't1', input: '1', expectedOutput: '2', visible: true }]);
+  const same = await answer({ questionId: 's2-medium', code: starter.replace(/\n/g, '\n\n  '), language: 'javascript' });
+  assert.equal(same.status, 200, same.text);
+  assert.equal(same.body.feedback.source, 'fallback');
+  assert.equal(same.body.feedback.score, 0);
+  assert.match(same.body.feedback.improvements.join(' '), /No code was written/);
+
+  interview.responses = []; interview.claimedAnswers = [];
+  const written = await answer({ questionId: 's2-medium', code: 'function solve(n) { return n * 2; }\nconsole.log(solve(1));', language: 'javascript' });
+  assert.equal(written.status, 200, written.text);
+  assert.notEqual(written.body.feedback.score, 0, 'real code keeps the usual basic estimate');
 });
