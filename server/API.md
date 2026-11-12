@@ -122,3 +122,38 @@ Everything here works on the admin's own university. A person outside it is `404
 |---|---|---|
 | GET `/compliance/subprocessors` | public | `{ success, updated, subprocessors: [{ name, purpose, status, data, note? }] }` (`status` is `in_use` or `planned`) |
 
+## Practice (`/api/practice`, student)
+
+Coding, multiple-choice (`mcq`) and `trace` questions from the seeded question bank. Only server-side sandbox results are scored; any result in a request body is ignored. A missing or unpublished question is `404 Question not found`.
+
+| Method and path | Body or query | Response | Errors |
+|---|---|---|---|
+| GET `/practice/questions` | query `topic`, `difficulty`, `type`, `unseen=1` (hide solved) | `{ success, questions: [{ id, title, type, topic, difficulty, languages, estimatedMinutes, isSeed }] }` | |
+| GET `/practice/questions/:id` | none | `{ success, question: { id, title, statement, type, topic, difficulty, languages, starterCode, timeLimitMs, memoryLimitKb, estimatedMinutes, learningOutcome, options?, multi?, visibleTests, hiddenTestCount } }`. Hidden tests are never sent. | 404 |
+| POST `/practice/questions/:id/run` | `language`, `source`, `stdin?` | With `stdin`: `{ success, mode: "custom", verdict, stdout, stderr, compileOutput, timeMs, memoryKb }`. Without: runs the visible tests, `{ success, mode: "visible_tests", verdict, tests }`. Not scored. Limit 20 a minute. | 400 not a coding question, unsupported or disallowed language, no source, bad stdin; 409 no visible tests; 413 too large; 429; 503 `verdict: "unavailable"` with `reason` (no runner; nothing scored) |
+| POST `/practice/questions/:id/browser-run` | `language`, `source` | 201 `{ success, recorded: true, verified: false }`. Records that the student ran code in their own browser; never scored. Limit 60 a minute. | 400, 413, 429 |
+| POST `/practice/questions/:id/submit` | coding: `language`, `source`. `mcq`: `selected` (list of option indexes). `trace`: `answer`. | MCQ and trace: `{ success, attemptId, verdict, score, explanation }`. Coding: `{ success, attemptId, verdict, score, passed, total, notRun, message?, tests }`. Visible tests run first; hidden tests run only if all visible tests pass, otherwise they count as not passed. Limit 20 a minute. | 400 bad answer, language or type; 409 no tests; 413; 429; 503 unavailable |
+| POST `/practice/questions/:id/attempts` | none | `{ success, draft: { attemptId, questionId, language, source, updatedAt } }` (returns the existing draft if there is one) | 404 |
+| GET `/practice/questions/:id/draft` | none | `{ success, draft }` (null when none) | 404 |
+| PUT `/practice/attempts/:id/autosave` | `language`, `source` (up to 64 KB) | `{ success, draft }` | 400 bad source or language; 404 |
+
+## Dashboard (`/api/dashboard`, lecturer and university admin)
+
+An admin sees the whole university. A lecturer sees only the students in the groups assigned to them (see `assigned-groups` above); with none assigned, lists are empty and `noGroupsAssigned` is true. A student outside the caller's scope is `404 Student not found`. Viewing a student, an interview or the CSV is written to the audit log. Only active students are counted. Query `group` narrows to one group: `400 INVALID_GROUP` if malformed, `403 GROUP_NOT_ASSIGNED` for a lecturer asking for a group that is not theirs.
+
+Attention flags (`code`, label): `no_cv` "No CV yet", `no_interview` "No interview yet", `inactive_14_days` "Inactive 14+ days", `score_drop_15` "Score dropped 15+ points" (the latest interview scored 15 or more points under the one before).
+
+Student row: `{ id, name, email, group, targetRoleTitle, cvScore, lastInterviewScore, lastLevelReached, trend (last three scores), practiceSolved, lastActive, attention: [{ code, label }] }`. `cvScore` is the latest target-role CV result with an AI score. Answers scored by the basic fallback are left out of every average.
+
+| Method and path | Query | Response | Errors |
+|---|---|---|---|
+| GET `/dashboard/overview` | `group?` | `{ success, noGroupsAssigned, group, groups, generatedAt, students, activeLast14Days, needingAttention, avgCvScore, studentsWithCvScore, avgInterviewScore, studentsWithInterviewScore, levelReachedCounts: { easy, medium, hard }, topMissingSkills (null below 5 students with a CV score), minimumForSkills, practiceSolved, seats? }`. `seats { used, limit, invited }` is for admins only. | 400, 403 |
+| GET `/dashboard/students` | `group`, `search` (name or email), `needsAttention=1`, `attention=<code>`, `sort` (`name`, `group`, `targetRoleTitle`, `cvScore`, `lastInterviewScore`, `practiceSolved`, `lastActive`; prefix `-` for descending), `page`, `pageSize` (1-100, default 25) | `{ success, noGroupsAssigned, students: [row], page, pageSize, total, totalPages, sort, group }` | 400 bad sort or attention code, 403 |
+| GET `/dashboard/students.csv` | the same filters as above | CSV download `students.csv` with columns `id, name, email, group, target_role, cv_score, last_interview_score, last_level_reached, trend, practice_solved, last_active, attention` | 400, 403 |
+| GET `/dashboard/students/:id` | none | `{ success, student: { id, name, email, group }, summary: row, interviews: [{ id, status, date, jobExcerpt, score, categoryScores, readinessLevel, levelReached, answered, skipped, excludedFallbackAnswers }], cvAnalyses: [{ id, date, firstAnalysedAt, bestMatch, results: [{ kind, jobTitle, matchPercentage, countsTowardAverage, scoreBreakdown, strengths, weaknesses, ... }] }], practice, delivery }` | 404 |
+| GET `/dashboard/students/:id/interviews/:interviewId` | none | `{ success, student, interview: { id, status, dates, jobDescription, score, categoryScores, readinessLevel, levelReached, excludedFallbackAnswers, summary, delivery, questions: [{ questionId, type, category, difficulty, level, question, answered, skipped, answer, feedback, feedbackSource, executionResults, deliveryMetrics }] } }`. No CV text, hidden tests or question pool. | 404 |
+
+## Other
+
+- Any path outside `/api` serves the built web app (`client/dist`).
+- Express body limit is 2 MB (JSON and CSV text); file uploads have their own limits above.
