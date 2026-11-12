@@ -34,7 +34,7 @@ const userAuth = async (req, res, next) => {
 
     // Role, institution and status always come from the database, never from the token,
     // so deactivation and role changes take effect immediately.
-    if (user.status === "deactivated" || user.status === "invited") {
+    if (user.status === "deactivated" || user.status === "invited" || user.status === "unverified") {
       return res.status(401).json({
         success: false,
         message: "This account is not active.",
