@@ -218,10 +218,15 @@ export const studentRow = (user, data, now, institution = null) => {
     ...attempts.filter((a) => a.runKind !== 'draft').map((a) => a.createdAt),
   );
 
+  // Only the upload date of the profile CV is read (the dashboard repo never selects its text).
+  const hasCv = cvAnalyses.length > 0 || Boolean(user.currentCV?.uploadedAt);
+
   const row = {
     id: sid(user._id), name: user.name || '', email: user.email || '', group: user.group || '',
     targetRoleTitle: targetRole?.title ?? null,
     cvScore: cvResult ? cvResult.matchPercentage : null,
+    // A CV is on file (uploaded, or analysed before) but has no score against the current role yet.
+    cvNotScored: !cvResult && hasCv,
     lastInterviewScore,
     lastLevelReached: latest ? levelOf(latest.levelReached) : null,
     trend: scores.filter(isNum).slice(-3),
@@ -229,7 +234,7 @@ export const studentRow = (user, data, now, institution = null) => {
     lastActive: lastActive ? lastActive.toISOString() : null,
   };
   row.attention = attentionFor({
-    hasCv: cvAnalyses.length > 0, hasInterview: completed.length > 0, lastActive: row.lastActive, lastInterviewScore, previousScore,
+    hasCv, hasInterview: completed.length > 0, lastActive: row.lastActive, lastInterviewScore, previousScore,
   }, now);
   // Not part of the table, used for the overview.
   Object.defineProperty(row, '_agg', { enumerable: false, value: { missingSkills: cvResult ? skillList(cvResult.scoreBreakdown?.missingSkills) : [] } });

@@ -370,7 +370,7 @@ test('row shape, search, sort (nulls last, ties by name) and pagination', async 
   assert.deepEqual([p2.body.total, p2.body.totalPages, p2.body.page, p2.body.pageSize], [6, 2, 2, 4]);
   const s = await get('/api/dashboard/students', adminA, { search: 'FLO@' });
   assert.deepEqual(s.body.students.map((x) => x.name), ['Flo']);
-  assert.deepEqual(Object.keys(s.body.students[0]).sort(), ['attention', 'cvScore', 'email', 'group', 'id', 'lastActive', 'lastInterviewScore',
+  assert.deepEqual(Object.keys(s.body.students[0]).sort(), ['attention', 'cvNotScored', 'cvScore', 'email', 'group', 'id', 'lastActive', 'lastInterviewScore',
     'lastLevelReached', 'name', 'practiceSolved', 'targetRoleTitle', 'trend'].sort());
 });
 
@@ -582,4 +582,29 @@ test('the CV projection selects each result targetRoleId and no CV text', () => 
   const fields = String(dashboardRepoSource.match(/const CV_FIELDS = \[([\s\S]*?)\]/)[1]);
   assert.match(fields, /'results\.targetRoleId'/);
   assert.doesNotMatch(fields, /resumeText/);
+});
+
+test('a student with an uploaded but unanalysed CV is not no_cv, and is flagged cvNotScored', async () => {
+  const [ann, bob, cy] = studentsA;
+  ann.currentCV = { ...ann.currentCV, uploadedAt: new Date() };
+  db.addCv(bob, [db.result(70)]);
+  db.addCv(cy, [db.result(60, { kind: 'job_description' })]);
+  const rows = await rowsFor(adminA);
+  assert.ok(!codes(rows.Ann).includes('no_cv'));
+  assert.equal(rows.Ann.cvScore, null);
+  assert.equal(rows.Ann.cvNotScored, true);
+  assert.equal(rows.Bob.cvNotScored, false);
+  assert.equal(rows.Cy.cvNotScored, true, 'only checked against a pasted job, so not scored against the role');
+  assert.ok(codes(rows.Ed).includes('no_cv'));
+  assert.equal(rows.Ed.cvNotScored, false, 'no CV at all is no_cv, not "not scored"');
+  const prof = await get(`/api/dashboard/students/${ann._id}`, adminA);
+  assert.equal(prof.body.summary.cvNotScored, true);
+  noSecrets(JSON.stringify(prof.body), 'student profile');
+  assert.doesNotMatch(JSON.stringify(prof.body), /currentCV/);
+});
+
+test('the student projection selects currentCV.uploadedAt only, never the CV text', () => {
+  const fields = dashboardRepoSource.match(/const STUDENT_FIELDS = '([^']*)'/)[1].split(' ');
+  assert.ok(fields.includes('currentCV.uploadedAt'));
+  assert.deepEqual(fields.filter((f) => f.startsWith('currentCV')), ['currentCV.uploadedAt']);
 });

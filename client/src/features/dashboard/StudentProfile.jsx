@@ -186,7 +186,7 @@ const StudentProfile = () => {
       <div className="space-y-6">
         <section aria-label="Summary" className="space-y-3">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <MetricTile label="CV score" value={summary.cvScore} suffix="%" hint="Against the target role" />
+            <MetricTile label="CV score" value={summary.cvScore} suffix="%" hint={summary.cvNotScored ? 'CV on file, not scored against the target role yet' : 'Against the target role'} />
             <MetricTile label="Last interview score" value={summary.lastInterviewScore}
               hint={LEVEL_LABELS[summary.lastLevelReached] ? `Reached ${LEVEL_LABELS[summary.lastLevelReached]}` : `Trend: ${summary.trend.length ? summary.trend.join(', ') : '-'}`} />
             <MetricTile label="Interviews completed" value={interviews.filter((iv) => iv.status === 'completed').length} />

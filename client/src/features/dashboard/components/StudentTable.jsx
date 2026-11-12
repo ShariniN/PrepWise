@@ -90,7 +90,10 @@ const StudentTable = ({ data, loading, sort, onSort, onPage }) => {
               <Td className="min-w-[11rem]"><AttentionChips reasons={s.attention} empty={dash} /></Td>
               <Td className="whitespace-nowrap">{s.group || dash}</Td>
               <Td className="min-w-[9rem]">{s.targetRoleTitle || dash}</Td>
-              <Td className="text-right tabular-nums">{fmtNum(s.cvScore, '%')}</Td>
+              <Td className="text-right tabular-nums">
+                {fmtNum(s.cvScore, '%')}
+                {s.cvNotScored && <span className="block text-xs text-ink-2">CV not scored yet</span>}
+              </Td>
               <Td className="whitespace-nowrap text-right tabular-nums">
                 {fmtNum(s.lastInterviewScore)}
                 {LEVEL_LABELS[s.lastLevelReached] && <span className="block text-xs text-ink-2">reached {LEVEL_LABELS[s.lastLevelReached]}</span>}
