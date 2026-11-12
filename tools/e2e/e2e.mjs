@@ -26,18 +26,32 @@ const signIn = async (p, email, password) => {
   await p.getByRole('button', { name: /log in/i }).first().click();
 };
 
-// 1. Student: login form, wrong password, signed-in /login and unknown URLs
-// --- Target roles: the onboarding checks use a brand-new student, so they do not depend on what the seed or other
-// suites gave the demo students. Sign up through the API, follow the dev verification link, then use the browser.
+// --- API helpers for setup and clean-up, so a run leaves the data as it found it (the suites can run again on a
+// persistent local database).
 const API = process.env.API || 'http://localhost:4000';
+const apiClient = () => {
+  let cookie = '';
+  return async (method, path, body) => {
+    const r = await fetch(API + path, { method, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    for (const c of r.headers.getSetCookie?.() || []) if (c.startsWith('token=')) cookie = c.split(';')[0];
+    return { status: r.status, data: await r.json().catch(() => ({})) };
+  };
+};
 const stamp = Date.now().toString(36);
 const freshEmail = `e2e.fresh.${stamp}@email.com`;
 const freshPassword = 'Fresh1!pass';
-const signup = await fetch(API + '/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'E2E Fresh', email: freshEmail, password: freshPassword }) }).then((r) => r.json()).catch(() => ({}));
-const verifyToken = new URL(signup.devVerificationLink || 'http://x/?token=').searchParams.get('token');
-ok('sign-up gives a dev verification link', !!verifyToken, JSON.stringify(signup));
-const verified = await fetch(API + '/api/auth/verify-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: verifyToken }) });
-ok('the verification link activates the new student', verified.status === 200, String(verified.status));
+let originalRole = null;
+
+try {
+// 1. Student: login form, wrong password, signed-in /login and unknown URLs
+// --- Target roles: the onboarding checks use a brand-new student, so they do not depend on what the seed or other
+// suites gave the demo students. Sign up through the API, follow the dev verification link, then use the browser.
+const signupRes = await apiClient()('POST', '/api/auth/signup', { name: 'E2E Fresh', email: freshEmail, password: freshPassword });
+const verifyToken = new URL(signupRes.data.devVerificationLink || 'http://x/?token=').searchParams.get('token');
+ok('sign-up gives a dev verification link', signupRes.status === 200 && !!verifyToken, `${signupRes.status} ${JSON.stringify(signupRes.data)}`);
+if (!verifyToken) throw new Error(`Sign-up of ${freshEmail} failed: ${signupRes.status} ${JSON.stringify(signupRes.data)}`);
+const verified = await apiClient()('POST', '/api/auth/verify-email', { token: verifyToken });
+ok('the verification link activates the new student', verified.status === 200, `${verified.status} ${JSON.stringify(verified.data)}`);
 
 let ctx = await newCtx();
 let p = await ctx.newPage(); watch(p, 'fresh student');
@@ -183,6 +197,11 @@ await sp.waitForURL(/manage-people/, { timeout: 15000 }).catch(() => {});
 await sp.goto(B + '/settings', { waitUntil: 'networkidle' }); await sp.waitForTimeout(1000);
 const settingsText = await body(sp);
 ok('settings shows the read-only seat limit note', /Set in your contract. Contact us to change it./.test(settingsText));
+{
+  const adminApi = apiClient(); await adminApi('POST', '/api/auth/login', { email: 'admin@email.com', password: 'admin@123' });
+  const first = (await adminApi('GET', '/api/institution/settings')).data.targetRoles?.[0];
+  if (first) originalRole = { id: first.id, title: first.title, description: first.description, skills: first.skills };
+}
 await sp.getByRole('button', { name: /^Edit / }).first().click();
 const editedTitle = 'E2E edited role ' + Date.now().toString(36);
 await sp.getByLabel(/^Title/).fill(editedTitle);
@@ -225,7 +244,30 @@ await ap.goto(B + '/admin-overview', { waitUntil: 'networkidle' }); await ap.wai
 ok('the old admin overview page is gone', !/Adoption and renewal/i.test(await body(ap)));
 await ctx.close();
 
-console.log('\nbrowser errors:', errs.length ? errs.slice(0, 8) : 'none');
-console.log(`\n${results.filter((r) => r[1]).length}/${results.length} passed`);
-if (results.some((r) => !r[1])) process.exitCode = 1;
-await browser.close();
+} finally {
+  // Put everything back: the new student is erased with their own password, the edited role gets its original text
+  // back, and the pending invitation from prep.mjs is cancelled if the browser step did not do it.
+  try {
+    const me = apiClient();
+    const login = await me('POST', '/api/auth/login', { email: freshEmail, password: freshPassword });
+    if (login.status === 200) {
+      const del = await me('DELETE', '/api/me', { password: freshPassword });
+      if (del.status !== 200) console.log(`WARN  could not remove ${freshEmail}: ${del.status} ${JSON.stringify(del.data)}`);
+    }
+    const admin = apiClient(); await admin('POST', '/api/auth/login', { email: 'admin@email.com', password: 'admin@123' });
+    if (originalRole) {
+      const back = await admin('PATCH', `/api/institution/target-roles/${originalRole.id}`, { title: originalRole.title, description: originalRole.description, skills: originalRole.skills });
+      if (back.status !== 200) console.log(`WARN  could not restore the target role: ${back.status} ${JSON.stringify(back.data)}`);
+    }
+    if (st.inviteEmail) {
+      const found = (await admin('GET', `/api/institution/people?search=${encodeURIComponent(st.inviteEmail)}`)).data.people || [];
+      for (const person of found.filter((x) => x.email === st.inviteEmail && x.status === 'invited')) await admin('PATCH', `/api/institution/people/${person.id}/deactivate`);
+    }
+  } catch (error) {
+    console.log('WARN  clean-up failed:', error.message);
+  }
+  console.log('\nbrowser errors:', errs.length ? errs.slice(0, 8) : 'none');
+  console.log(`\n${results.filter((r) => r[1]).length}/${results.length} passed`);
+  if (results.some((r) => !r[1])) process.exitCode = 1;
+  await browser.close();
+}

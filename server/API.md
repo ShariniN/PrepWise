@@ -5,7 +5,7 @@ Taken from `server/app.js` and every `server/modules/*/*.routes.js`. All paths s
 **Conventions**
 - Auth is a `token` HTTP-only cookie set by login, accept-invite and verify-email. "Any user" means any signed-in user with a known role.
 - Roles: `student`, `lecturer`, `university_admin`. Role, institution and status are read from the database on every request.
-- Failures are `{ success: false, message, code? }`. Common to every signed-in route: `401` not signed in or account not active, `403 ROLE_NOT_SUPPORTED` for a removed role, `403` wrong role ("You do not have permission to do this").
+- Failures are `{ success: false, message, code? }`. The interviews router is the exception for most of its errors: `{ success: false, error }`, with `code` and `message` added for the coded ones (`CV_REQUIRED`, `TARGET_ROLE_REQUIRED`, `READINESS_REQUIRED`, `ALREADY_ANSWERED`, `INTERVIEW_COMPLETED`, `TRANSCRIPTION_UNAVAILABLE`). Plain errors in that router (404, 400 without a code, 500) carry only `error`. Common to every signed-in route: `401` not signed in or account not active, `403 ROLE_NOT_SUPPORTED` for a removed role, `403` wrong role ("You do not have permission to do this").
 - Every query is scoped to the caller's institution.
 - An unknown `/api/...` path answers `404 { success: false, message: "Not found" }`.
 - Outside production, mail is not sent: sign-up and invitations return the link in the response (`devVerificationLink`, `inviteLink`).
