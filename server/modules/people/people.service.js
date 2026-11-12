@@ -26,6 +26,7 @@ export const publicUser = (u) => ({
   role: u.role,
   status: u.status,
   group: u.group || '',
+  assignedGroups: u.role === 'lecturer' && Array.isArray(u.assignedGroups) ? [...u.assignedGroups] : [],
   isAccountVerified: !!u.isAccountVerified,
   lastActive: u.lastActive || null,
   createdAt: u.createdAt || null,
@@ -274,6 +275,27 @@ export const setGroup = async ({ institution, actor, id, group }) => {
   await audit({ actor: actor.id, action: 'user.group_change', target: user._id, institutionId: institution._id, meta: { from, to: g } });
   return { user: publicUser(updated) };
 };
+
+export const MAX_ASSIGNED_GROUPS = 20;
+
+// The groups whose students a lecturer sees on the dashboard. Every value is cleaned before it reaches the model.
+export const setAssignedGroups = async ({ institution, actor, id, groups }) => {
+  const user = await loadTarget(institution, id);
+  if (user.role !== 'lecturer') throw new PeopleError(400, 'Groups can only be assigned to lecturers', 'NOT_A_LECTURER');
+  if (!Array.isArray(groups)) throw new PeopleError(400, 'groups must be a list of group names', 'INVALID_GROUPS');
+  const cleaned = [...new Set(groups.map((g) => cleanGroup(g)).filter(Boolean))];
+  if (cleaned.length > MAX_ASSIGNED_GROUPS) {
+    throw new PeopleError(400, `A lecturer can have at most ${MAX_ASSIGNED_GROUPS} groups`, 'TOO_MANY_GROUPS');
+  }
+  const from = Array.isArray(user.assignedGroups) ? [...user.assignedGroups] : [];
+  const updated = await peopleRepo.updateAssignedGroups(institution._id, user._id, cleaned);
+  if (!updated) throw new PeopleError(404, 'Person not found', 'NOT_FOUND');
+  await audit({ actor: actor.id, action: 'user.assigned_groups_change', target: user._id, institutionId: institution._id, meta: { from, to: cleaned } });
+  return { user: publicUser(updated) };
+};
+
+export const listStudentGroups = async (institution) =>
+  [...new Set(await peopleRepo.distinctStudentGroups(institution._id))].sort((a, b) => a.localeCompare(b));
 
 export const changeRole = async ({ institution, actor, id, role }) => {
   if (!ROLES.includes(role)) throw new PeopleError(400, `Role must be one of: ${ROLES.join(', ')}`, 'INVALID_ROLE');

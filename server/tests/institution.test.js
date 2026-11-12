@@ -343,3 +343,70 @@ test('CSV import at the limit validates every row first and labels each by its r
   assert.deepEqual(res.body.summary, { total: 8, skipped: 2, blocked_limit: 1, error: 4, invited: 1 });
   assert.equal(res.body.limitReached, true);
 });
+
+// ---------------------------------------------------------------- lecturer group assignment
+const assign = (user, target, body) => request(app).patch(`/api/institution/people/${target._id}/assigned-groups`).set(as(user)).send(body);
+
+test('admin assigns groups to a lecturer', async () => {
+  const res = await assign(adminA, lecturerA, { groups: [' Group   1 ', 'Group 2', 'Group 2', ''] });
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(res.body.user.assignedGroups, ['Group 1', 'Group 2'], 'cleaned, without blanks or repeats');
+  assert.deepEqual(lecturerA.assignedGroups, ['Group 1', 'Group 2']);
+  assert.equal(w.saves, 0, 'an atomic update: no save hook, so the lecturer does not look active');
+  const entry = w.audit.find((a) => a.action === 'user.assigned_groups_change');
+  assert.deepEqual(entry.meta, { from: [], to: ['Group 1', 'Group 2'] });
+  assert.equal(String(entry.target), String(lecturerA._id));
+  const list = await request(app).get('/api/institution/people?role=lecturer').set(as(adminA));
+  assert.deepEqual(list.body.people[0].assignedGroups, ['Group 1', 'Group 2']);
+  const cleared = await assign(adminA, lecturerA, { groups: [] });
+  assert.equal(cleared.status, 200);
+  assert.deepEqual(lecturerA.assignedGroups, []);
+});
+
+test('assigning groups to a student is 400 NOT_A_LECTURER', async () => {
+  for (const target of [studentA, adminA]) {
+    const res = await assign(adminA, target, { groups: ['Group 1'] });
+    assert.equal(res.status, 400, target.role);
+    assert.equal(res.body.code, 'NOT_A_LECTURER');
+    assert.equal(res.body.success, false);
+  }
+  assert.equal(studentA.assignedGroups, undefined);
+});
+
+test('more than 20 groups is 400', async () => {
+  const many = Array.from({ length: 21 }, (_, i) => `G${i}`);
+  const res = await assign(adminA, lecturerA, { groups: many });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'TOO_MANY_GROUPS');
+  assert.equal((await assign(adminA, lecturerA, { groups: [...many.slice(0, 20), 'G0', ' G1 '] })).status, 200, 'repeats do not count');
+  const long = await assign(adminA, lecturerA, { groups: ['x'.repeat(61)] });
+  assert.equal(long.status, 400);
+  assert.equal(long.body.code, 'INVALID_GROUP');
+  for (const body of [{}, { groups: 'Group 1' }, { groups: [3] }]) {
+    const bad = await assign(adminA, lecturerA, body);
+    assert.equal(bad.status, 400, JSON.stringify(body));
+    assert.match(bad.body.code, /^INVALID_GROUPS?$/);
+  }
+  assert.equal(lecturerA.assignedGroups.length, 20);
+});
+
+test('lecturer cannot assign groups', async () => {
+  assert.equal((await assign(lecturerA, lecturerA, { groups: ['Group 1'] })).status, 403);
+  assert.equal((await assign(studentA, lecturerA, { groups: ['Group 1'] })).status, 403);
+  assert.equal((await request(app).get('/api/institution/groups').set(as(lecturerA))).status, 403);
+  const lecB = w.addUser({ email: 'lec@b.edu', role: 'lecturer', institutionId: IDS.instB });
+  assert.equal((await assign(adminA, lecB, { groups: ['Group 1'] })).status, 404, 'another university');
+  assert.equal(lecturerA.assignedGroups, undefined);
+});
+
+test('GET /api/institution/groups lists the distinct student groups of the caller institution', async () => {
+  studentA.group = 'Group 2';
+  w.addUser({ email: 's2@a.edu', role: 'student', institutionId: IDS.instA, group: 'Group 1' });
+  w.addUser({ email: 's3@a.edu', role: 'student', institutionId: IDS.instA, group: 'Group 1', status: 'invited' });
+  w.addUser({ email: 's4@a.edu', role: 'student', institutionId: IDS.instA });
+  w.addUser({ email: 'l2@a.edu', role: 'lecturer', institutionId: IDS.instA, group: 'Staff only' });
+  studentB.group = 'Other uni';
+  const res = await request(app).get('/api/institution/groups').set(as(adminA));
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.groups, ['Group 1', 'Group 2']);
+});

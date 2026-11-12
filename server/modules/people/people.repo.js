@@ -2,7 +2,7 @@ import userModel from '../../models/User.js';
 import Institution from '../../models/Institution.js';
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const PUBLIC_FIELDS = 'name email role status group isAccountVerified lastActive createdAt inviteExpiresAt';
+const PUBLIC_FIELDS = 'name email role status group assignedGroups isAccountVerified lastActive createdAt inviteExpiresAt';
 
 // Every function that takes institutionId filters by it. Controllers must pass req.user.institutionId.
 const peopleRepo = {
@@ -51,6 +51,14 @@ const peopleRepo = {
   // reads lastActive as student activity, so an admin assigning groups must not make students look active.
   updateGroup: (institutionId, id, group) =>
     userModel.findOneAndUpdate({ _id: id, institutionId }, { $set: { group } }, { new: true, runValidators: true }).select(PUBLIC_FIELDS).lean(),
+  // Same reason: a lecturer's activity is not changed by an admin assigning their groups. `groups` is already cleaned.
+  updateAssignedGroups: (institutionId, id, groups) =>
+    userModel.findOneAndUpdate({ _id: id, institutionId, role: 'lecturer' }, { $set: { assignedGroups: groups } }, { new: true, runValidators: true })
+      .select(PUBLIC_FIELDS).lean(),
+
+  // Distinct non-empty groups of the institution's students (any status), for assigning lecturers.
+  distinctStudentGroups: async (institutionId) =>
+    (await userModel.distinct('group', { institutionId, role: 'student' })).filter((g) => typeof g === 'string' && g.trim()),
 };
 
 export default peopleRepo;
