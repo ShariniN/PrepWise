@@ -79,6 +79,44 @@ if (await phone.count()) {
   ok('profile shows the phone rule for a bad number', /10 to 15 digits/.test(await body(p)));
   await p.screenshot({ path: 'e2e/profile-phone.png' });
 } else ok('profile phone field present', false, 'no #ps-phone');
+
+// ---------------------------------------------------------------- Task 6: adaptive mock interview in the browser
+// Needs a CV on file and a target role (smoke.mjs gives the demo student both). No AI key: generic questions and
+// basic scoring, so every question stays at the starting level. The coding slot runs in the browser, never scored.
+await p.goto(B + '/interview', { waitUntil: 'networkidle' }); await p.waitForTimeout(1200);
+let iv = await body(p);
+if (/No CV yet|No target role yet/.test(iv)) {
+  console.log('SKIP  mock interview in the browser (the demo student has no CV or target role: run smoke.mjs first)');
+} else {
+  ok('interview start screen shows the CV and the target role', /CV on file/.test(iv) && /Practising for/.test(iv) && /Start interview/.test(iv), iv.slice(0, 200));
+  ok('job description is optional and collapsed', /Practising for a specific job\? Paste the description/.test(iv) && await p.locator('textarea').count() === 0);
+  if (/How ready do you feel\?/.test(iv)) await p.getByRole('button', { name: /Some practice/ }).click();
+  await p.getByRole('button', { name: /Start interview/ }).click();
+  await p.getByText('Question 1 of 5').waitFor({ timeout: 30000 }).catch(() => {});
+  const seen = [];
+  for (let n = 1; n <= 5; n++) {
+    iv = await body(p);
+    if (!iv.includes(`Question ${n} of 5`)) { ok(`question ${n} of 5 is shown`, false, iv.slice(0, 200)); break; }
+    seen.push((iv.match(/Question \d of 5\s*(Easy|Medium|Hard)/) || [])[1] || null);
+    if (/Your code/.test(iv)) {
+      await p.locator('.monaco-editor').first().waitFor({ timeout: 30000 }).catch(() => {});
+      await p.getByRole('button', { name: /Run on the examples/ }).click();
+      await p.getByText('Ran in your browser: not graded. Submit to check on the server.').waitFor({ timeout: 90000 }).catch(() => {});
+      ok('coding slot: Run on the examples runs in the browser', (await body(p)).includes('Ran in your browser: not graded'));
+      await p.screenshot({ path: 'e2e/interview-coding.png' });
+    } else {
+      await p.getByRole('button', { name: /Text\s*Type answer/ }).click();
+      await p.locator('#iv-text-answer').fill('I built a REST API in Node.js with Express and MongoDB, and I wrote Jest tests for every route.');
+    }
+    await p.getByRole('button', { name: /Submit & (Continue|Finish)/ }).click();
+    await p.getByText(n < 5 ? `Question ${n + 1} of 5` : 'Interview complete').waitFor({ timeout: 60000 }).catch(() => {});
+  }
+  ok('five questions, each with a level badge', seen.length === 5 && seen.every(Boolean), JSON.stringify(seen));
+  iv = await body(p);
+  ok('results show "Reached" a level and each question with its level', /Interview complete/.test(iv) && /Reached\s*(Easy|Medium|Hard)/.test(iv) && (iv.match(/Question \d\n/g) || []).length === 5, iv.slice(0, 300));
+  await p.screenshot({ path: 'e2e/interview-results.png', fullPage: true });
+}
+// ---------------------------------------------------------------- end of Task 6
 await ctx.close();
 
 // 5. Lecturer dashboard
