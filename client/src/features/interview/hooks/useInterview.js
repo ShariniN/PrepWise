@@ -1,5 +1,25 @@
 import { useState, useCallback } from 'react';
+import api, { errorMessage } from '../../../lib/apiClient';
 
+// An error from the interview API, with the server's code (CV_REQUIRED, READINESS_REQUIRED, ...) when it sent one.
+export class InterviewApiError extends Error {
+  constructor(error, fallback) {
+    super(error?.response?.data?.message || error?.response?.data?.error || errorMessage(error, fallback));
+    this.name = 'InterviewApiError';
+    this.status = error?.response?.status ?? null;
+    this.code = error?.response?.data?.code ?? null;
+  }
+}
+
+const call = async (request, fallback) => {
+  try {
+    return (await request()).data;
+  } catch (error) {
+    throw new InterviewApiError(error, fallback);
+  }
+};
+
+// The adaptive interview: the server sends one question at a time, and each answer's response carries the next one.
 export const useInterview = () => {
   const [interview, setInterview] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -8,223 +28,68 @@ export const useInterview = () => {
   const [responses, setResponses] = useState([]);
   const [questionFeedbacks, setQuestionFeedbacks] = useState({});
 
-  const createInterview = useCallback(async (interviewData, cvMode, profileCV, user) => {
-    if (!user) throw new Error('Please log in to start an interview');
+  // CV on file, target role, and whether this is the student's first interview (then readiness is asked).
+  const getSetup = useCallback(() => call(() => api.get('/api/interviews/setup'), 'Could not load the interview setup'), []);
 
-    const endpoint = cvMode === 'profile' && profileCV 
-      ? '/api/interviews/create-with-profile-cv'
-      : '/api/interviews/create';
-
-    const requestBody = {
-      jobTitle: 'Software Engineering Internship',
-      jobDescription: interviewData.jobDescription.trim(),
-      difficulty: 'intermediate',
-      questionCount: 5,
-      ...(cvMode === 'profile' && profileCV 
-        ? { useProfileCV: true }
-        : { resumeText: interviewData.resumeText.trim() }
-      )
-    };
-
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include',
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      await response.text();
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    
-    if (!result.success || !result.interview?.questions?.length) {
-      throw new Error(result.error || 'Failed to create interview');
-    }
-
-    setInterview(result.interview);
-    setQuestions(result.interview.questions);
-    
-    return result.interview;
-  }, []);
-
-  const startInterview = useCallback(async (interviewId) => {
-    
-    const response = await fetch(`/api/interviews/${interviewId}/start`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include'
-    });
-
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to start interview');
-    }
-
-    const firstQuestion = result.firstQuestion || result.questions?.[0] || questions[0];
-    
-    if (!firstQuestion) {
-      throw new Error('No questions available');
-    }
-
-    setCurrentQuestion(firstQuestion);
+  const createInterview = useCallback(async ({ readiness, jobDescription }) => {
+    const body = {};
+    if (readiness) body.readiness = readiness;
+    if (jobDescription?.trim()) body.jobDescription = jobDescription.trim();
+    const result = await call(() => api.post('/api/interviews/create', body), 'Failed to create the interview');
+    const first = result.interview?.questions?.[0];
+    if (!first) throw new Error('The interview has no first question');
+    setInterview({ ...result.interview, usedFallbackQuestions: !!result.usedFallbackQuestions });
+    setQuestions([first]);
+    setCurrentQuestion(first);
     setQuestionIndex(0);
-    
-    
-    return firstQuestion;
-  }, [questions]);
+    return { interview: result.interview, firstQuestion: first };
+  }, []);
 
+  const send = useCallback(async (interviewId, body, fallback) => {
+    const result = await call(() => api.post(`/api/interviews/${interviewId}/submit-answer`, body), fallback);
+    if (!result.success) throw new Error(result.error || fallback);
+    return result;
+  }, []);
+
+  // { feedback, nextQuestion, level, done }. The feedback carries the server's execution record and the
+  // delivery numbers exactly as the server stored them.
   const submitAnswer = useCallback(async (interviewId, submitData) => {
-    
-    const response = await fetch(`/api/interviews/${interviewId}/submit-answer`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include',
-      body: JSON.stringify(submitData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to submit answer');
-    }
-
-    // Execution is recorded by the server; surface it if the response carries it.
-    const execution = result.executionResults || result.response?.executionResults || result.feedback?.executionResults;
-    // The delivery coaching numbers exactly as the server stored them (after its validation).
+    const result = await send(interviewId, submitData, 'Failed to submit answer');
+    const execution = result.executionResults || result.feedback?.executionResults;
     const delivery = 'deliveryMetrics' in result ? { deliveryMetrics: result.deliveryMetrics } : {};
-    if (result.feedback && typeof result.feedback === 'object' && (execution || result.feedback.executionSource)) {
-      return { ...result.feedback, execution, executionSource: result.feedback.executionSource, ...delivery };
-    }
-    if (result.feedback && typeof result.feedback === 'object') return { ...result.feedback, ...delivery };
-    return result.feedback;
+    const feedback = result.feedback && typeof result.feedback === 'object'
+      ? { ...result.feedback, execution, executionSource: result.feedback.executionSource, ...delivery }
+      : result.feedback;
+    return { feedback, nextQuestion: result.nextQuestion || null, level: result.level || null, done: !!result.done };
+  }, [send]);
+
+  const skipQuestion = useCallback(async (interviewId, question) => {
+    const result = await send(interviewId, {
+      questionId: question.questionId, responseTime: 5, answerMode: 'skipped', skipped: true,
+    }, 'Failed to skip question');
+    return {
+      feedback: { score: 0, strengths: [], improvements: ['Question was skipped'], detailedAnalysis: 'Question was skipped', responseType: 'skipped' },
+      nextQuestion: result.nextQuestion || null, level: result.level || null, done: !!result.done,
+    };
+  }, [send]);
+
+  // Show the next question that came with the last answer.
+  const advance = useCallback((nextQuestion) => {
+    setQuestions((prev) => [...prev, nextQuestion]);
+    setCurrentQuestion(nextQuestion);
+    setQuestionIndex((i) => i + 1);
   }, []);
 
-  const skipQuestion = useCallback(async (interviewId, currentQuestion, language) => {
-    const isCodingQuestion = ['coding', 'technical_coding', 'problem-solving'].includes(currentQuestion?.type);
-
-    const submitData = {
-      questionId: currentQuestion.questionId,
-      responseTime: 5,
-      answerMode: 'skipped',
-      responseText: 'Question skipped by candidate',
-      skipped: true,
-      questionType: currentQuestion.type,
-      difficulty: currentQuestion.difficulty || 'intermediate',
-      ...(isCodingQuestion && { code: null, language })
-    };
-
-    const response = await fetch(`/api/interviews/${interviewId}/submit-answer`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include',
-      body: JSON.stringify(submitData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to skip question');
-    }
-
-    return result.feedback || {
-      score: 0,
-      strengths: [],
-      improvements: ['Question was skipped'],
-      detailedAnalysis: 'Question was skipped',
-      responseType: 'skipped'
-    };
-  }, []);
-
+  // Completing is idempotent: the last answer already completed the interview on the server.
   const completeInterview = useCallback(async (interviewId) => {
-    
-    const response = await fetch(`/api/interviews/${interviewId}/complete`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    await call(() => api.put(`/api/interviews/${interviewId}/complete`), 'Failed to complete interview');
+    try {
+      const result = (await api.get(`/api/interviews/${interviewId}/feedback`)).data;
+      return result.success && result.feedback ? result.feedback : null;
+    } catch {
+      return null;
     }
-
-    const result = await response.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to complete interview');
-    }
-
-    const feedbackResponse = await fetch(`/api/interviews/${interviewId}/feedback`, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include'
-    });
-
-    if (feedbackResponse.ok) {
-      const feedbackResult = await feedbackResponse.json();
-      if (feedbackResult.success && feedbackResult.feedback) {
-        return feedbackResult.feedback;
-      }
-    }
-
-    return null;
   }, []);
-
-  const getNextQuestion = useCallback(async (interviewId) => {
-    const response = await fetch(`/api/interviews/${interviewId}/next-question`, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      },
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    if (result.success && !result.completed) {
-      const nextQuestion = result.question || questions[questionIndex + 1];
-      setCurrentQuestion(nextQuestion);
-      setQuestionIndex(prev => prev + 1);
-      return nextQuestion;
-    }
-
-    return null;
-  }, [questions, questionIndex]);
 
   const reset = useCallback(() => {
     setInterview(null);
@@ -244,13 +109,12 @@ export const useInterview = () => {
     questionFeedbacks,
     setResponses,
     setQuestionFeedbacks,
-    setCurrentQuestion,
+    getSetup,
     createInterview,
-    startInterview,
     submitAnswer,
     skipQuestion,
+    advance,
     completeInterview,
-    getNextQuestion,
     reset
   };
 };

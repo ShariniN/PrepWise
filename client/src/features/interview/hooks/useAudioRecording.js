@@ -68,14 +68,19 @@ export const useAudioRecording = () => {
         body: formData
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
+      // Voice answers are off (no key) or the speech service failed: the server's message says to type instead.
+      if (result.code === 'TRANSCRIPTION_UNAVAILABLE') {
+        setTranscriptionError(result.message);
+        return;
+      }
       if (result.success && result.text && result.text.trim()) {
         setTranscription(result.text);
       } else if (result.success) {
         throw new Error('No speech was detected. Check your microphone and try again, or type your answer below.');
       } else {
-        throw new Error(result.error || 'Transcription failed');
+        throw new Error(result.message || result.error || 'Transcription failed');
       }
       
     } catch (err) {
