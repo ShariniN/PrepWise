@@ -3,7 +3,7 @@ process.env.JWT_SECRET = 'test-secret-test-secret-1234';
 process.env.NODE_ENV = 'test';
 delete process.env.JDOODLE_CLIENT_ID;
 delete process.env.JDOODLE_CLIENT_SECRET;
-delete process.env.ASSEMBLYAI_API_KEY;
+delete process.env.GROQ_API_KEY;
 
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';

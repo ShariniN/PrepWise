@@ -18,7 +18,15 @@ const questionSchema = new mongoose.Schema({
   slot: { type: Number, min: 0, max: 4 },
   level: { type: String, enum: ['easy', 'medium', 'hard'] },
   expectedDuration: { type: Number, default: 120 }, 
-  // Optional hidden tests for coding questions. Never sent to the client (see getNextQuestion).
+  // Adaptive coding slot: the seeded practice question it came from. Its tests stay in the practice set and are
+  // loaded on the server when the answer is marked; only the visible ones are copied here for the student.
+  practiceQuestionId: { type: mongoose.Schema.Types.ObjectId, default: undefined },
+  statement: { type: String, default: undefined },
+  languages: { type: [String], default: undefined },
+  visibleTests: { type: [new mongoose.Schema({ id: String, input: String, expectedOutput: String, comparison: String }, { _id: false })], default: undefined },
+  hiddenTestCount: { type: Number, default: undefined },
+  timeLimitMs: { type: Number, default: undefined },
+  // Hidden tests of older interview questions. Never sent to the client.
   tests: { type: [new mongoose.Schema({ input: String, expectedOutput: String, comparison: String }, { _id: true })], default: undefined },
   followUpQuestions: [{ type: String }],
   starterCode: {
@@ -65,6 +73,8 @@ const responseSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   question: { type: String, required: true },
   questionType: { type: String, required: true },
+  // Adaptive interview: the level the question was asked at.
+  level: { type: String, enum: ['easy', 'medium', 'hard'] },
   audioUrl: { type: String }, 
   transcription: { type: String },
   textResponse: { type: String },

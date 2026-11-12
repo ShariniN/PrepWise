@@ -12,6 +12,7 @@ import { makeWorld, IDS, newId } from './helpers.js';
 import CVAnalysis from '../models/CvAnalysis.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
+import { interviewAi } from '../modules/interviews/interviews.controller.js';
 import app from '../app.js';
 
 const SNAP_FILE = new URL('./support/legacy-routes.snap.json', import.meta.url);
@@ -170,32 +171,19 @@ test('POST /api/analyze/analyze-resume with the profile CV: CS role, non-CS role
 
 // ---------------------------------------------------------------- interviews
 
-const AI_QUESTIONS = [
-  { questionId: 'q1', type: 'behavioural', question: 'Tell me about\nyour Node.js project', category: 'projects', difficulty: 'easy' },
-  { type: 'code', question: 'Write a function that sums an array of numbers', followUpQuestions: ['why?'] },
-  { questionId: 'q3', type: 'coding', question: 'Reverse a string', language: 'python', cvReference: 'Python course' },
-  { questionId: 'q4', type: 'system-design', question: 'Design a URL shortener', jdAlignment: 'backend' },
-];
 const aiReturns = (payload) => mock.method(axios, 'post', async () => ({ data: { generated_text: typeof payload === 'string' ? payload : JSON.stringify(payload) } }));
 
-test('POST /api/interviews/create: validation, AI questions and the fallback set', async () => {
-  snap('iv create missing', await post('/api/interviews/create', { jobDescription: 'JD' }));
-  aiReturns(AI_QUESTIONS);
-  snap('iv create ai', await post('/api/interviews/create', { jobDescription: ' Backend intern, Java and Spring ', resumeText: ' CV with Java, Spring and Maven ' }));
-  aiReturns('no json here');
-  snap('iv create fallback', await post('/api/interviews/create', { jobDescription: 'Frontend intern', resumeText: 'CV with React' }));
-  assert.equal(ivStore.length, 2);
-});
-
-test('POST /api/interviews/create-with-profile-cv', async () => {
-  snap('iv profile missing jd', await post('/api/interviews/create-with-profile-cv', {}));
-  snap('iv profile no cv', await post('/api/interviews/create-with-profile-cv', { jobDescription: 'JD' }));
-  student.currentCV = { text: 'Profile CV: C++ and Qt developer', fileName: 'cv.pdf' };
-  student.getCVText = function getCVText() { return this.currentCV.text; };
-  Object.defineProperty(student, 'hasCV', { get() { return !!this.currentCV?.text; }, configurable: true });
-  aiReturns(AI_QUESTIONS.slice(0, 2));
-  snap('iv profile ok', await post('/api/interviews/create-with-profile-cv', { jobDescription: ' Systems intern ' }));
-  assert.equal(ivStore[0].resumeText, 'Profile CV: C++ and Qt developer');
+test('POST /api/interviews/create: CV, target role and readiness checks, then the generic question pool', async () => {
+  mock.method(interviewAi, 'generate', async () => { throw new Error('All AI models failed'); });
+  snap('iv create no cv', await post('/api/interviews/create', {}));
+  student.currentCV = { text: 'Profile CV: C++ and Qt developer with Git', fileName: 'cv.pdf' };
+  snap('iv create no role', await post('/api/interviews/create', {}));
+  w.institutions[IDS.instA].targetRoles = [{ _id: 'cccccccccccccccccccccccc', title: 'Systems intern', description: 'Low-level work', skills: ['C++'] }];
+  student.targetRoleId = 'cccccccccccccccccccccccc';
+  snap('iv create no readiness', await post('/api/interviews/create', { jobDescription: 'JD' }));
+  snap('iv create fallback', await post('/api/interviews/create', { readiness: 'just_starting', jobDescription: ' Systems intern ' }));
+  assert.equal(ivStore.length, 1);
+  assert.equal(ivStore[0].resumeText, 'Profile CV: C++ and Qt developer with Git');
 });
 
 const makeInterview = (fields = {}) => {
@@ -211,10 +199,9 @@ const makeInterview = (fields = {}) => {
   return iv;
 };
 
-test('interview start, next question, details and history', async () => {
+test('interview start, details and history', async () => {
   snap('iv start not found', await put(`/api/interviews/${newId()}/start`));
   const iv = makeInterview();
-  snap('iv next first', await get(`/api/interviews/${iv._id}/next-question`));
   snap('iv start ok', await put(`/api/interviews/${iv._id}/start`));
   snap('iv start again', await put(`/api/interviews/${iv._id}/start`));
   snap('iv get', await get(`/api/interviews/${iv._id}`));
@@ -228,9 +215,8 @@ test('submit-answer: skipped answer, unknown question, empty answer and completi
   snap('iv submit empty answer', await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'b1', responseText: '  ' }));
   snap('iv submit skipped', await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'b1', skipped: true, responseTime: '12' }));
   assert.equal(iv.status, 'in_progress');
-  snap('iv next after skip', await get(`/api/interviews/${iv._id}/next-question`));
-  await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'c1', skipped: true });
-  snap('iv next done', await get(`/api/interviews/${iv._id}/next-question`));
+  snap('iv submit skipped last', await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'c1', skipped: true }));
+  snap('iv submit already answered', await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'c1', skipped: true }));
   const done = await put(`/api/interviews/${iv._id}/complete`);
   done.body.results.duration = '<duration>';
   done.body.results.feedback.duration = '<duration>';
@@ -246,7 +232,8 @@ test('submit-answer: an answered behavioural question with AI feedback, then wit
     deliveryMetrics: { cameraUsed: true, faceVisiblePct: 120, eyeContactPct: 55.55, lookAwayCount: 3.4, headMovement: 'low', wordsPerMinute: 130.6, fillerWordCount: 2, durationSec: 40, extra: 'x' },
   }));
   aiReturns('nothing useful');
-  snap('iv submit fallback', await post(`/api/interviews/${iv._id}/submit-answer`, { questionId: 'b1', responseText: 'Short answer about a project where I learned and completed it during work', responseTime: 20 }));
+  const iv2 = makeInterview({ status: 'in_progress' });
+  snap('iv submit fallback', await post(`/api/interviews/${iv2._id}/submit-answer`, { questionId: 'b1', responseText: 'Short answer about a project where I learned and completed it during work', responseTime: 20 }));
 });
 
 test('every snapshot in the file is still used', () => {

@@ -138,7 +138,7 @@ There is no endpoint to list consents except inside `/api/me/export`.
 
 ### GET /api/compliance/subprocessors  (public, no login)
 `{ success, updated, subprocessors: [{ name, purpose, status: "in_use"|"planned", data, note? }] }`
-In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, AssemblyAI. Planned: Judge0, Vercel, Cloudflare.
+In use today: MongoDB Atlas, Google Gemini API, Google (Gmail SMTP), JDoodle, Groq (voice transcription). Planned: Judge0, Vercel, Cloudflare.
 
 ---
 

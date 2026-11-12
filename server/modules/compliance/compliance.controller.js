@@ -76,7 +76,7 @@ export const SUBPROCESSORS = [
   { name: 'Google (Gmail SMTP)', purpose: 'Sending invitations and verification emails', status: 'in_use', data: 'Email address, name' },
   { name: 'JDoodle', purpose: 'Running candidate code', status: 'in_use', data: 'Submitted code' },
   { name: 'Judge0', purpose: 'Running candidate code (replaces JDoodle in Phase 2)', status: 'planned', data: 'Submitted code' },
-  { name: 'AssemblyAI', purpose: 'Speech-to-text for spoken interview answers', status: 'in_use', data: 'Audio recordings; only when the student uses voice answers and a key is configured' },
+  { name: 'Groq (voice transcription)', purpose: 'Speech-to-text for spoken interview answers (Whisper)', status: 'in_use', data: 'Audio recordings, not stored; only when the student uses voice answers and a key is configured' },
   { name: 'Vercel', purpose: 'Hosting the web app and API', status: 'planned', data: 'All traffic', note: 'Not deployed from this repository yet' },
   { name: 'Cloudflare', purpose: 'DNS', status: 'planned', data: 'Traffic metadata', note: 'Not used by the code yet' },
 ];

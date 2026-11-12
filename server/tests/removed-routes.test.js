@@ -56,7 +56,9 @@ export const REMOVED = [
   // lean refactor: skills self-assessment, lecturer question authoring, grading, edit-event tracking
   ['get', '/api/swot/assessments'], ['post', '/api/questions'], ['post', '/api/questions/x/validate'],
   ['post', '/api/questions/draft'], ['get', '/api/user/skills-assessments'], ['delete', `/api/user/assessment/${id}`],
-  ['post', '/api/swot/save-ratings'], ['get', '/api/grading/queue']
+  ['post', '/api/swot/save-ratings'], ['get', '/api/grading/queue'],
+  // adaptive interviews: creation uses the CV on file, and the next question comes with each answer
+  ['post', '/api/interviews/create-with-profile-cv'], ['get', `/api/interviews/${id}/next-question`], ['post', '/api/interviews/process-cv']
 ];
 
 test('every removed endpoint returns a JSON 404 for every role', async () => {

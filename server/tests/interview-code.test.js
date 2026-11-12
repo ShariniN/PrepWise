@@ -8,6 +8,7 @@ import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import * as exec from '../services/execution/index.js';
 import { VmProvider } from './support/vmChecker.js';
+import practiceRepo from '../modules/practice/practice.repo.js';
 import app from '../app.js';
 
 let w, student, interview, provider, aiPrompts;
@@ -71,10 +72,11 @@ test('questions with tests are marked against them and the tests never reach the
   assert.equal(right.status, 200, right.text);
   assert.equal(interview.responses[0].executionResults.testsPassed, 2);
   assert.equal(interview.responses[0].executionResults.success, true);
+  interview.responses = []; // the same question can be answered only once
   const wrong = await answer({ questionId: 'c2', code: 'console.log(0)', executionResults: FAKE_CLAIM });
   assert.equal(wrong.status, 200);
-  assert.equal(interview.responses[1].executionResults.success, false);
-  assert.equal(interview.responses[1].executionResults.testsPassed, 0);
+  assert.equal(interview.responses[0].executionResults.success, false);
+  assert.equal(interview.responses[0].executionResults.testsPassed, 0);
   assert.ok(!JSON.stringify(wrong.body).includes('expectedOutput'));
 });
 
@@ -97,4 +99,35 @@ test('non-coding answers are untouched by the execution path', async () => {
   assert.equal(res.status, 200, res.text);
   assert.equal(interview.responses[0].executionResults, null);
   assert.equal(provider.calls, 0);
+});
+
+test('the adaptive coding slot is marked against all of its practice question tests, loaded on the server', async () => {
+  const practiceQuestionId = 'dddddddddddddddddddddddd';
+  const loaded = [];
+  mock.method(practiceRepo, 'listTests', async (id) => {
+    loaded.push(String(id));
+    return [
+      { _id: 't1', input: '2', expectedOutput: '4', visible: true, comparison: 'trim' },
+      { _id: 't2', input: '7', expectedOutput: '14', visible: false, comparison: 'trim' },
+      { _id: 't3', input: '10', expectedOutput: '20', visible: false, comparison: 'trim' },
+    ];
+  });
+  interview.questions.push({
+    questionId: 's2-easy', slot: 2, level: 'easy', type: 'coding', question: 'Double it', statement: 'Read n, print 2n.',
+    practiceQuestionId, languages: ['javascript', 'python', 'java'], visibleTests: [{ id: 't1', input: '2', expectedOutput: '4' }],
+  });
+  const res = await answer({ questionId: 's2-easy', code: 'const n=parseInt(require("fs").readFileSync(0,"utf8"),10);console.log(n*2)' });
+  assert.equal(res.status, 200, res.text);
+  assert.deepEqual(loaded, [practiceQuestionId]);
+  const saved = interview.responses[0].executionResults;
+  assert.equal(saved.testsPassed, 3);
+  assert.equal(saved.testsTotal, 3, 'hidden tests count too');
+  assert.equal(saved.serverVerified, true);
+  assert.ok(!JSON.stringify(res.body).includes('"14"'));
+
+  const cobol = await answer({ questionId: 's2-easy', code: 'x', language: 'cobol' });
+  assert.equal(cobol.status, 409, 'already answered');
+  interview.responses = [];
+  const bad = await answer({ questionId: 's2-easy', code: 'print(1)', language: 'cpp' });
+  assert.equal(bad.status, 400, 'only the slot languages are accepted');
 });

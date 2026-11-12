@@ -616,81 +616,6 @@
       }
     }
   },
-  "iv create ai": {
-    "status": 201,
-    "body": {
-      "success": true,
-      "message": "Interview created successfully",
-      "usedFallbackQuestions": false,
-      "interview": {
-        "id": "<id>",
-        "_id": "<id>",
-        "userId": "<id>",
-        "jobDescription": "Backend intern, Java and Spring",
-        "questions": [
-          {
-            "questionId": "q1",
-            "type": "behavioral",
-            "question": "Tell me about your Node.js project",
-            "category": "projects",
-            "difficulty": "easy",
-            "expectedDuration": 180,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q2",
-            "type": "coding",
-            "question": "Write a function that sums an array of numbers",
-            "category": "general",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [
-              "why?"
-            ],
-            "starterCode": {
-              "java": "public class Solution {\n    public static int solution(int[] arr) {\n        // Write a function that sums an array of n...\n        \n        // Your code here\n        \n        return 0;\n    }\n    \n    public static void main(String[] args) {\n        int[] test = {1, 2, 3, 4, 5};\n        System.out.println(solution(test));\n    }\n}"
-            },
-            "language": "java",
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q3",
-            "type": "coding",
-            "question": "Reverse a string",
-            "category": "general",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [],
-            "starterCode": {
-              "python": "def solution(text):\n    # Reverse a string\n    \n    # Your code here\n    \n    return text\n\nprint(solution(\"hello world\"))"
-            },
-            "language": "python",
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q4",
-            "type": "technical",
-            "question": "Design a URL shortener",
-            "category": "general",
-            "difficulty": "easy",
-            "expectedDuration": 150,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          }
-        ],
-        "totalQuestions": 4,
-        "status": "created",
-        "cvSource": "manual",
-        "usedFallbackQuestions": false,
-        "createdAt": "<date>"
-      }
-    }
-  },
   "iv create fallback": {
     "status": 201,
     "body": {
@@ -699,150 +624,54 @@
       "usedFallbackQuestions": true,
       "interview": {
         "id": "<id>",
-        "_id": "<id>",
-        "userId": "<id>",
-        "jobDescription": "Frontend intern",
         "questions": [
           {
-            "questionId": "q1",
+            "questionId": "s0-easy",
             "type": "behavioral",
-            "question": "Tell me about a programming project you worked on recently. What challenges did you face?",
+            "question": "Tell me about a programming project you worked on recently. What was your part in it?",
             "category": "project_experience",
             "difficulty": "easy",
+            "slot": 0,
+            "level": "easy",
             "expectedDuration": 180,
             "followUpQuestions": [],
             "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q2",
-            "type": "behavioral",
-            "question": "Describe a time when you had to learn a new technology for a project.",
-            "category": "learning_ability",
-            "difficulty": "easy",
-            "expectedDuration": 180,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q3",
-            "type": "behavioral",
-            "question": "Tell me about a time when you worked with others on a coding project.",
-            "category": "teamwork",
-            "difficulty": "easy",
-            "expectedDuration": 180,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q4",
-            "type": "technical",
-            "question": "What is the difference between frontend and backend in web development?",
-            "category": "web_basics",
-            "difficulty": "easy",
-            "expectedDuration": 150,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q5",
-            "type": "technical",
-            "question": "Explain what Git is and why it's useful for programmers.",
-            "category": "tools_basics",
-            "difficulty": "easy",
-            "expectedDuration": 150,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q6",
-            "type": "technical",
-            "question": "What is a function in programming? Why are functions useful?",
-            "category": "programming_basics",
-            "difficulty": "easy",
-            "expectedDuration": 150,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q7",
-            "type": "technical",
-            "question": "What is debugging? Describe a simple debugging process.",
-            "category": "debugging_basics",
-            "difficulty": "easy",
-            "expectedDuration": 150,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q8",
-            "type": "coding",
-            "question": "Write a function that finds the largest number in an array.",
-            "category": "basic_arrays",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [],
-            "starterCode": {
-              "javascript": "function findLargest(numbers) {\n    // Find and return the largest number\n    return 0;\n}\n\nconsole.log(findLargest([3, 7, 2, 9, 1])); // Should return 9"
-            },
-            "language": "javascript",
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q9",
-            "type": "coding",
-            "question": "Create a function that counts how many times a character appears in a string.",
-            "category": "string_basics",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [],
-            "starterCode": {
-              "javascript": "function countCharacter(text, char) {\n    // Count how many times 'char' appears in 'text'\n    return 0;\n}\n\nconsole.log(countCharacter(\"hello world\", \"l\")); // Should return 3"
-            },
-            "language": "javascript",
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q10",
-            "type": "coding",
-            "question": "Write a function that checks if a number is even or odd.",
-            "category": "basic_logic",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [],
-            "starterCode": {
-              "javascript": "function checkEvenOdd(number) {\n    // Return \"even\" or \"odd\"\n    return \"\";\n}\n\nconsole.log(checkEvenOdd(4)); // Should return \"even\""
-            },
-            "language": "javascript",
-            "_id": "<id>"
+            "language": null
           }
         ],
-        "totalQuestions": 10,
+        "totalSlots": 5,
+        "startLevel": "easy",
         "status": "created",
-        "cvSource": "manual",
         "usedFallbackQuestions": true,
         "createdAt": "<date>"
       }
     }
   },
-  "iv create missing": {
+  "iv create no cv": {
+    "status": 409,
+    "body": {
+      "success": false,
+      "code": "CV_REQUIRED",
+      "message": "Upload your CV before you start a mock interview. The questions are based on it.",
+      "error": "Upload your CV before you start a mock interview. The questions are based on it."
+    }
+  },
+  "iv create no readiness": {
     "status": 400,
     "body": {
       "success": false,
-      "error": "Missing required fields: jobDescription and resumeText are required"
+      "code": "READINESS_REQUIRED",
+      "message": "Tell us how ready you feel, so the first question is at the right level.",
+      "error": "Tell us how ready you feel, so the first question is at the right level."
+    }
+  },
+  "iv create no role": {
+    "status": 409,
+    "body": {
+      "success": false,
+      "code": "TARGET_ROLE_REQUIRED",
+      "message": "Choose your target role in your profile before you start a mock interview.",
+      "error": "Choose your target role in your profile before you start a mock interview."
     }
   },
   "iv feedback all skipped": {
@@ -965,8 +794,7 @@
             "expectedDuration": 120,
             "followUpQuestions": [],
             "starterCode": null,
-            "language": null,
-            "_id": "<id>"
+            "language": null
           },
           {
             "questionId": "c1",
@@ -975,18 +803,9 @@
             "category": "c",
             "difficulty": "easy",
             "expectedDuration": 120,
-            "tests": [
-              {
-                "input": "1",
-                "expectedOutput": "2",
-                "_id": "<id>",
-                "id": "<id>"
-              }
-            ],
             "followUpQuestions": [],
             "starterCode": null,
-            "language": "javascript",
-            "_id": "<id>"
+            "language": "javascript"
           }
         ],
         "totalQuestions": 2,
@@ -1090,125 +909,6 @@
         "total": 1,
         "count": 1,
         "totalRecords": 1
-      }
-    }
-  },
-  "iv next after skip": {
-    "status": 200,
-    "body": {
-      "success": true,
-      "question": {
-        "questionId": "c1",
-        "type": "coding",
-        "question": "Q2",
-        "category": "c",
-        "difficulty": "easy",
-        "expectedDuration": 120,
-        "followUpQuestions": [],
-        "starterCode": null,
-        "language": "javascript",
-        "_id": "<id>"
-      },
-      "progress": {
-        "current": 2,
-        "total": 2,
-        "percentage": 100
-      }
-    }
-  },
-  "iv next done": {
-    "status": 200,
-    "body": {
-      "success": true,
-      "completed": true,
-      "message": "All questions completed",
-      "progress": {
-        "current": 2,
-        "total": 2,
-        "percentage": 100
-      }
-    }
-  },
-  "iv next first": {
-    "status": 200,
-    "body": {
-      "success": true,
-      "question": {
-        "questionId": "b1",
-        "type": "behavioral",
-        "question": "Q1",
-        "category": "c",
-        "difficulty": "easy",
-        "expectedDuration": 120,
-        "followUpQuestions": [],
-        "starterCode": null,
-        "language": null,
-        "_id": "<id>"
-      },
-      "progress": {
-        "current": 1,
-        "total": 2,
-        "percentage": 50
-      }
-    }
-  },
-  "iv profile missing jd": {
-    "status": 400,
-    "body": {
-      "success": false,
-      "error": "Missing required field: jobDescription is required"
-    }
-  },
-  "iv profile no cv": {
-    "status": 400,
-    "body": {
-      "success": false,
-      "error": "No CV found in user profile. Please upload a CV first."
-    }
-  },
-  "iv profile ok": {
-    "status": 201,
-    "body": {
-      "success": true,
-      "message": "Interview created successfully with profile CV",
-      "usedFallbackQuestions": false,
-      "interview": {
-        "id": "<id>",
-        "questions": [
-          {
-            "questionId": "q1",
-            "type": "behavioral",
-            "question": "Tell me about your Node.js project",
-            "category": "projects",
-            "difficulty": "easy",
-            "expectedDuration": 180,
-            "followUpQuestions": [],
-            "starterCode": null,
-            "language": null,
-            "_id": "<id>"
-          },
-          {
-            "questionId": "q2",
-            "type": "coding",
-            "question": "Write a function that sums an array of numbers",
-            "category": "general",
-            "difficulty": "easy",
-            "expectedDuration": 300,
-            "followUpQuestions": [
-              "why?"
-            ],
-            "starterCode": {
-              "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint solution(vector<int>& arr) {\n    // Write a function that sums an array of n...\n    \n    // Your code here\n    \n    return 0;\n}\n\nint main() {\n    vector<int> test = {1, 2, 3, 4, 5};\n    cout << solution(test) << endl;\n    return 0;\n}"
-            },
-            "language": "cpp",
-            "_id": "<id>"
-          }
-        ],
-        "totalQuestions": 2,
-        "status": "created",
-        "cvSource": "profile",
-        "usedFallbackQuestions": false,
-        "createdAt": "<date>"
       }
     }
   },
@@ -1320,11 +1020,23 @@
         "fillerWordCount": 2,
         "durationSec": 40
       },
+      "nextQuestion": null,
+      "level": null,
+      "done": false,
       "progress": {
         "current": 1,
         "total": 2,
         "completed": false
       }
+    }
+  },
+  "iv submit already answered": {
+    "status": 409,
+    "body": {
+      "success": false,
+      "code": "ALREADY_ANSWERED",
+      "message": "You have already answered this question.",
+      "error": "You have already answered this question."
     }
   },
   "iv submit empty answer": {
@@ -1365,6 +1077,25 @@
         "executionSource": "none"
       },
       "deliveryMetrics": null,
+      "nextQuestion": null,
+      "level": null,
+      "done": false,
+      "progress": {
+        "current": 1,
+        "total": 2,
+        "completed": false
+      }
+    }
+  },
+  "iv submit skipped last": {
+    "status": 200,
+    "body": {
+      "success": true,
+      "message": "Question skipped successfully",
+      "feedback": null,
+      "nextQuestion": null,
+      "level": null,
+      "done": true,
       "progress": {
         "current": 2,
         "total": 2,
@@ -1377,6 +1108,10 @@
     "body": {
       "success": true,
       "message": "Question skipped successfully",
+      "feedback": null,
+      "nextQuestion": null,
+      "level": null,
+      "done": false,
       "progress": {
         "current": 1,
         "total": 2,

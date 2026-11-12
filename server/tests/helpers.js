@@ -6,7 +6,7 @@ process.env.NODE_ENV = 'test';
 process.env.CLIENT_URL = 'http://localhost:5173';
 delete process.env.JDOODLE_CLIENT_ID;
 delete process.env.JDOODLE_CLIENT_SECRET;
-delete process.env.ASSEMBLYAI_API_KEY;
+delete process.env.GROQ_API_KEY;
 
 import { mock } from 'node:test';
 import mongoose from 'mongoose';
