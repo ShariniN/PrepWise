@@ -12,7 +12,10 @@ import { passwordProblems } from '../../lib/roles';
 const FATAL = {
   VERIFY_INVALID: 'This verification link is not valid, or it has already been used. If you have not finished signing up, request a new link below.',
   VERIFY_EXPIRED: 'This verification link has expired. Request a new link below.',
+  SIGNUP_CLOSED: 'Sign-up is closed for this address. Ask your university for an invitation.',
 };
+// A new link only helps when sign-up is still open.
+const CAN_RESEND = new Set([FATAL.VERIFY_INVALID, FATAL.VERIFY_EXPIRED]);
 const SEAT_MESSAGE = 'Your university has no free student seats right now. Ask your university administrator, then try this link again.';
 
 // The password is chosen here, by whoever opened the link in the mailbox, never at sign-up.
@@ -75,14 +78,14 @@ const VerifyEmail = () => {
       {fatal ? (
         <div className="space-y-4">
           <p role="alert" className="text-danger-700 text-sm text-center">{fatal}</p>
-          <form onSubmit={resend} className="space-y-3">
+          {CAN_RESEND.has(fatal) && <form onSubmit={resend} className="space-y-3">
             <Field label="Your university email">
               {(p) => <Input {...p} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />}
             </Field>
             <Button type="submit" block variant="secondary" loading={sending}>
               {sending ? 'Sending...' : 'Send me a new link'}
             </Button>
-          </form>
+          </form>}
           <p className="text-center"><Link to="/login" className="text-primary-700 text-sm font-medium hover:underline">Go to login</Link></p>
         </div>
       ) : (

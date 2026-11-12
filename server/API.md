@@ -15,8 +15,8 @@ Taken from `server/app.js` and every `server/modules/*/*.routes.js`. All paths s
 | Method and path | Who | Body | Response | Errors |
 |---|---|---|---|---|
 | POST `/auth/signup` | public, rate limited | `name`, `email` (a `password` field is accepted and ignored; it is chosen at verify) | `{ success, message, devVerificationLink? }`. Stores no password. Same answer for an existing email. | 400 `INVALID_EMAIL`, `INVALID_NAME`, `SIGNUP_DOMAIN_NOT_ALLOWED`; 409 `SEAT_LIMIT_REACHED`; 429 |
-| POST `/auth/verify-email` | public | `token` (64 hex), `password` (same rule as accept-invite) | session body (below) and sets the cookie; sets the password; the student takes a seat now | 400 `VERIFY_INVALID`, `VERIFY_EXPIRED`, `WEAK_PASSWORD` (token kept); 409 `SEAT_LIMIT_REACHED` (token kept, no password set); 503 `TRY_AGAIN` |
-| POST `/auth/resend-verification` | public, rate limited | `email` | `{ success, message }` always | 429 |
+| POST `/auth/verify-email` | public | `token` (64 hex), `password` (same rule as accept-invite) | session body (below) and sets the cookie; sets the password; the student takes a seat now | 400 `VERIFY_INVALID`, `VERIFY_EXPIRED`, `SIGNUP_CLOSED` (self-signup turned off or the domain removed since sign-up; token kept), `WEAK_PASSWORD` (token kept); 409 `SEAT_LIMIT_REACHED` (token kept, no password set); 503 `TRY_AGAIN` |
+| POST `/auth/resend-verification` | public, rate limited | `email` | `{ success, message }` always. Sends a link only to an unverified account whose university still has self-signup on for its domain. | 429 |
 | POST `/auth/accept-invite` | public | `token`, `password`, `name?`, `phoneNumber?` (10 digits) | session body and sets the cookie | 400 `INVITE_INVALID`, `INVITE_EXPIRED`, weak password, bad name or phone; 403 `ROLE_NOT_SUPPORTED` |
 | POST `/auth/login` | public | `email`, `password` | session body and sets the cookie | 401 wrong credentials; 403 `EMAIL_NOT_VERIFIED`, deactivated, not yet activated, `ROLE_NOT_SUPPORTED` |
 | POST `/auth/logout` | public | none | `{ success, message }`, clears the cookie | |

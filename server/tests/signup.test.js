@@ -380,3 +380,47 @@ test('a failed verification email is logged but the answer stays the generic 200
   assert.equal(res.body.success, true);
   assert.ok(errors.some((e) => /Verification email failed: smtp down/.test(e)));
 });
+
+const CLOSED = 'Sign-up is closed for this address. Ask your university for an invitation.';
+
+test('verify after self-signup is switched off is 400 SIGNUP_CLOSED and keeps the token', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].selfSignup = false;
+  const res = await verify(token);
+  assert.equal(res.status, 400);
+  assert.deepEqual([res.body.code, res.body.message], ['SIGNUP_CLOSED', CLOSED]);
+  const user = w.users[0];
+  assert.equal(user.status, 'unverified');
+  assert.equal(user.password, undefined);
+  assert.equal(user.emailVerifyTokenHash, hashToken(token));
+  w.institutions[IDS.instA].selfSignup = true;
+  assert.equal((await verify(token)).status, 200, 'turned back on, the same link works');
+});
+
+test('verify after the email domain is removed is 400 SIGNUP_CLOSED', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].allowedEmailDomains = ['other.edu'];
+  const res = await verify(token);
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'SIGNUP_CLOSED');
+  assert.equal(w.users[0].status, 'unverified');
+});
+
+test('resend sends nothing once sign-up is closed or the domain is removed, with the same generic answer', async () => {
+  await signup();
+  const user = w.users[0];
+  const hash = user.emailVerifyTokenHash;
+  w.mails.length = 0;
+  const msg = 'If that address has an account waiting for verification, we have sent a new link.';
+  w.institutions[IDS.instA].selfSignup = false;
+  const a = await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  w.institutions[IDS.instA].selfSignup = true;
+  w.institutions[IDS.instA].allowedEmailDomains = ['other.edu'];
+  const b = await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  for (const r of [a, b]) assert.deepEqual([r.status, r.body.success, r.body.message], [200, true, msg]);
+  assert.equal(w.mails.length, 0);
+  assert.equal(user.emailVerifyTokenHash, hash, 'no new link was issued');
+  w.institutions[IDS.instA].allowedEmailDomains = ['a.edu'];
+  await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  assert.equal(w.mails.length, 1, 'open again: a link is sent');
+});
