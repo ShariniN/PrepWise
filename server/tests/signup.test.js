@@ -25,24 +25,17 @@ beforeEach(() => {
     if (q.emailVerifyTokenHash) return w.users.find((u) => u.emailVerifyTokenHash === q.emailVerifyTokenHash) || null;
     return base.call(userModel, q);
   });
-  mock.method(signupRepo, 'createUser', async (data) => w.addUser(data));
-  // In-memory seat lock with the same rule as the real query: free when unset or expired.
-  mock.method(seatLockRepo, 'acquire', async (id, now, until) => {
-    const inst = w.institutions[String(id)];
-    if (inst.seatLockUntil && inst.seatLockUntil >= now) return null;
-    inst.seatLockUntil = until;
-    return { _id: id };
-  });
-  mock.method(seatLockRepo, 'release', async (id, until) => {
-    const inst = w.institutions[String(id)];
-    if (inst.seatLockUntil === until) inst.seatLockUntil = null;
-  });
+  // Stores only the fields given, like the real create (the test world otherwise fills in a password).
+  mock.method(signupRepo, 'createUser', async (data) => w.addUser({ password: undefined, ...data }));
+  // The in-memory seat lock comes from the shared test world (helpers.js).
 });
 afterEach(() => mock.restoreAll());
 
-const signup = (body = {}) => request(app).post('/api/auth/signup').send({ name: 'New Student', email: 'new@a.edu', password: GOOD, ...body });
+const signup = (body = {}) => request(app).post('/api/auth/signup').send({ name: 'New Student', email: 'new@a.edu', ...body });
 const tokenOf = (res) => new URL(res.body.devVerificationLink).searchParams.get('token');
-const verify = (token) => request(app).post('/api/auth/verify-email').send({ token });
+const verify = (token, password = GOOD) => request(app).post('/api/auth/verify-email').send({ token, password });
+const verifyNoPassword = (token) => request(app).post('/api/auth/verify-email').send({ token });
+const login = (email, password) => request(app).post('/api/auth/login').send({ email, password });
 
 test('signup with an allowed domain creates an unverified student and sends a link', async () => {
   const res = await signup();
@@ -53,7 +46,7 @@ test('signup with an allowed domain creates an unverified student and sends a li
   assert.equal(user.role, 'student');
   assert.equal(String(user.institutionId), IDS.instA);
   assert.equal(user.isAccountVerified, false);
-  assert.notEqual(user.password, GOOD);
+  assert.equal(user.password, undefined);
 
   assert.equal(w.mails.length, 1);
   assert.equal(w.mails[0].to, 'new@a.edu');
@@ -82,12 +75,19 @@ test('signup when selfSignup is off is 400 SIGNUP_DOMAIN_NOT_ALLOWED', async () 
   assert.equal(res.body.code, 'SIGNUP_DOMAIN_NOT_ALLOWED');
 });
 
-test('signup validates name, email and password', async () => {
-  assert.equal((await signup({ password: 'weak' })).status, 400);
+test('signup validates name and email, and needs no password', async () => {
   assert.equal((await signup({ name: '' })).status, 400);
   assert.equal((await signup({ email: 'nope' })).status, 400);
   assert.equal((await signup({ email: { $ne: '' } })).status, 400);
   assert.equal(w.users.length, 0);
+  assert.equal((await signup()).status, 200);
+});
+
+test('a password sent at signup is accepted for compatibility and ignored', async () => {
+  const res = await signup({ password: 'Attacker1!' });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(w.users[0].password, undefined);
+  assert.equal((await signup({ email: 'weak@a.edu', password: 'weak' })).status, 200);
 });
 
 test('signup for an existing email answers the same generic 200 and sends nothing', async () => {
@@ -100,18 +100,54 @@ test('signup for an existing email answers the same generic 200 and sends nothin
   assert.equal(w.users.length, 1);
 });
 
-test('signing up again with an unverified email sends a fresh link and keeps the first password', async () => {
-  const first = await signup();
+test('re-signup cannot set or keep a password', async () => {
+  const first = await signup({ password: 'Attacker1!' });
   const user = w.users[0];
-  const pw = user.password;
   const second = await signup({ password: 'Other1234!' });
   assert.equal(second.status, 200);
   assert.equal(w.users.length, 1);
-  assert.equal(user.password, pw);
+  assert.equal(user.password, undefined);
   assert.notEqual(tokenOf(second), tokenOf(first));
   assert.equal(user.emailVerifyTokenHash, hashToken(tokenOf(second)));
   assert.equal((await verify(tokenOf(first))).body.code, 'VERIFY_INVALID');
-  assert.equal((await verify(tokenOf(second))).status, 200);
+  assert.equal((await verify(tokenOf(second), 'Victim123!')).status, 200);
+  // Only the password chosen at verify works; neither signup password does.
+  assert.equal((await login('new@a.edu', 'Attacker1!')).status, 401);
+  assert.equal((await login('new@a.edu', 'Other1234!')).status, 401);
+  assert.equal((await login('new@a.edu', 'Victim123!')).status, 200);
+});
+
+test('verify without a password is 400 and the token still works', async () => {
+  const token = tokenOf(await signup());
+  for (const send of [() => verifyNoPassword(token), ...['', 'weak', 'nouppercase1!', null, { $ne: '' }].map((pw) => () => verify(token, pw))]) {
+    const res = await send();
+    assert.equal(res.status, 400, res.text);
+    assert.equal(res.body.code, 'WEAK_PASSWORD');
+    assert.equal(res.body.message, 'Password must be at least 6 characters long, include one uppercase letter, one number, and one special character');
+    assert.ok(!res.headers['set-cookie']);
+  }
+  const user = w.users[0];
+  assert.equal(user.status, 'unverified');
+  assert.equal(user.password, undefined);
+  assert.equal(user.emailVerifyTokenHash, hashToken(token));
+  assert.equal((await verify(token)).status, 200);
+});
+
+test('an invalid or expired token is reported before a missing password', async () => {
+  const token = tokenOf(await signup());
+  assert.equal((await verifyNoPassword('f'.repeat(64))).body.code, 'VERIFY_INVALID');
+  w.users[0].emailVerifyExpiresAt = new Date(Date.now() - 1000);
+  assert.equal((await verifyNoPassword(token)).body.code, 'VERIFY_EXPIRED');
+});
+
+test('the password set at verify is the login password', async () => {
+  const token = tokenOf(await signup());
+  const res = await verify(token, 'Chosen12!');
+  assert.equal(res.status, 200, res.text);
+  const user = w.users[0];
+  assert.ok(await bcrypt.compare('Chosen12!', user.password));
+  assert.equal((await login('new@a.edu', 'Chosen12!')).status, 200);
+  assert.equal((await login('new@a.edu', GOOD)).status, 401);
 });
 
 test('signup with no seats left is 409 SEAT_LIMIT_REACHED', async () => {
@@ -171,6 +207,7 @@ test('last seat: first verify activates, second is 409 SEAT_LIMIT_REACHED and st
   assert.equal(res.body.code, 'SEAT_LIMIT_REACHED');
   const two = w.users.find((u) => u.email === 'two@a.edu');
   assert.equal(two.status, 'unverified');
+  assert.equal(two.password, undefined);
   assert.equal(two.emailVerifyTokenHash, hashToken(t2));
 });
 
@@ -332,4 +369,48 @@ test('a failed verification email is logged but the answer stays the generic 200
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
   assert.ok(errors.some((e) => /Verification email failed: smtp down/.test(e)));
+});
+
+const CLOSED = 'Sign-up is closed for this address. Ask your university for an invitation.';
+
+test('verify after self-signup is switched off is 400 SIGNUP_CLOSED and keeps the token', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].selfSignup = false;
+  const res = await verify(token);
+  assert.equal(res.status, 400);
+  assert.deepEqual([res.body.code, res.body.message], ['SIGNUP_CLOSED', CLOSED]);
+  const user = w.users[0];
+  assert.equal(user.status, 'unverified');
+  assert.equal(user.password, undefined);
+  assert.equal(user.emailVerifyTokenHash, hashToken(token));
+  w.institutions[IDS.instA].selfSignup = true;
+  assert.equal((await verify(token)).status, 200, 'turned back on, the same link works');
+});
+
+test('verify after the email domain is removed is 400 SIGNUP_CLOSED', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].allowedEmailDomains = ['other.edu'];
+  const res = await verify(token);
+  assert.equal(res.status, 400);
+  assert.equal(res.body.code, 'SIGNUP_CLOSED');
+  assert.equal(w.users[0].status, 'unverified');
+});
+
+test('resend sends nothing once sign-up is closed or the domain is removed, with the same generic answer', async () => {
+  await signup();
+  const user = w.users[0];
+  const hash = user.emailVerifyTokenHash;
+  w.mails.length = 0;
+  const msg = 'If that address has an account waiting for verification, we have sent a new link.';
+  w.institutions[IDS.instA].selfSignup = false;
+  const a = await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  w.institutions[IDS.instA].selfSignup = true;
+  w.institutions[IDS.instA].allowedEmailDomains = ['other.edu'];
+  const b = await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  for (const r of [a, b]) assert.deepEqual([r.status, r.body.success, r.body.message], [200, true, msg]);
+  assert.equal(w.mails.length, 0);
+  assert.equal(user.emailVerifyTokenHash, hash, 'no new link was issued');
+  w.institutions[IDS.instA].allowedEmailDomains = ['a.edu'];
+  await request(app).post('/api/auth/resend-verification').send({ email: 'new@a.edu' });
+  assert.equal(w.mails.length, 1, 'open again: a link is sent');
 });

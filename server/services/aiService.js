@@ -1,6 +1,5 @@
 import { AI_MODELS } from '../config/ai.js';
 import { generateWithFallback } from './geminiClient.js';
-import axios from 'axios';
 import { consumeAi } from './aiUsage.js';
 
 
@@ -12,7 +11,6 @@ const MAX_REQUESTS_PER_MINUTE = 10;
 setInterval(() => {
   requestCount = 0;
   lastResetTime = Date.now();
-  console.log('🔄 Rate limit counter reset');
 }, 60000).unref();
 
 
@@ -20,7 +18,7 @@ const checkRateLimit = async () => {
   if (requestCount >= MAX_REQUESTS_PER_MINUTE) {
     const waitTime = 60000 - (Date.now() - lastResetTime);
     if (waitTime > 0) {
-      console.log(`⏳ Rate limit reached, waiting ${waitTime}ms`);
+      console.log(`AI rate limit reached, waiting ${waitTime}ms`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
       requestCount = 0;
       lastResetTime = Date.now();
@@ -32,9 +30,6 @@ const checkRateLimit = async () => {
 
 
 export const parseAIResponse = (rawText) => {
-  console.log('🔧 Parsing AI response...');
-  console.log('📏 Raw text length:', rawText.length);
-  
   let cleanedText = rawText
     .trim()
     .replace(/```json\s*/gi, '')
@@ -44,13 +39,9 @@ export const parseAIResponse = (rawText) => {
     .replace(/```$/gm, '')
     .replace(/^\s*[\r\n]/gm, '');
 
-  console.log('🧹 After basic cleanup, length:', cleanedText.length);
-
   const arrayStart = cleanedText.indexOf('[');
   const arrayEnd = cleanedText.lastIndexOf(']');
-  
-  console.log('🔍 Array bounds:', { arrayStart, arrayEnd });
-  
+
   if (arrayStart === -1 || arrayEnd === -1) {
     // If not array, check for object (overall feedback or single question evaluation)
     const objStart = cleanedText.indexOf('{');
@@ -63,7 +54,7 @@ export const parseAIResponse = (rawText) => {
         console.error('Failed to parse object fallback:', e.message);
       }
     }
-    console.error('❌ No JSON found in response');
+    console.error('No JSON found in the AI response');
     console.error('Response preview:', cleanedText.substring(0, 500));
     throw new Error('No JSON found in response');
   }
@@ -76,15 +67,10 @@ export const parseAIResponse = (rawText) => {
     .replace(/"\s*:\s*"/g, '": "')
     .replace(/",\s*"/g, '", "');
 
-  console.log('📦 JSON text extracted, length:', jsonText.length);
-
   try {
-    const parsed = JSON.parse(jsonText);
-    console.log('✅ JSON parsed successfully, items:', parsed.length);
-    return parsed;
+    return JSON.parse(jsonText);
   } catch (parseError) {
-    console.error('❌ Initial JSON parse failed:', parseError.message);
-    console.log('🔧 Attempting to fix JSON...');
+    console.error('AI response JSON parse failed, trying to repair it:', parseError.message);
     
     let fixedJson = jsonText
       .replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":');
@@ -97,72 +83,24 @@ export const parseAIResponse = (rawText) => {
     }
     
     try {
-      const parsed = JSON.parse(fixedJson);
-      console.log('✅ Fixed JSON parsed successfully, items:', parsed.length);
-      return parsed;
+      return JSON.parse(fixedJson);
     } catch (fixError) {
-      console.error('❌ Failed to fix JSON:', fixError.message);
+      console.error('Could not repair the AI response JSON:', fixError.message);
       console.error('Problematic JSON (first 500 chars):', jsonText.substring(0, 500));
       throw new Error('Could not parse AI response as JSON: ' + fixError.message);
     }
   }
 };
 
-// Generic helper to route requests to correct AI Provider
-const callAIModel = async (instruction, inputPrompt, fallbackGeminiPrompt, config = {}) => {
-  await consumeAi(); // per-university monthly cap; throws AiLimitError when exceeded
-  const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-
-  if (provider === 'huggingface') {
-    const token = process.env.HF_API_TOKEN;
-    const modelUrl = process.env.HF_MODEL_URL || 'https://api-inference.huggingface.co/models/microsoft/Phi-3.5-mini-instruct';
-    
-    if (!token) {
-      console.warn('⚠️ HF_API_TOKEN is not set. Falling back to Gemini.');
-      return callGemini(fallbackGeminiPrompt, config);
-    }
-
-    // Standard ChatML format for Phi-3.5
-    const prompt = `<|system|>\n${instruction}<|end|>\n<|user|>\n${inputPrompt}<|end|>\n<|assistant|>\n`;
-
-    try {
-      console.log('📤 Sending request to Hugging Face Inference API:', modelUrl);
-      const response = await axios.post(
-        modelUrl,
-        {
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: config.maxOutputTokens || 1500,
-            temperature: config.temperature || 0.1,
-            return_full_text: false
-          }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 45000
-        }
-      );
-      
-      const resultText = Array.isArray(response.data) ? response.data[0].generated_text : response.data.generated_text;
-      return resultText;
-    } catch (error) {
-      console.error('❌ Hugging Face API call failed:', error.message);
-      console.log('🔄 Falling back to Gemini...');
-      return callGemini(fallbackGeminiPrompt, config);
-    }
-  } else {
-    return callGemini(fallbackGeminiPrompt, config);
-  }
+// All AI calls go through the model chain in config/ai.js (Groq first, then Gemini), which skips
+// models that are over quota or retired and retries overloaded ones. Tests replace aiClient.generate.
+export const aiClient = {
+  generate: async (prompt, { temperature } = {}) => (await generateWithFallback(prompt, { models: AI_MODELS, temperature })).text,
 };
 
-// All AI calls go through the model chain in config/ai.js (Groq first, then Gemini), which skips
-// models that are over quota or retired and retries overloaded ones.
-const callGemini = async (prompt, config = {}) => {
-  const { text } = await generateWithFallback(prompt, { models: AI_MODELS, temperature: config.temperature });
-  return text;
+const callAIModel = async (prompt, config = {}) => {
+  await consumeAi(); // per-university monthly cap; throws AiLimitError when exceeded
+  return aiClient.generate(prompt, config);
 };
 
 export const generateAIFeedback = async (question, questionType, responseText, code, language, executionResults) => {
@@ -184,7 +122,7 @@ ${code ? `CODE SUBMITTED: "${truncate(code, 1500)}"` : ''}
 ${language ? `PROGRAMMING LANGUAGE: ${language}` : ''}
 ${executionResults ? `CODE EXECUTION RESULT: "${executionResults.output || 'No output'}"${executionResults.error ? ' | ERROR: ' + executionResults.error : ''}` : ''}`;
 
-  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON format:
+  const prompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON format:
 {
   "score": 67,
   "responseType": "mostly-relevant",
@@ -198,7 +136,7 @@ ${executionResults ? `CODE EXECUTION RESULT: "${executionResults.output || 'No o
   "technicalAccuracy": 6
 }`;
 
-  const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt, { temperature: 0.1, maxOutputTokens: 1500 });
+  const rawText = await callAIModel(prompt, { temperature: 0.1 });
 
   let cleanText = rawText.trim().replace(/```json\s*|```\s*/g, '');
   const jsonStart = cleanText.indexOf('{');
@@ -254,7 +192,7 @@ export const generateOverallInterviewFeedback = async (responses) => {
 - Questions Skipped: ${skippedCount}
 - Average Score: ${averageScore.toFixed(1)}/100`;
 
-  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON:
+  const prompt = `${instruction}\n\n${inputPrompt}\n\nReturn ONLY this JSON:
 {
   "overallScore": 45,
   "readinessLevel": "Needs Development Before Ready",
@@ -265,7 +203,7 @@ export const generateOverallInterviewFeedback = async (responses) => {
   "hiringRecommendation": "Clear recommendation"
 }`;
 
-  const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt, { temperature: 0.3, maxOutputTokens: 800 });
+  const rawText = await callAIModel(prompt, { temperature: 0.3 });
 
   const aiAnalysis = parseAIResponse(rawText);
 

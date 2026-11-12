@@ -14,9 +14,9 @@ Taken from `server/app.js` and every `server/modules/*/*.routes.js`. All paths s
 
 | Method and path | Who | Body | Response | Errors |
 |---|---|---|---|---|
-| POST `/auth/signup` | public, rate limited | `name`, `email`, `password` | `{ success, message, devVerificationLink? }`. Same answer for an existing email. | 400 `INVALID_EMAIL`, `INVALID_NAME`, `WEAK_PASSWORD`, `SIGNUP_DOMAIN_NOT_ALLOWED`; 409 `SEAT_LIMIT_REACHED`; 429 |
-| POST `/auth/verify-email` | public | `token` (64 hex) | session body (below) and sets the cookie; the student takes a seat now | 400 `VERIFY_INVALID`, `VERIFY_EXPIRED`; 409 `SEAT_LIMIT_REACHED`; 503 `TRY_AGAIN` |
-| POST `/auth/resend-verification` | public, rate limited | `email` | `{ success, message }` always | 429 |
+| POST `/auth/signup` | public, rate limited | `name`, `email` (a `password` field is accepted and ignored; it is chosen at verify) | `{ success, message, devVerificationLink? }`. Stores no password. Same answer for an existing email. | 400 `INVALID_EMAIL`, `INVALID_NAME`, `SIGNUP_DOMAIN_NOT_ALLOWED`; 409 `SEAT_LIMIT_REACHED`; 429 |
+| POST `/auth/verify-email` | public | `token` (64 hex), `password` (same rule as accept-invite) | session body (below) and sets the cookie; sets the password; the student takes a seat now | 400 `VERIFY_INVALID`, `VERIFY_EXPIRED`, `SIGNUP_CLOSED` (self-signup turned off or the domain removed since sign-up; token kept), `WEAK_PASSWORD` (token kept); 409 `SEAT_LIMIT_REACHED` (token kept, no password set); 503 `TRY_AGAIN` |
+| POST `/auth/resend-verification` | public, rate limited | `email` | `{ success, message }` always. Sends a link only to an unverified account whose university still has self-signup on for its domain. | 429 |
 | POST `/auth/accept-invite` | public | `token`, `password`, `name?`, `phoneNumber?` (10 digits) | session body and sets the cookie | 400 `INVITE_INVALID`, `INVITE_EXPIRED`, weak password, bad name or phone; 403 `ROLE_NOT_SUPPORTED` |
 | POST `/auth/login` | public | `email`, `password` | session body and sets the cookie | 401 wrong credentials; 403 `EMAIL_NOT_VERIFIED`, deactivated, not yet activated, `ROLE_NOT_SUPPORTED` |
 | POST `/auth/logout` | public | none | `{ success, message }`, clears the cookie | |
@@ -41,11 +41,11 @@ Password rule: at least 6 characters with an upper case letter, a digit and a sy
 | GET `/user/saved-analyses` | none | same as GET `/analyze/saved` | |
 | DELETE `/user/analysis/:id` | none | same as DELETE `/analyze/delete/:id` | |
 
-## CV analysis (`/api/analyze`, any user; students are scored against their target role)
+## CV analysis (`/api/analyze`, any user; `analyze-resume` is for students, who are scored against their target role)
 
 | Method and path | Body | Response | Errors |
 |---|---|---|---|
-| POST `/analyze/analyze-resume` | multipart: PDF in field `resume` (or `useProfileCV=true` to use the CV on file), `jobDescriptions` (JSON string array, optional for students) | `{ success, analysisId, resumeHash, extractedTechnologies, technologiesUnavailable, analysis: [result], metadata }`. A student's first result has `kind: "target_role"`; pasted descriptions give `kind: "job_description"`. Each result has `matchPercentage`, `scoreBreakdown { keywordScore, aiScore, aiAvailable, matchedSkills, missingSkills, ... }`, strengths, weaknesses, recommendations. With no AI, `aiAvailable` is false and `matchPercentage` is null. | 400 bad job descriptions, no file, unreadable PDF, no profile CV, no description for a non-student; 409 `TARGET_ROLE_REQUIRED` (student without a role); 500 |
+| POST `/analyze/analyze-resume` | multipart: PDF in field `resume` (or `useProfileCV=true` to use the CV on file), `jobDescriptions` (JSON string array, optional) | `{ success, analysisId, resumeHash, extractedTechnologies, technologiesUnavailable, analysis: [result], metadata }`. `metadata.model` is the AI model that produced the score (absent when there is no AI score); nothing else in the response names a provider. The first result has `kind: "target_role"`, scored against the role's description and its own skills list (the matched and missing skills are the role's skills); pasted descriptions give `kind: "job_description"`. Each result has `matchPercentage`, `scoreBreakdown { keywordScore, aiScore, aiAvailable, matchedSkills, missingSkills, ... }`, strengths, weaknesses, recommendations. With no AI, `aiAvailable` is false, `hasError` is true and `matchPercentage` is 0 (never counted on the dashboard). | 400 bad job descriptions, no file, unreadable PDF, no profile CV; 403 lecturers and admins; 409 `TARGET_ROLE_REQUIRED` (student without a role); 500 |
 | POST `/analyze/save` | `id` or `resumeHash`, `shouldSave?` (default true) | `{ success, message, saved, data: { id, isSaved, resumeHash } }`. Only marks a stored analysis; scores are never taken from the request. | 400 neither id nor hash; 404 `Analyse your CV first.` |
 | GET `/analyze/saved` | none | `{ success, message, data: [analysis], count }` (up to 50, newest first) | |
 | DELETE `/analyze/delete/:id` | none | `{ success, message, deletedId, deletedAnalysis }` | 400 bad id; 404 not found or not yours |
@@ -64,35 +64,28 @@ An adaptive mock interview has 5 slots in the order behavioural, technical, codi
 | POST `/interviews/:interviewId/submit-answer` | `questionId`, `answerMode` (`text`, `audio` or `code`), `responseText`, `code?`, `language?`, `responseTime`, `skipped?`, `deliveryMetrics?` (numbers only, coaching only, never scored) | `{ success, feedback, deliveryMetrics, nextQuestion, level, done, progress: { current, total, completed } }`. `nextQuestion` is at the new level; null after the fifth answer, which also completes the interview and sets `levelReached`. Coding answers are marked on the server against the seeded practice question's tests. `feedback.source` is `ai`, `tests` or `fallback`. | 400 unknown question, missing text, language not allowed; 404; 409 `ALREADY_ANSWERED` (also when sent twice at once), `INTERVIEW_COMPLETED` |
 | PUT `/interviews/:interviewId/complete` | none | `{ success, results: { ...scores, feedback, questionsAnswered, totalQuestions, startLevel, levelReached, deliverySummary } }`. Ends early; the level reached follows the last answer. | 404 |
 | GET `/interviews/:interviewId/feedback` | none | `{ success, feedback: { ...scores, feedback, responses, startLevel, levelReached, questions, deliverySummary, excludedFallbackAnswers } }` | 404 |
-| POST `/interviews/transcribe` | multipart audio in field `audio` (max 25 MB, 20 a minute) | `{ success, text, durationSec }`. Speech to text with Groq Whisper; audio is not stored. | 400 no audio or not audio; 503 `TRANSCRIPTION_UNAVAILABLE` (no `GROQ_API_KEY` or provider failure) |
-| POST `/interviews/execute-code` | same as `/code/execute` | same as `/code/execute` (10 a minute) | |
-
-## Code (`/api/code`, any user)
-
-| Method and path | Body | Response | Errors |
-|---|---|---|---|
-| POST `/code/execute` | `script`, `language`, `stdin?` | `{ success, verdict, output, error, executionTime, memory, statusCode }` | 400 missing field or unsupported language; 413 too large; 503 `verdict: "unavailable"` with `reason` when no runner is set up (nothing is scored); 429 (50 per 15 minutes) |
-| GET `/code/health` and GET `/code/languages` | none | `{ success, provider, configured, supportedLanguages, languages, warning?, timestamp }` | |
+| POST `/interviews/transcribe` | multipart audio in field `audio` (max 25 MB, 20 a minute) | `{ success, text, durationSec }`. Speech to text with Groq Whisper; audio is not stored. Each recording counts as one AI call against the university's monthly cap. | 400 no audio or not audio; 503 `TRANSCRIPTION_UNAVAILABLE` (no `GROQ_API_KEY`, monthly AI cap reached, or provider failure) |
 
 ## People (`/api/institution`, university admin)
 
-Everything here works on the admin's own university. A person outside it is `404 NOT_FOUND`. Errors carry `{ success: false, message, code }`.
+Everything here works on the admin's own university. A person outside it is `404 NOT_FOUND`. Errors carry `{ success: false, message, code }`. Anything that takes a student seat (invite, import, reactivate, role change to student) checks and writes under the same per-university seat lock as email verification, so two requests cannot both take the last seat.
 
 `person` = `{ id, name, email, role, status, group, assignedGroups, isAccountVerified, lastActive, createdAt, inviteExpiresAt }`. `status` is `invited`, `active` or `deactivated`.
 
 | Method and path | Body or query | Response | Errors |
 |---|---|---|---|
-| GET `/institution/people` | query `role`, `status`, `search`, `group` | `{ success, people, counts: { total, byRole, byStatus }, usage }` | 400 unknown role or status filter, bad group |
+| GET `/institution/people` | query `role`, `status` (`invited`, `unverified`, `active`, `deactivated`), `search`, `group` | `{ success, people, counts: { total, byRole, byStatus }, usage }` | 400 unknown role or status filter, bad group |
 | GET `/institution/usage` | none | `{ success, studentLimit, activeStudents, invitedStudents, remaining }` | |
 | GET `/institution/groups` | none | `{ success, groups: [name] }` (student groups in use) | |
-| POST `/institution/people/invite` | `email`, `name?`, `role?` (default `student`), `group?` | 201 `{ success, user, emailSent, warning?, inviteLink? }` (`inviteLink` outside production only) | 400 `INVALID_EMAIL`, `INVALID_ROLE`, `INVALID_GROUP`, `DOMAIN_NOT_ALLOWED`; 409 `EMAIL_IN_USE`, `STUDENT_LIMIT_REACHED` |
-| POST `/institution/people/import` | CSV as the body (`Content-Type: text/csv`) or `{ csv }`. Columns: `email` (required), `name`, `role`, `group`. Up to 2000 rows. | `{ success, results: [{ line, email, role, status, reason?, inviteLink? }], summary, limitReached?, warning? }`. Row status is `invited`, `skipped`, `blocked_limit` or `error`. | 400 `INVALID_CSV`; 413 `TOO_MANY_ROWS` |
+| POST `/institution/people/invite` | `email`, `name?`, `role?` (default `student`), `group?` | 201 `{ success, user, emailSent, warning?, inviteLink? }` (`inviteLink` outside production only) | 400 `INVALID_EMAIL`, `INVALID_ROLE`, `INVALID_GROUP`, `DOMAIN_NOT_ALLOWED`; 409 `EMAIL_IN_USE`, `STUDENT_LIMIT_REACHED`; 503 `TRY_AGAIN` (seat lock busy, students only) |
+| POST `/institution/people/import` | CSV as the body (`Content-Type: text/csv`) or `{ csv }`. Columns: `email` (required), `name`, `role`, `group`. Up to 2000 rows. | `{ success, results: [{ line, email, role, status, reason?, inviteLink? }], summary, limitReached?, warning? }`. Row status is `invited`, `skipped`, `blocked_limit` or `error`. | 400 `INVALID_CSV`; 413 `TOO_MANY_ROWS`; 503 `TRY_AGAIN` (seat lock busy) |
 | PATCH `/institution/people/:id/deactivate` | none | `{ success, user }` | 400 `SELF`; 404; 409 `ALREADY`, `LAST_ADMIN` |
-| PATCH `/institution/people/:id/reactivate` | none | `{ success, user, inviteLink?, emailSent? }` (someone who never accepted goes back to `invited`) | 404; 409 `NOT_DEACTIVATED`, `STUDENT_LIMIT_REACHED` |
-| PATCH `/institution/people/:id/role` | `role` | `{ success, user }` | 400 `INVALID_ROLE`, `SELF`; 404; 409 `SAME_ROLE`, `LAST_ADMIN` |
+| PATCH `/institution/people/:id/reactivate` | none | `{ success, user, inviteLink?, emailSent? }` (someone who never accepted goes back to `invited`) | 404; 409 `NOT_DEACTIVATED`, `STUDENT_LIMIT_REACHED`; 503 `TRY_AGAIN` (seat lock busy, students only) |
+| PATCH `/institution/people/:id/role` | `role` | `{ success, user }` | 400 `INVALID_ROLE`, `SELF`, `ACCOUNT_NOT_VERIFIED` (a self-signup that has not verified); 404; 409 `SAME_ROLE`, `LAST_ADMIN`, `STUDENT_LIMIT_REACHED`; 503 `TRY_AGAIN` (seat lock busy, when the change takes a seat) |
 | PATCH `/institution/people/:id/group` | `group` (text up to 60 chars; `""` clears) | `{ success, user }` | 400 `INVALID_GROUP`; 404 |
 | PATCH `/institution/people/:id/assigned-groups` | `groups` (list of names, up to 20) | `{ success, user }`. These are the groups a lecturer sees on the dashboard. | 400 `NOT_A_LECTURER`, `INVALID_GROUPS`, `TOO_MANY_GROUPS`; 404 |
 | POST `/institution/people/:id/resend-invite` | none | `{ success, user, emailSent, inviteLink? }` | 404; 409 `NOT_INVITED` |
+| POST `/institution/people/:id/cancel-signup` | none | `{ success, cancelled: true, id }`. Removes an unverified self-signup, so the address can be invited or sign up again. | 404; 409 `NOT_UNVERIFIED` |
 
 ## University settings and target roles (`/api/institution`, university admin)
 

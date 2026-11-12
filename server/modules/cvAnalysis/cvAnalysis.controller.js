@@ -36,21 +36,14 @@ export const analyzeResume = async (req, res) => {
     }
     jobDescriptions = jobDescriptions.filter((jd) => typeof jd === 'string' && jd.trim());
 
-    // A student is always scored against their target role, so pasted job descriptions are optional for them.
-    let targetRole = null;
-    if (req.user.role === 'student') {
-      targetRole = await targetRoleOf(req.user);
-      if (!targetRole) {
-        return res.status(409).json({
-          success: false,
-          code: 'TARGET_ROLE_REQUIRED',
-          message: 'Choose the role you are preparing for before analysing your CV.'
-        });
-      }
-    } else if (jobDescriptions.length === 0) {
-      return res.status(400).json({
+    // Only students reach this (see the route). They are always scored against their target role, so pasted job
+    // descriptions are optional.
+    const targetRole = await targetRoleOf(req.user);
+    if (!targetRole) {
+      return res.status(409).json({
         success: false,
-        message: 'At least one job description is required'
+        code: 'TARGET_ROLE_REQUIRED',
+        message: 'Choose the role you are preparing for before analysing your CV.'
       });
     }
 
@@ -113,9 +106,12 @@ export const analyzeResume = async (req, res) => {
       targetRoleId: targetRole ? targetRole._id : null
     });
 
+    // The model that produced the score, as the scorer reported it. Nothing else names a provider.
+    const scoredBy = analysisResults.find((r) => r.scoreBreakdown?.aiAvailable && r.scoreBreakdown.model)?.scoreBreakdown.model;
+
     res.json({
       success: true,
-      message: 'Resume analysis completed successfully using enhanced Gemini API',
+      message: 'CV analysis complete.',
       analysisId: stored._id,
       resumeHash,
       resumeText: useProfileCV ? 'Profile CV content' : `Uploaded: ${resumeFileName}`,
@@ -129,9 +125,7 @@ export const analyzeResume = async (req, res) => {
         jobDescriptionCount: analysisResults.length,
         technologiesFound: extractedTechnologies.length,
         technologiesUnavailable,
-        apiUsed: 'Gemini 2.5 Flash Enhanced',
-        realAnalysis: true,
-        enhancedParsing: true
+        ...(scoredBy ? { model: scoredBy } : {})
       }
     });
   } catch (error) {
@@ -249,8 +243,7 @@ export const deleteAnalysis = async (req, res) => {
         analysisCount: analysis.results?.length || 0,
         wasSaved: analysis.isSaved,
         technologiesCount: (analysis.extractedTechnologies || []).length,
-        deletedAt: new Date().toISOString(),
-        analysisVersion: analysis.analysisMetadata?.geminiModel || 'legacy'
+        deletedAt: new Date().toISOString()
       }
     });
   } catch (error) {

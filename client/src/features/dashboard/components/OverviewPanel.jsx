@@ -19,7 +19,7 @@ export const OverviewSkeleton = () => (
   </div>
 );
 
-// Overview header of the dashboard: activity, CV and interview averages, level reached, missing skills,
+// Overview header of the dashboard: activity, CV and interview averages, next interview level, missing skills,
 // and for admins the seat usage of the whole university.
 const OverviewPanel = ({ data }) => {
   const levels = data.levelReachedCounts || { easy: 0, medium: 0, hard: 0 };
@@ -41,10 +41,10 @@ const OverviewPanel = ({ data }) => {
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <Card as="section" aria-labelledby="ov-level" className="space-y-4">
-          <CardTitle className="!mb-0"><span id="ov-level">Level reached</span></CardTitle>
+          <CardTitle className="!mb-0"><span id="ov-level">Next interview level</span></CardTitle>
           {levelTotal ? (
             <BarList
-              caption="Students by the level reached in their latest interview"
+              caption="Students by the level their next interview starts at"
               suffix=""
               max={levelTotal}
               items={Object.keys(LEVEL_LABELS).map((k) => ({ label: LEVEL_LABELS[k], value: levels[k] }))}

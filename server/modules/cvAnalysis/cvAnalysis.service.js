@@ -109,18 +109,15 @@ const RECOMMENDATION_FIELDS = ['strengths', 'contentWeaknesses', 'structureWeakn
 
 const truncate = (text, max) => (text.length > max ? text.substring(0, max) + '...' : text);
 
-// Written advice for one job description, or { isNonTechRole: true } when it is not a CS/SE internship.
-const getStructuredRecommendations = async (resumeText, jobDesc) => {
-  try {
-    const prompt = `You are a senior technical recruiter specializing in Computer Science internships.
-
-VERIFICATION: Confirm this is a CS/Software Engineering internship.
+// The non-CS check is only for pasted job descriptions. A target role was chosen by the university, so it is
+// never refused, whatever field it is in.
+const NON_CS_CHECK = `VERIFICATION: Confirm this is a CS/Software Engineering internship.
 
 If this is NOT a CS/Software Engineering internship, respond exactly: NON_CS_ROLE
 
-For CS/SOFTWARE ENGINEERING internships, provide analysis in this exact JSON format (no additional text):
+For CS/SOFTWARE ENGINEERING internships, provide analysis in this exact JSON format (no additional text):`;
 
-{
+const ADVICE_FORMAT = `{
   "strengths": [
     "Specific CS/programming strengths from their background",
     "Technical projects or coursework demonstrating coding ability",
@@ -151,9 +148,31 @@ For CS/SOFTWARE ENGINEERING internships, provide analysis in this exact JSON for
     "Format for technical recruiting: ATS-friendly, CS keywords",
     "Structure project descriptions with tech stack and outcomes"
   ]
-}
+}`;
 
-Resume:
+const ROLE_ADVICE_FORMAT = `{
+  "strengths": ["Specific strengths from their background that fit this role"],
+  "contentWeaknesses": ["Skills or experience the role asks for that the CV does not show"],
+  "structureWeaknesses": ["Layout or wording problems that hide what they can do"],
+  "contentRecommendations": ["Concrete things to learn, do or add for this role"],
+  "structureRecommendations": ["Concrete changes to how the CV is written or laid out"]
+}`;
+
+const advicePrompt = (resumeText, jobDesc, { checkNonCs }) => (checkNonCs
+  ? `You are a senior technical recruiter specializing in Computer Science internships.
+
+${NON_CS_CHECK}
+
+${ADVICE_FORMAT}
+
+`
+  : `You are a senior recruiter helping a student prepare for the internship role their university chose for them.
+
+Analyse the CV against this role and reply in this exact JSON format (no additional text), with 2 to 4 items in each list:
+
+${ROLE_ADVICE_FORMAT}
+
+`) + `Resume:
 ${truncate(resumeText, 4500)}
 
 Job Description:
@@ -161,9 +180,17 @@ ${truncate(jobDesc, 4500)}
 
 Return ONLY the JSON object, no other text or formatting.`;
 
+// Written advice for one job description. With checkNonCs (pasted job descriptions only) it is
+// { isNonTechRole: true } when the job is not a CS/SE internship.
+const getStructuredRecommendations = async (resumeText, jobDesc, { checkNonCs = true } = {}) => {
+  try {
+    const prompt = advicePrompt(resumeText, jobDesc, { checkNonCs });
+
     const { text: responseText } = await generateWithFallback(prompt, { models: CV_MODELS, temperature: 0.2 });
 
     if (responseText.includes('NON_CS_ROLE')) {
+      // A target role is never refused: a model that answers NON_CS_ROLE anyway just gives no advice.
+      if (!checkNonCs) return noRecommendations();
       return {
         isNonTechRole: true,
         message: 'This position is not a Computer Science or Software Engineering internship. Please provide a CS/Software Engineering job description for accurate analysis.'
@@ -196,11 +223,12 @@ Return ONLY the JSON object, no other text or formatting.`;
 
 const generateScore = (prompt) => generateWithFallback(prompt, { models: CV_MODELS, temperature: 0 });
 
-// Score and written feedback for one job description, run in parallel.
-const analyzeResumeMatch = async (resumeText, jobDesc) => {
+// Score and written feedback for one job description, run in parallel. A target role passes its own skills
+// list (the keyword part of the score) and skips the non-CS check.
+const analyzeResumeMatch = async (resumeText, jobDesc, { requiredSkills = null, checkNonCs = true } = {}) => {
   const [score, structuredAnalysis] = await Promise.all([
-    scoreResume({ resumeText, jobDesc, generate: generateScore }),
-    getStructuredRecommendations(resumeText, jobDesc).catch((err) => {
+    scoreResume({ resumeText, jobDesc, generate: generateScore, requiredSkills }),
+    getStructuredRecommendations(resumeText, jobDesc, { checkNonCs }).catch((err) => {
       console.error('Structured analysis failed:', err.message);
       return noRecommendations();
     })
@@ -219,7 +247,7 @@ const analyzeResumeMatch = async (resumeText, jobDesc) => {
     model: score.model
   };
 
-  if (structuredAnalysis.isNonTechRole) {
+  if (checkNonCs && structuredAnalysis.isNonTechRole) {
     return {
       matchPercentage: 0,
       isNonTechRole: true,
@@ -289,13 +317,15 @@ export const analyzeCv = async (cvText, jobDescriptions, { targetRole = null } =
     const tag = targetRoleId ? { kind, targetRoleId } : { kind };
     try {
       if (kind === 'job_description') validateJobDescription(rawJobDesc);
-      const analysisResult = await analyzeResumeMatch(cvText, stripHTMLToText(rawJobDesc));
+      const options = kind === 'target_role' ? { requiredSkills: targetRole.skills, checkNonCs: false } : {};
+      const analysisResult = await analyzeResumeMatch(cvText, stripHTMLToText(rawJobDesc), options);
       analysis.push({ ...buildJobResult(analysisResult, convertMarkdownToHTML(rawJobDesc), extractedTechnologies), ...tag });
     } catch (error) {
       console.error(`Analysis error for JD ${i + 1}:`, error.message);
       analysis.push({
         matchPercentage: 0,
-        isNonTechRole: true,
+        // A failed target role is an error, never a "non-tech role".
+        isNonTechRole: kind !== 'target_role',
         hasError: true,
         message: 'Analysis failed: ' + error.message,
         jobDescription: convertMarkdownToHTML(rawJobDesc),

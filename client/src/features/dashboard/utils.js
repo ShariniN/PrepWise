@@ -43,12 +43,6 @@ export const ATTENTION_FILTERS = [
 
 export const LEVEL_LABELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
-// "68, reached Hard"; either part may be missing.
-export const fmtScoreLevel = (score, level) => {
-  const parts = [isNum(score) ? `${score}` : null, LEVEL_LABELS[level] ? `reached ${LEVEL_LABELS[level]}` : null].filter(Boolean);
-  return parts.length ? parts.join(', ') : '-';
-};
-
 export const CATEGORIES = [
   { key: 'behavioural', label: 'Behavioural' },
   { key: 'technical', label: 'Technical' },

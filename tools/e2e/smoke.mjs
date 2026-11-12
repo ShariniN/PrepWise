@@ -324,22 +324,28 @@ r = await stuB.req('GET', '/api/practice/questions'); check('B student can read 
 {
   const email = `new.student.${stamp}@email.com`;
   const anon = new Client('signup');
-  const bad = await anon.req('POST', '/api/auth/signup', { name: 'Nobody', email: `x.${stamp}@not-a-university.test`, password: 'Newpass1!' });
+  const bad = await anon.req('POST', '/api/auth/signup', { name: 'Nobody', email: `x.${stamp}@not-a-university.test` });
   check('signup with an unknown domain is refused', bad.status === 400 && bad.data.code === 'SIGNUP_DOMAIN_NOT_ALLOWED', short(bad.data));
-  const su = await anon.req('POST', '/api/auth/signup', { name: 'New Student', email, password: 'Newpass1!' });
+  // A password sent at signup is ignored: the password is chosen at verify, by whoever has the mailbox.
+  const su = await anon.req('POST', '/api/auth/signup', { name: 'New Student', email, password: 'Attacker1!' });
   const link = su.data.devVerificationLink;
   check('signup answers 200 with a dev verification link', su.status === 200 && su.data.success && !!link, short(su.data));
-  const early = await new Client('early').login([email, 'Newpass1!']);
-  check('login before verifying is 403 EMAIL_NOT_VERIFIED', early.status === 403 && early.data.code === 'EMAIL_NOT_VERIFIED', short(early.data));
+  const early = await new Client('early').login([email, 'Attacker1!']);
+  check('a password sent at signup cannot log in', early.status === 401, short(early.data));
   const token = link && new URL(link).searchParams.get('token');
-  const v = await anon.req('POST', '/api/auth/verify-email', { token });
+  const noPw = await anon.req('POST', '/api/auth/verify-email', { token });
+  check('verify without a password is 400 WEAK_PASSWORD', noPw.status === 400 && noPw.data.code === 'WEAK_PASSWORD', short(noPw.data));
+  const v = await anon.req('POST', '/api/auth/verify-email', { token, password: 'Newpass1!' });
   check('verify-email activates the student and signs them in', v.status === 200 && v.data.success && v.data.role === 'student' && v.data.isAccountVerified === true, short(v.data));
   const me = await anon.req('GET', '/api/auth/is-auth');
   check('verified student is signed in', me.data?.user?.email === email && me.data.user.status === 'active', short(me.data));
   check('a new student needs onboarding', me.data?.needsOnboarding === true || me.data?.user?.needsOnboarding === true, short(me.data));
-  const again = await new Client('again').req('POST', '/api/auth/verify-email', { token });
+  const again = await new Client('again').req('POST', '/api/auth/verify-email', { token, password: 'Other123!' });
   check('verification link works once', again.status === 400 && again.data.code === 'VERIFY_INVALID', short(again.data));
-  const dup = await new Client('dup').req('POST', '/api/auth/signup', { name: 'New Student', email, password: 'Newpass1!' });
+  const pwIn = await new Client('pw').login([email, 'Newpass1!']);
+  const pwOut = await new Client('pw2').login([email, 'Attacker1!']);
+  check('the password chosen at verify is the login password', pwIn.status === 200 && pwOut.status === 401, `${pwIn.status} ${pwOut.status}`);
+  const dup = await new Client('dup').req('POST', '/api/auth/signup', { name: 'New Student', email });
   check('signup for an existing email gives the same answer, no link', dup.status === 200 && dup.data.message === su.data.message && !dup.data.devVerificationLink, short(dup.data));
   const oldOtp = await anon.req('POST', '/api/auth/send-verify-otp');
   check('old email-code route is gone', oldOtp.status === 404, String(oldOtp.status));

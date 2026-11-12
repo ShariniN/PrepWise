@@ -110,8 +110,9 @@ const sessionBody = (user) => ({
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
-    const { link } = await startSignup({ name, email, password });
+    // A `password` field from older clients is accepted and ignored: it is chosen at verify.
+    const { name, email } = req.body || {};
+    const { link } = await startSignup({ name, email });
     return res.json({ success: true, message: SIGNUP_MESSAGE, ...(link && exposeVerifyLinks() ? { devVerificationLink: link } : {}) });
   } catch (error) {
     if (error instanceof SignupError) return res.status(error.status).json({ success: false, code: error.code, message: error.message });
@@ -122,7 +123,8 @@ export const signup = async (req, res) => {
 
 export const verifyEmailLink = async (req, res) => {
   try {
-    const user = await completeVerification((req.body || {}).token);
+    const { token, password } = req.body || {};
+    const user = await completeVerification(token, password);
     res.cookie("token", signToken(user), { ...cookieOptions(), maxAge: 7 * 24 * 60 * 60 * 1000 });
     return res.json(sessionBody(user));
   } catch (error) {

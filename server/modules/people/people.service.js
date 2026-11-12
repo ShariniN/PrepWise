@@ -3,6 +3,7 @@ import peopleRepo from './people.repo.js';
 import { audit } from '../../services/audit.js';
 import { createInviteToken, buildInviteLink, exposeInviteLinks } from '../../services/inviteTokens.js';
 import { parseUsersCsv } from './people.csv.js';
+import { withSeatLock, SeatLockBusyError } from '../../services/seatLock.js';
 
 import { ROLES } from '../../config/roles.js';
 import { cleanGroup as cleanGroupText, InvalidGroupError, MAX_GROUP_CHARS } from '../../services/groups.js';
@@ -77,6 +78,22 @@ const seatWarning = (used, limit) =>
 const limitError = (limit) =>
   new PeopleError(409, `The student limit of ${limit} has been reached. Deactivate students or ask PrepWise to raise the limit.`, 'STUDENT_LIMIT_REACHED');
 
+// Seat checks and the writes that take a seat run under the institution's seat lock (the same lock as email
+// verification), so two requests can never both take the last seat. Emails are sent after the lock is released.
+const withSeats = async (institution, fn, options) => {
+  try {
+    return await withSeatLock(institution._id, fn, options);
+  } catch (error) {
+    if (error instanceof SeatLockBusyError) {
+      throw new PeopleError(503, 'Student seats are being updated right now. Try again in a moment.', 'TRY_AGAIN');
+    }
+    throw error;
+  }
+};
+
+// A CSV import holds the lock for every row (up to 2000), so its lock lasts longer than one invite's.
+const IMPORT_LOCK_MS = 60 * 1000;
+
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export const sendInviteEmail = async (institution, user, link) => {
@@ -98,11 +115,10 @@ export const sendInviteEmail = async (institution, user, link) => {
   }
 };
 
-/**
- * Invites one person. `seats` is an optional shared counter ({ used }) so an import counts seats once.
- * Throws PeopleError for anything the caller should see as a 4xx.
- */
-export const inviteUser = async ({ institution, actor, email, name, role = 'student', group, seats }) => {
+// Validates one invitation and creates the invited user. A student takes a seat, so for students this runs under the
+// seat lock: inviteUser takes it for one person, importUsers once for the whole file. `seats` ({ used }) is the
+// import's shared counter. Returns what is needed to send the email once the lock is released.
+const createInvite = async ({ institution, actor, email, name, role = 'student', group, seats }) => {
   const cleanEmail = String(email || '').trim().toLowerCase();
   if (!EMAIL_RE.test(cleanEmail)) throw new PeopleError(400, 'A valid email is required', 'INVALID_EMAIL');
   if (!ROLES.includes(role)) throw new PeopleError(400, `Role must be one of: ${ROLES.join(', ')}`, 'INVALID_ROLE');
@@ -139,11 +155,21 @@ export const inviteUser = async ({ institution, actor, email, name, role = 'stud
   if (seats && role === 'student') seats.used = usedAfter;
 
   await audit({ actor: actor?.id, action: 'user.invite', target: user._id, institutionId: institution._id, meta: { email: cleanEmail, role } });
+  return { user, link: buildInviteLink(invite.token), usedAfter };
+};
 
-  const link = buildInviteLink(invite.token);
+/**
+ * Invites one person. Throws PeopleError for anything the caller should see as a 4xx (503 TRY_AGAIN when the
+ * seat lock stays busy).
+ */
+export const inviteUser = async ({ institution, actor, email, name, role = 'student', group }) => {
+  const args = { institution, actor, email, name, role, group };
+  const { user, link, usedAfter } = role === 'student'
+    ? await withSeats(institution, () => createInvite(args))
+    : await createInvite(args);
+
   const emailSent = await sendInviteEmail(institution, user, link);
-  const warning = role === 'student' ? seatWarning(usedAfter, limit) : undefined;
-
+  const warning = role === 'student' ? seatWarning(usedAfter, institution.contractedStudentLimit || 0) : undefined;
   return {
     user: publicUser(user),
     emailSent,
@@ -156,34 +182,45 @@ export const importUsers = async ({ institution, actor, csvText }) => {
   const parsed = parseUsersCsv(csvText);
   if (parsed.error) throw new PeopleError(parsed.tooMany ? 413 : 400, parsed.error, parsed.tooMany ? 'TOO_MANY_ROWS' : 'INVALID_CSV');
 
-  const seats = { used: await seatsUsed(institution) };
   const limit = institution.contractedStudentLimit || 0;
   const results = [];
+  const created = []; // [result, { user, link }] to email once the lock is released
   let limitHit = false;
   const seenEmails = new Set();
+  let seats;
 
   // Every row is validated first (email, role, group, domain, already exists) and labelled by its real problem.
-  // inviteUser checks the student limit last, so only valid new student rows become blocked_limit.
+  // createInvite checks the student limit last, so only valid new student rows become blocked_limit.
   // Staff rows are still added after the limit is reached, because they are free.
-  for (const row of parsed.rows) {
-    const base = { line: row.line, email: row.email, role: row.role };
-    if (row.email && seenEmails.has(row.email)) {
-      results.push({ ...base, status: 'skipped', reason: 'Duplicate email in this file' });
-      continue;
+  await withSeats(institution, async () => {
+    seats = { used: await seatsUsed(institution) };
+    for (const row of parsed.rows) {
+      const base = { line: row.line, email: row.email, role: row.role };
+      if (row.email && seenEmails.has(row.email)) {
+        results.push({ ...base, status: 'skipped', reason: 'Duplicate email in this file' });
+        continue;
+      }
+      seenEmails.add(row.email);
+      try {
+        const invite = await createInvite({ institution, actor, email: row.email, name: row.name, role: row.role, group: row.group, seats });
+        const result = { ...base, status: 'invited' };
+        results.push(result);
+        created.push([result, invite]);
+      } catch (error) {
+        if (!(error instanceof PeopleError)) throw error;
+        if (error.code === 'STUDENT_LIMIT_REACHED') limitHit = true;
+        results.push({
+          ...base,
+          status: error.code === 'EMAIL_IN_USE' ? 'skipped' : error.code === 'STUDENT_LIMIT_REACHED' ? 'blocked_limit' : 'error',
+          reason: error.code === 'STUDENT_LIMIT_REACHED' ? `Student limit of ${limit} reached` : error.message,
+        });
+      }
     }
-    seenEmails.add(row.email);
-    try {
-      const r = await inviteUser({ institution, actor, email: row.email, name: row.name, role: row.role, group: row.group, seats });
-      results.push({ ...base, status: 'invited', emailSent: r.emailSent, ...(r.inviteLink ? { inviteLink: r.inviteLink } : {}) });
-    } catch (error) {
-      if (!(error instanceof PeopleError)) throw error;
-      if (error.code === 'STUDENT_LIMIT_REACHED') limitHit = true;
-      results.push({
-        ...base,
-        status: error.code === 'EMAIL_IN_USE' ? 'skipped' : error.code === 'STUDENT_LIMIT_REACHED' ? 'blocked_limit' : 'error',
-        reason: error.code === 'STUDENT_LIMIT_REACHED' ? `Student limit of ${limit} reached` : error.message,
-      });
-    }
+  }, { ttlMs: IMPORT_LOCK_MS });
+
+  for (const [result, { user, link }] of created) {
+    result.emailSent = await sendInviteEmail(institution, user, link);
+    if (exposeInviteLinks()) result.inviteLink = link;
   }
 
   const summary = results.reduce((acc, r) => ({ ...acc, [r.status]: (acc[r.status] || 0) + 1 }), { total: results.length });
@@ -229,20 +266,24 @@ export const reactivateUser = async ({ institution, actor, id }) => {
   const user = await loadTarget(institution, id);
   if (user.status !== 'deactivated') throw new PeopleError(409, 'This person is not deactivated', 'NOT_DEACTIVATED');
   const limit = institution.contractedStudentLimit || 0;
-  if (user.role === 'student' && (await seatsUsed(institution)) >= limit) throw limitError(limit);
 
   // Someone who never accepted their invitation goes back to 'invited' with a fresh link.
-  let link;
-  if (user.password) {
-    user.status = 'active';
-  } else {
-    const invite = createInviteToken();
-    user.status = 'invited';
-    user.inviteTokenHash = invite.hash;
-    user.inviteExpiresAt = invite.expiresAt;
-    link = buildInviteLink(invite.token);
-  }
-  await user.save();
+  const reactivate = async () => {
+    if (user.role === 'student' && (await seatsUsed(institution)) >= limit) throw limitError(limit);
+    let fresh;
+    if (user.password) {
+      user.status = 'active';
+    } else {
+      const invite = createInviteToken();
+      user.status = 'invited';
+      user.inviteTokenHash = invite.hash;
+      user.inviteExpiresAt = invite.expiresAt;
+      fresh = buildInviteLink(invite.token);
+    }
+    await user.save();
+    return fresh;
+  };
+  const link = user.role === 'student' ? await withSeats(institution, reactivate) : await reactivate();
   const emailSent = link ? await sendInviteEmail(institution, user, link) : undefined;
   await audit({ actor: actor.id, action: 'user.reactivate', target: user._id, institutionId: institution._id });
   return {
@@ -263,6 +304,18 @@ export const resendInvite = async ({ institution, actor, id }) => {
   const emailSent = await sendInviteEmail(institution, user, link);
   await audit({ actor: actor.id, action: 'user.invite_resend', target: user._id, institutionId: institution._id });
   return { user: publicUser(user), emailSent, ...(exposeInviteLinks() ? { inviteLink: link } : {}) };
+};
+
+// Cancels a self-signup that was never verified. The account is removed (it has no password, seat or data),
+// so the address can be invited, or sign up again, straight away.
+export const cancelSignup = async ({ institution, actor, id }) => {
+  const user = await loadTarget(institution, id);
+  if (user.status !== 'unverified') throw new PeopleError(409, 'Only sign-ups waiting for email verification can be cancelled', 'NOT_UNVERIFIED');
+  if (!(await peopleRepo.deleteUnverified(institution._id, user._id))) {
+    throw new PeopleError(409, 'Only sign-ups waiting for email verification can be cancelled', 'NOT_UNVERIFIED');
+  }
+  await audit({ actor: actor.id, action: 'user.signup_cancel', target: user._id, institutionId: institution._id, meta: { email: user.email } });
+  return { cancelled: true, id: String(user._id) };
 };
 
 export const setGroup = async ({ institution, actor, id, group }) => {
@@ -301,14 +354,20 @@ export const changeRole = async ({ institution, actor, id, role }) => {
   if (!ROLES.includes(role)) throw new PeopleError(400, `Role must be one of: ${ROLES.join(', ')}`, 'INVALID_ROLE');
   const user = await loadTarget(institution, id);
   if (String(user._id) === String(actor.id)) throw new PeopleError(400, 'You cannot change your own role', 'SELF');
+  // A self-signup is a student until it is verified; changing its role would create staff nobody invited.
+  if (user.status === 'unverified') throw new PeopleError(400, "This person hasn't verified their email yet.", 'ACCOUNT_NOT_VERIFIED');
   if (user.role === role) throw new PeopleError(409, 'This person already has that role', 'SAME_ROLE');
   const limit = institution.contractedStudentLimit || 0;
   const countsAsSeat = user.status === 'active' || user.status === 'invited';
-  if (role === 'student' && countsAsSeat && (await seatsUsed(institution)) >= limit) throw limitError(limit);
   await guardLastAdmin(institution, user);
   const from = user.role;
-  user.role = role;
-  await user.save();
+  const apply = async () => {
+    if (role === 'student' && countsAsSeat && (await seatsUsed(institution)) >= limit) throw limitError(limit);
+    user.role = role;
+    await user.save();
+  };
+  if (role === 'student' && countsAsSeat) await withSeats(institution, apply);
+  else await apply();
   await audit({ actor: actor.id, action: 'user.role_change', target: user._id, institutionId: institution._id, meta: { from, to: role } });
   return { user: publicUser(user) };
 };

@@ -1,7 +1,7 @@
 // Mock interview coding answers: the server re-runs the code and ignores whatever the browser claims.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import axios from 'axios';
+import { aiClient } from '../services/aiService.js';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import InterviewModel from '../models/Interview.js';
@@ -15,7 +15,6 @@ import app from '../app.js';
 let w, student, interview, provider, aiPrompts;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   provider = new VmProvider();
@@ -33,14 +32,14 @@ beforeEach(() => {
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiPrompts = [];
-  mock.method(axios, 'post', async (url, body) => {
-    aiPrompts.push(JSON.stringify(body));
-    return { data: { generated_text: JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' }) } };
+  mock.method(aiClient, 'generate', async (prompt) => {
+    aiPrompts.push(prompt);
+    return JSON.stringify({ score: 70, strengths: ['ok'], improvements: ['more'], detailedAnalysis: 'a', overallAssessment: 'b' });
   });
   mock.method(console, 'error', () => {});
   mock.method(console, 'log', () => {});
 });
-afterEach(() => { mock.restoreAll(); exec.setProvider(null); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
+afterEach(() => { mock.restoreAll(); exec.setProvider(null); });
 
 const answer = (body) => request(app).post('/api/interviews/i1/submit-answer').set('Cookie', w.cookie(student))
   .send({ responseText: 'My approach is below, explained in enough words.', answerMode: 'text', responseTime: 30, language: 'javascript', ...body });
@@ -55,6 +54,7 @@ test('client-sent executionResults are ignored: the server runs the code and rec
   assert.equal(saved.verdict, 'runtime_error');
   assert.equal(saved.serverVerified, true);
   assert.ok(!JSON.stringify(interview.responses[0]).includes('FORGED_OUTPUT'));
+  assert.equal(aiPrompts.length, 1, 'the answer went to the AI client');
   assert.ok(!aiPrompts.join('').includes('FORGED_OUTPUT'));
   assert.equal(interview.responses[0].feedback.executionSource, 'server');
   assert.equal(provider.calls, 1);
@@ -92,6 +92,7 @@ test('sandbox outage: executionResults.unavailable=true, no fabricated success, 
   assert.equal(saved.serverVerified, false);
   assert.equal(saved.output, undefined);
   assert.equal(interview.responses[0].feedback.executionSource, 'unavailable');
+  assert.equal(aiPrompts.length, 1, 'the answer went to the AI client');
   assert.ok(!aiPrompts.join('').includes('CODE EXECUTION RESULT'));
 });
 
@@ -141,7 +142,7 @@ test('the adaptive coding slot is marked against all of its practice question te
 });
 
 test('the basic estimate gives 0 for code that is empty or the unchanged starting code', async () => {
-  mock.method(axios, 'post', async () => ({ data: { generated_text: 'Sorry, I cannot help with that right now.' } })); // AI unusable
+  mock.method(aiClient, 'generate', async () => 'Sorry, I cannot help with that right now.'); // AI unusable
   const starter = 'function solve(n) {\n  // TODO: write your solution here\n}\nconsole.log(solve(1));\n';
   interview.questions.push({ questionId: 's2-medium', slot: 2, level: 'medium', type: 'coding', question: 'Solve it', practiceQuestionId: 'dddddddddddddddddddddddd', languages: ['javascript', 'python', 'java'], starterCode: { javascript: starter } });
   mock.method(practiceRepo, 'listTests', async () => [{ _id: 't1', input: '1', expectedOutput: '2', visible: true }]);

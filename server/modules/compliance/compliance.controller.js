@@ -24,7 +24,7 @@ const profileOf = (u) => ({
 export const exportMyData = async (req, res) => {
   const user = await complianceRepo.findUser(req.user.id);
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-  const data = await complianceRepo.collect(user._id);
+  const data = await complianceRepo.collect(user._id, user.institutionId);
   await audit({ actor: user._id, action: 'user.export', target: user._id, institutionId: user.institutionId });
   res.setHeader('Content-Disposition', 'attachment; filename="prepwise-my-data.json"');
   res.json({ exportedAt: new Date().toISOString(), profile: profileOf(user), ...data });
@@ -46,7 +46,7 @@ export const deleteMyAccount = async (req, res) => {
 
   // Written first, and it holds ids only, so it survives the deletion without keeping personal data.
   await audit({ actor: user._id, action: 'user.delete', target: user._id, institutionId: user.institutionId, meta: { role: user.role } });
-  const deleted = await complianceRepo.deleteAll(user._id);
+  const deleted = await complianceRepo.deleteAll(user._id, user.institutionId);
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -72,15 +72,15 @@ export const recordConsent = async (req, res) => {
 // Static, and deliberately honest: 'in_use' means the code in this repository calls it today.
 export const SUBPROCESSORS = [
   { name: 'MongoDB Atlas', purpose: 'Database for all accounts and results', status: 'in_use', data: 'All application data', note: 'Region must be chosen to match the university contract' },
-  { name: 'Google Gemini API', purpose: 'AI interview questions, feedback and CV analysis', status: 'in_use', data: 'CV text, job descriptions, interview answers and code' },
+  { name: 'Groq', purpose: 'Default AI for CV scoring and CV feedback, interview questions, interview answer feedback, and voice transcription (Whisper)', status: 'in_use', data: 'CV text, the target role and any pasted job descriptions, interview answers and code, and audio recordings of spoken answers (audio is not stored)', note: 'Only when a key is configured' },
+  { name: 'Google Gemini API', purpose: 'Fallback AI, used only when Groq fails or is over its limit: CV scoring and feedback, interview questions and answer feedback', status: 'in_use', data: 'For the request that fell back, the same as Groq: CV text, the target role and job descriptions, interview answers and code. Never audio', note: 'Only when a key is configured' },
   { name: 'Google (Gmail SMTP)', purpose: 'Sending invitations and verification emails', status: 'in_use', data: 'Email address, name' },
   { name: 'JDoodle', purpose: 'Running candidate code', status: 'in_use', data: 'Submitted code' },
   { name: 'Judge0', purpose: 'Running candidate code (replaces JDoodle in Phase 2)', status: 'planned', data: 'Submitted code' },
-  { name: 'Groq (voice transcription)', purpose: 'Speech-to-text for spoken interview answers (Whisper)', status: 'in_use', data: 'Audio recordings, not stored; only when the student uses voice answers and a key is configured' },
   { name: 'Vercel', purpose: 'Hosting the web app and API', status: 'planned', data: 'All traffic', note: 'Not deployed from this repository yet' },
   { name: 'Cloudflare', purpose: 'DNS', status: 'planned', data: 'Traffic metadata', note: 'Not used by the code yet' },
 ];
 
 export const subprocessors = (req, res) => {
-  res.json({ success: true, updated: '2026-11-07', subprocessors: SUBPROCESSORS });
+  res.json({ success: true, updated: '2026-11-12', subprocessors: SUBPROCESSORS });
 };

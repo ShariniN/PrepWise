@@ -45,17 +45,23 @@ let originalRole = null;
 try {
 // 1. Student: login form, wrong password, signed-in /login and unknown URLs
 // --- Target roles: the onboarding checks use a brand-new student, so they do not depend on what the seed or other
-// suites gave the demo students. Sign up through the API, follow the dev verification link, then use the browser.
-const signupRes = await apiClient()('POST', '/api/auth/signup', { name: 'E2E Fresh', email: freshEmail, password: freshPassword });
+// suites gave the demo students. Sign up through the API, then open the dev verification link in the browser and
+// choose the password there (sign-up itself takes no password).
+const signupRes = await apiClient()('POST', '/api/auth/signup', { name: 'E2E Fresh', email: freshEmail });
 const verifyToken = new URL(signupRes.data.devVerificationLink || 'http://x/?token=').searchParams.get('token');
 ok('sign-up gives a dev verification link', signupRes.status === 200 && !!verifyToken, `${signupRes.status} ${JSON.stringify(signupRes.data)}`);
 if (!verifyToken) throw new Error(`Sign-up of ${freshEmail} failed: ${signupRes.status} ${JSON.stringify(signupRes.data)}`);
-const verified = await apiClient()('POST', '/api/auth/verify-email', { token: verifyToken });
-ok('the verification link activates the new student', verified.status === 200, `${verified.status} ${JSON.stringify(verified.data)}`);
 
 let ctx = await newCtx();
 let p = await ctx.newPage(); watch(p, 'fresh student');
-await signIn(p, freshEmail, freshPassword);
+await p.goto(`${B}/verify-email?token=${verifyToken}`, { waitUntil: 'networkidle' });
+ok('the verification link opens a "Choose a password" form', await p.getByRole('button', { name: 'Finish signing up' }).count() === 1);
+// Opening the page must not use the link: a verify without a password is refused and leaves the token usable.
+const noPassword = await apiClient()('POST', '/api/auth/verify-email', { token: verifyToken });
+ok('opening the link does not use it, and verify without a password is refused', noPassword.status === 400 && noPassword.data.code === 'WEAK_PASSWORD', `${noPassword.status} ${JSON.stringify(noPassword.data)}`);
+await p.getByLabel('Password', { exact: true }).fill(freshPassword);
+await p.getByLabel('Confirm password').fill(freshPassword);
+await p.getByRole('button', { name: 'Finish signing up' }).click();
 await p.waitForURL(/welcome/, { timeout: 15000 }).catch(() => {});
 ok('student without a target role is sent to /welcome', /welcome/.test(p.url()), p.url());
 await p.locator('[role="radio"]').first().waitFor({ timeout: 10000 }).catch(() => {});
@@ -161,7 +167,7 @@ if (/No CV yet|No target role yet/.test(iv)) {
   }
   ok('five questions, each with a level badge', seen.length === 5 && seen.every(Boolean), JSON.stringify(seen));
   iv = await body(p);
-  ok('results show "Reached" a level and each question with its level', /Interview complete/.test(iv) && /Reached\s*(Easy|Medium|Hard)/.test(iv) && (iv.match(/Question \d\n/g) || []).length === 5, iv.slice(0, 300));
+  ok('results show "Next interview starts at" a level and each question with its level', /Interview complete/.test(iv) && /Next interview starts at\s*(Easy|Medium|Hard)/.test(iv) && (iv.match(/Question \d\n/g) || []).length === 5, iv.slice(0, 300));
   await p.screenshot({ path: 'e2e/interview-results.png', fullPage: true });
 }
 // ---------------------------------------------------------------- end of Task 6
@@ -174,7 +180,7 @@ await lp.waitForURL(/\/dashboard/, { timeout: 15000 }).catch(() => {});
 ok('lecturer login -> /dashboard', /\/dashboard/.test(lp.url()), lp.url());
 await lp.waitForTimeout(1500);
 const ov = await body(lp);
-ok('overview shows CV score, interview score and level reached', /Average CV score/.test(ov) && /Average interview score/.test(ov) && /Level reached/.test(ov));
+ok('overview shows CV score, interview score and next interview level', /Average CV score/.test(ov) && /Average interview score/.test(ov) && /Next interview level/.test(ov));
 ok('student table has the new columns', /Target role/i.test(ov) && /CV score/i.test(ov) && /Trend/i.test(ov));
 ok('lecturer sees only Group 1', /Group 1/.test(ov) && !/Group 2/.test(ov) && !/Student seats/.test(ov));
 await lp.screenshot({ path: 'e2e/dashboard-lecturer.png', fullPage: true });

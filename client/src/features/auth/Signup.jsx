@@ -4,23 +4,18 @@ import { toast } from 'react-toastify';
 import AuthLayout from './components/AuthLayout';
 import { Button, Field, Input } from '../../components/ui';
 import api, { errorMessage } from '../../lib/apiClient';
-import { passwordProblems, PASSWORD_RULES } from '../../lib/roles';
 
 const Signup = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
 
-  const problems = passwordProblems(password);
-
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (problems.length) return toast.error('Password needs: ' + problems.join(', ').toLowerCase());
     setBusy(true);
     try {
-      const { data } = await api.post('/api/auth/signup', { name: name.trim(), email: email.trim(), password });
+      const { data } = await api.post('/api/auth/signup', { name: name.trim(), email: email.trim() });
       setDone(data);
     } catch (error) {
       toast.error(errorMessage(error, 'Could not sign you up'));
@@ -48,7 +43,7 @@ const Signup = () => {
   return (
     <AuthLayout
       title="Create your account"
-      subtitle="Use your university email. We will send you a link to confirm it."
+      subtitle="Use your university email. We will send you a link to confirm it, and you choose your password there."
       footer={<p>Already have an account? <Link to="/login" className="text-primary-700 font-medium hover:underline">Log in</Link></p>}
     >
       <form onSubmit={onSubmit} className="space-y-4">
@@ -58,18 +53,6 @@ const Signup = () => {
         <Field label="University email">
           {(p) => <Input {...p} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />}
         </Field>
-        <div>
-          <Field label="Password">
-            {(p) => <Input {...p} type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-describedby="su-pw-rules" />}
-          </Field>
-          <ul id="su-pw-rules" className="mt-2 text-xs space-y-0.5">
-            {PASSWORD_RULES.map((r) => (
-              <li key={r.label} className={r.test(password) ? 'text-success-700' : 'text-ink-muted'}>
-                {r.test(password) ? '✓' : '-'} {r.label}
-              </li>
-            ))}
-          </ul>
-        </div>
         <Button type="submit" block size="lg" loading={busy}>
           {busy ? 'Creating...' : 'Create my account'}
         </Button>

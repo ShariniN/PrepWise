@@ -24,6 +24,7 @@ const Onboarding = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [scoring, setScoring] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,13 +59,29 @@ const Onboarding = () => {
       const formData = new FormData();
       formData.append('cv', file);
       await api.put('/api/user/upload-cv', formData);
-      toast.success('CV uploaded');
-      await getUserData();
-      home();
     } catch (err) {
       setUploadError(errorMessage(err, 'Could not upload your CV'));
-    } finally {
       setUploading(false);
+      return;
+    }
+    toast.success('CV uploaded');
+    setUploading(false);
+    await scoreCv();
+    await getUserData();
+    home();
+  };
+
+  // Scores the uploaded CV against the role just chosen. A failure never blocks onboarding.
+  const scoreCv = async () => {
+    setScoring(true);
+    try {
+      const { data } = await api.post('/api/analyze/analyze-resume', { useProfileCV: 'true' });
+      const result = data?.analysis?.[0];
+      if (!result || result.hasError || result.scoreBreakdown?.aiAvailable === false) throw new Error('not scored');
+    } catch {
+      toast.info("We'll score your CV when you open the CV page.");
+    } finally {
+      setScoring(false);
     }
   };
 
@@ -130,9 +147,12 @@ const Onboarding = () => {
             />
           </div>
           {uploadError && <p role="alert" className="rounded-2xl bg-danger-50 p-3 text-sm text-danger-700">{uploadError}</p>}
+          {scoring && <p role="status" className="text-sm text-ink-2">Scoring your CV...</p>}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button variant="ghost" onClick={home} disabled={uploading}>Skip for now</Button>
-            <Button onClick={uploadCv} disabled={!file} loading={uploading} icon={<Upload size={16} aria-hidden="true" />}>Upload CV</Button>
+            <Button variant="ghost" onClick={home} disabled={uploading || scoring}>Skip for now</Button>
+            <Button onClick={uploadCv} disabled={!file || scoring} loading={uploading || scoring} icon={<Upload size={16} aria-hidden="true" />}>
+              {scoring ? 'Scoring your CV...' : 'Upload CV'}
+            </Button>
           </div>
         </Card>
       )}

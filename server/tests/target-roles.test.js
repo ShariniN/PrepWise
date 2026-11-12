@@ -9,6 +9,7 @@ import CVAnalysis from '../models/CvAnalysis.js';
 import { savedResultsView } from '../modules/cvAnalysis/cvAnalysis.service.js';
 import institutionRepo from '../modules/institution/institution.repo.js';
 import { roleAsJobDescription } from '../services/targetRoles.js';
+import { DEFAULT_TARGET_ROLES } from '../config/defaultTargetRoles.js';
 import app from '../app.js';
 
 const same = (a, b) => String(a) === String(b);
@@ -368,4 +369,106 @@ test('deleting a role clears the students before the role is removed', async () 
   assert.equal(last.status, 409);
   assert.deepEqual(order, []);
   assert.equal(studentA.targetRoleId, roleBackend._id);
+});
+
+// The worst case for a non-software role: the advice model answers NON_CS_ROLE whatever it is asked.
+const stubRefusingGemini = (prompts) => mock.method(GoogleGenerativeAI.prototype, 'getGenerativeModel', () => ({
+  generateContent: async (prompt) => {
+    prompts.push(prompt);
+    let text = 'NON_CS_ROLE';
+    if (prompt.includes('extract ONLY technical skills')) text = '[]';
+    else if (prompt.includes('Reply with ONLY the number')) text = '0.6';
+    return { response: { text: () => text } };
+  },
+}));
+
+for (const title of ['Business analyst intern', 'Data analyst intern']) {
+  test(`a target-role analysis for "${title}" is scored, never 0 because of the non-CS gate`, async () => {
+    const role = { _id: newId(), ...DEFAULT_TARGET_ROLES.find((r) => r.title === title) };
+    w.institutions[IDS.instA].targetRoles = [role];
+    studentA.targetRoleId = role._id;
+    studentA.currentCV = { text: `Business student. Wrote user stories and documentation, used SQL and Excel for reports. ${'Led a club project. '.repeat(6)}`, fileName: 'cv.pdf', hash: 'h' };
+    delete process.env.GROQ_API_KEY;
+    const prompts = [];
+    stubRefusingGemini(prompts);
+    const res = await analyze({});
+    assert.equal(res.status, 200, res.text);
+    const r = res.body.analysis[0];
+    assert.equal(r.kind, 'target_role');
+    assert.equal(r.isNonTechRole, false);
+    assert.ok(r.matchPercentage > 0, `scored ${r.matchPercentage}`);
+    assert.equal(r.scoreBreakdown.aiAvailable, true);
+    assert.doesNotMatch(JSON.stringify(res.body), /Please provide a CS\/Software Engineering job description/);
+    assert.ok(!prompts.some((p) => p.includes(roleAsJobDescription(role)) && p.includes('NON_CS_ROLE')), 'the target role is never put through the non-CS check');
+    assert.equal(cvStore[0].results[0].isNonTechRole, false);
+  });
+}
+
+test('target-role missing skills come from role.skills', async () => {
+  const role = { _id: newId(), ...DEFAULT_TARGET_ROLES.find((r) => r.title === 'Business analyst intern') };
+  w.institutions[IDS.instA].targetRoles = [role];
+  studentA.targetRoleId = role._id;
+  studentA.currentCV = { text: `Wrote user stories and documentation for a club app. Used Google Sheets and SQL. ${'Volunteer work. '.repeat(8)}`, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  const b = res.body.analysis[0].scoreBreakdown;
+  assert.deepEqual(b.requiredSkills, role.skills);
+  assert.deepEqual(b.matchedSkills, ['User stories', 'Excel or Google Sheets', 'SQL basics', 'Documentation']);
+  assert.deepEqual(b.missingSkills, ['Requirements gathering', 'Process mapping', 'Stakeholder communication', 'Problem solving', 'Presentation skills']);
+});
+
+test('a pasted job description still goes through the non-CS check', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubRefusingGemini([]);
+  const res = await analyze({ jobDescriptions: JSON.stringify(['Head chef for a busy restaurant kitchen, managing a team of cooks every evening.']) });
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.analysis[0].isNonTechRole, false);
+  assert.equal(res.body.analysis[1].isNonTechRole, true);
+  assert.equal(res.body.analysis[1].matchPercentage, 0);
+});
+
+test('the analyze response names no provider other than the model that scored it', async () => {
+  studentA.targetRoleId = roleBackend._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  stubGemini([]);
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.message, 'CV analysis complete.');
+  const used = res.body.analysis[0].scoreBreakdown.model;
+  assert.ok(used, 'the scoring model is recorded');
+  assert.equal(res.body.metadata.model, used);
+  for (const label of ['apiUsed', 'geminiModel', 'realAnalysis', 'enhancedParsing']) assert.ok(!(label in res.body.metadata), label);
+  const rest = JSON.stringify(res.body).split(used).join('');
+  assert.doesNotMatch(rest, /gemini|groq|openai|hugging/i, 'no other provider is named');
+});
+
+test('without an AI score the response carries no model at all', async () => {
+  studentA.targetRoleId = roleData._id;
+  studentA.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+  delete process.env.GROQ_API_KEY;
+  // Over quota (429): every model is skipped at once, without the retry wait.
+  mock.method(GoogleGenerativeAI.prototype, 'getGenerativeModel', () => ({ generateContent: async () => { throw Object.assign(new Error('over quota'), { status: 429 }); } }));
+  const res = await analyze({});
+  assert.equal(res.status, 200, res.text);
+  assert.equal(res.body.message, 'CV analysis complete.');
+  assert.ok(!('model' in res.body.metadata));
+  assert.doesNotMatch(JSON.stringify(res.body.metadata), /gemini|groq/i);
+});
+
+test('analyze-resume is for students only: lecturers and admins get 403 and nothing is analysed', async () => {
+  const prompts = [];
+  stubGemini(prompts);
+  for (const user of [lecturerA, adminA]) {
+    user.currentCV = { text: CV_TEXT, fileName: 'cv.pdf', hash: 'h' };
+    const res = await request(app).post('/api/analyze/analyze-resume').set(as(user))
+      .send({ useProfileCV: 'true', jobDescriptions: JSON.stringify(['Backend intern: Node.js, SQL and Git, building REST APIs with the team.']) });
+    assert.equal(res.status, 403, `${user.role}: ${res.text}`);
+  }
+  assert.equal(prompts.length, 0);
+  assert.equal(cvStore.length, 0);
 });

@@ -679,7 +679,7 @@ const Interview = () => {
           )}
           {levelReached && (
             <p className="mb-6 flex items-center justify-center gap-2 text-lg font-semibold text-ink" data-testid="level-reached">
-              Reached <LevelBadge level={levelReached} />
+              Next interview starts at <LevelBadge level={levelReached} />
             </p>
           )}
 

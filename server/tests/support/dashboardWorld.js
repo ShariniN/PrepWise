@@ -70,8 +70,10 @@ export const installDashboardWorld = (world) => {
   };
   // A CV result. By default it is scored against the student's target role, which is what the dashboard counts.
   // kind: null leaves the field out, like a document written before results had a kind.
-  db.result = (match, { aiAvailable = true, missing = [], matched = ['javascript'], kind = 'target_role' } = {}) => ({
+  // A target-role result carries the role it was scored against: db.defaultRoleId unless `roleId` is given.
+  db.result = (match, { aiAvailable = true, missing = [], matched = ['javascript'], kind = 'target_role', roleId = db.defaultRoleId } = {}) => ({
     ...(kind ? { kind } : {}),
+    ...(kind === 'target_role' && roleId ? { targetRoleId: roleId } : {}),
     matchPercentage: match, scoreBreakdown: { aiAvailable, aiScore: aiAvailable ? match / 100 : null, keywordScore: 0.5, model: 'test', aiError: aiAvailable ? null : 'SECRET-AI-ERROR', requiredSkills: [...matched, ...missing], matchedSkills: matched, missingSkills: missing },
   });
   db.addAttempt = (user, fields) => {

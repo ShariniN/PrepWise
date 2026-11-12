@@ -3,7 +3,7 @@
     "status": 200,
     "body": {
       "success": true,
-      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "message": "CV analysis complete.",
       "analysisId": "<id>",
       "resumeHash": "cvhash",
       "resumeText": "Profile CV content",
@@ -30,14 +30,14 @@
             "keywordScore": 0.5,
             "keywordWeight": 0.3,
             "requiredSkills": [
-              "node.js",
-              "sql"
+              "Node.js",
+              "SQL"
             ],
             "matchedSkills": [
-              "node.js"
+              "Node.js"
             ],
             "missingSkills": [
-              "sql"
+              "SQL"
             ],
             "aiError": "Unreadable AI reply: about half",
             "model": "gemini-3.6-flash"
@@ -95,10 +95,7 @@
         "analysisDate": "<date>",
         "jobDescriptionCount": 2,
         "technologiesFound": 0,
-        "technologiesUnavailable": true,
-        "apiUsed": "Gemini 2.5 Flash Enhanced",
-        "realAnalysis": true,
-        "enhancedParsing": true
+        "technologiesUnavailable": true
       }
     }
   },
@@ -135,7 +132,7 @@
     "status": 200,
     "body": {
       "success": true,
-      "message": "Resume analysis completed successfully using enhanced Gemini API",
+      "message": "CV analysis complete.",
       "analysisId": "<id>",
       "resumeHash": "cvhash",
       "resumeText": "Profile CV content",
@@ -177,14 +174,14 @@
             "keywordScore": 0.5,
             "keywordWeight": 0.3,
             "requiredSkills": [
-              "node.js",
-              "sql"
+              "Node.js",
+              "SQL"
             ],
             "matchedSkills": [
-              "node.js"
+              "Node.js"
             ],
             "missingSkills": [
-              "sql"
+              "SQL"
             ],
             "aiError": null,
             "model": "gemini-3.6-flash"
@@ -307,9 +304,7 @@
         "jobDescriptionCount": 4,
         "technologiesFound": 1,
         "technologiesUnavailable": false,
-        "apiUsed": "Gemini 2.5 Flash Enhanced",
-        "realAnalysis": true,
-        "enhancedParsing": true
+        "model": "gemini-3.6-flash"
       }
     }
   },
@@ -340,8 +335,7 @@
         "analysisCount": 1,
         "wasSaved": true,
         "technologiesCount": 0,
-        "deletedAt": "<date>",
-        "analysisVersion": "legacy"
+        "deletedAt": "<date>"
       }
     }
   },
@@ -357,8 +351,7 @@
         "analysisCount": 1,
         "wasSaved": true,
         "technologiesCount": 0,
-        "deletedAt": "<date>",
-        "analysisVersion": "legacy"
+        "deletedAt": "<date>"
       }
     }
   },

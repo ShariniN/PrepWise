@@ -201,7 +201,7 @@ const StudentInterview = () => {
         <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
           <div className="grid grid-cols-2 gap-3">
             <MetricTile label="Interview score" value={iv.score} hint="Counted answers only" />
-            <MetricTile label="Level reached" value={LEVEL_LABELS[iv.levelReached] || '-'} hint={iv.readinessLevel ? `Readiness: ${iv.readinessLevel}` : undefined} />
+            <MetricTile label="Next level" value={LEVEL_LABELS[iv.levelReached] || '-'} hint={iv.readinessLevel ? `Readiness: ${iv.readinessLevel}` : undefined} />
             <MetricTile label="Answers" value={`${answered} of ${iv.questions.length}`} hint={skipped ? `${skipped} skipped` : undefined} />
             <MetricTile label="Stored score" value={iv.storedOverallScore} hint="Includes fallback answers; for reference" />
           </div>

@@ -4,7 +4,7 @@
 // Group scope: `groups` is null for "every group" (admins) or an array of group names (a lecturer's assigned
 // groups). An empty array matches nobody; it never means "no filter".
 //
-// Projections never select CV text (Interview.resumeText, CVAnalysis.resumeText, User.currentCV), secrets
+// Projections never select CV text (Interview.resumeText, CVAnalysis.resumeText, User.currentCV.text), secrets
 // (password, OTPs, invite tokens), hidden interview tests, the question pool or audio URLs. The controller whitelists fields again.
 import userModel from '../../models/User.js';
 import Institution from '../../models/Institution.js';
@@ -13,7 +13,8 @@ import CVAnalysis from '../../models/CvAnalysis.js';
 import Attempt from '../../models/Attempt.js';
 
 const MAX_ROWS = 100000;
-const STUDENT_FIELDS = 'name email group role status lastActive createdAt targetRoleId';
+// currentCV.uploadedAt only: a CV on file is not "no CV yet". The CV text is never selected.
+const STUDENT_FIELDS = 'name email group role status lastActive createdAt targetRoleId currentCV.uploadedAt';
 const STUDENT_FILTER = { role: 'student', status: 'active' };
 
 const INTERVIEW_SUMMARY_FIELDS = [
@@ -25,7 +26,7 @@ const INTERVIEW_SUMMARY_FIELDS = [
 
 const CV_FIELDS = [
   'userId', 'createdAt', 'updatedAt', 'jobDescriptions', 'targetRoleId',
-  'results.jobIndex', 'results.kind', 'results.jobTitle', 'results.company', 'results.matchPercentage', 'results.isNonTechRole', 'results.scoreBreakdown',
+  'results.jobIndex', 'results.kind', 'results.targetRoleId', 'results.jobTitle', 'results.company', 'results.matchPercentage', 'results.isNonTechRole', 'results.hasError', 'results.scoreBreakdown',
   'results.strengths', 'results.contentWeaknesses', 'results.structureWeaknesses', 'results.skillsMatched', 'results.skillsMissing',
 ].join(' ');
 

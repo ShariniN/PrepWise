@@ -2,7 +2,7 @@
 // and interviews built from the generic fallback question pool say so (QA-05). No real AI, no database.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import axios from 'axios';
+import { aiClient } from '../services/aiService.js';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import InterviewModel from '../models/Interview.js';
@@ -45,7 +45,6 @@ test('calculateFinalResults without fallback answers is unchanged and not partia
 let w, student, interview, aiCalls, aiDown, saved;
 beforeEach(() => {
   resetAiCapCache();
-  process.env.AI_PROVIDER = 'huggingface'; process.env.HF_API_TOKEN = 'test-token';
   w = makeWorld(); w.install();
   student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   interview = {
@@ -60,16 +59,15 @@ beforeEach(() => {
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiCalls = 0; aiDown = false;
-  mock.method(axios, 'post', async () => {
+  mock.method(aiClient, 'generate', async () => {
     aiCalls += 1;
-    // "Down" = the model answers with something unusable. (Throwing here would make aiService fall back to the
-    // Gemini SDK, which would try the network.)
-    if (aiDown) return { data: { generated_text: 'Sorry, I cannot help with that right now.' } };
-    return { data: { generated_text: JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' }) } };
+    // "Down" = the model answers with something unusable.
+    if (aiDown) return 'Sorry, I cannot help with that right now.';
+    return JSON.stringify({ overallScore: 90, readinessLevel: 'Ready', keyStrengths: ['x'], majorImprovements: [], recommendations: ['r'], generalFeedback: 'g' });
   });
   for (const k of ['error', 'log', 'warn']) mock.method(console, k, () => {});
 });
-afterEach(() => { mock.restoreAll(); delete process.env.AI_PROVIDER; delete process.env.HF_API_TOKEN; });
+afterEach(() => mock.restoreAll());
 
 const as = () => ({ Cookie: w.cookie(student) });
 
@@ -90,6 +88,7 @@ test('completing a mixed interview scores only the AI-scored answers', async () 
   assert.equal(res.body.results.score, 80);
   assert.equal(res.body.results.excludedFallbackAnswers, 1);
   assert.equal(res.body.results.scoreIsPartial, true);
+  assert.equal(aiCalls, 1, 'the overall feedback went to the AI client');
   const fb = await request(app).get('/api/interviews/i1/feedback').set(as());
   assert.equal(fb.body.feedback.score, 80);
   assert.equal(fb.body.feedback.excludedFallbackAnswers, 1);

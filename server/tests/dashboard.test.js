@@ -7,9 +7,11 @@ import { makeWorld, IDS, newId } from './helpers.js';
 import { installDashboardWorld } from './support/dashboardWorld.js';
 import * as m from '../modules/dashboard/dashboard.metrics.js';
 import { scopeFor } from '../modules/dashboard/dashboard.repo.js';
+import fs from 'node:fs';
 import app from '../app.js';
 
 const DAY = 86400000;
+const dashboardRepoSource = fs.readFileSync(new URL('../modules/dashboard/dashboard.repo.js', import.meta.url), 'utf8');
 let w, db, lecA, lec1, lecNone, adminA, lecB, studentsA, stuB, roleId;
 const as = (u) => ({ Cookie: w.cookie(u) });
 const get = (path, user, query = {}) => request(app).get(path).query(query).set(as(user));
@@ -31,8 +33,9 @@ beforeEach(() => {
   adminA = w.addUser({ name: 'Admin A', email: 'admin@a.edu', role: 'university_admin', institutionId: IDS.instA });
   lecB = w.addUser({ name: 'Lec B', email: 'lec@b.edu', role: 'lecturer', institutionId: IDS.instB, assignedGroups: ['Group 1'] });
   studentsA = ['Ann', 'Bob', 'Cy', 'Di', 'Ed', 'Flo'].map((n, i) => w.addUser({
-    name: n, email: `${n.toLowerCase()}@a.edu`, role: 'student', institutionId: IDS.instA, group: i < 3 ? 'Group 1' : 'Group 2', lastActive: new Date(), ...secret,
+    name: n, email: `${n.toLowerCase()}@a.edu`, role: 'student', institutionId: IDS.instA, group: i < 3 ? 'Group 1' : 'Group 2', lastActive: new Date(), targetRoleId: roleId, ...secret,
   }));
+  db.defaultRoleId = roleId;
   stuB = w.addUser({ name: 'Zed', email: 'z@b.edu', role: 'student', institutionId: IDS.instB, group: 'Group 1', lastActive: new Date(), ...secret });
 });
 afterEach(() => mock.restoreAll());
@@ -303,6 +306,7 @@ test('topMissingSkills hidden below 5 students', async () => {
 test('rows show the target role title, or null when the role was deleted', async () => {
   studentsA[0].targetRoleId = roleId;
   studentsA[1].targetRoleId = newId();
+  studentsA[2].targetRoleId = null;
   const rows = await rowsFor(adminA);
   assert.equal(rows.Ann.targetRoleTitle, 'Software engineer intern');
   assert.equal(rows.Bob.targetRoleTitle, null);
@@ -366,7 +370,7 @@ test('row shape, search, sort (nulls last, ties by name) and pagination', async 
   assert.deepEqual([p2.body.total, p2.body.totalPages, p2.body.page, p2.body.pageSize], [6, 2, 2, 4]);
   const s = await get('/api/dashboard/students', adminA, { search: 'FLO@' });
   assert.deepEqual(s.body.students.map((x) => x.name), ['Flo']);
-  assert.deepEqual(Object.keys(s.body.students[0]).sort(), ['attention', 'cvScore', 'email', 'group', 'id', 'lastActive', 'lastInterviewScore',
+  assert.deepEqual(Object.keys(s.body.students[0]).sort(), ['attention', 'cvNotScored', 'cvScore', 'email', 'group', 'id', 'lastActive', 'lastInterviewScore',
     'lastLevelReached', 'name', 'practiceSolved', 'targetRoleTitle', 'trend'].sort());
 });
 
@@ -522,4 +526,85 @@ test('studentRow tolerates missing data: no levels, no CV kind, no target role, 
   assert.deepEqual(codes(row), [], 'a CV of any kind and a completed interview; the interview counts as recent activity');
   const empty = m.studentRow({ _id: newId() }, {}, new Date());
   assert.deepEqual(codes(empty), ['no_cv', 'no_interview', 'inactive_14_days']);
+});
+
+test('isTargetRoleScore ignores isNonTechRole and error results', () => {
+  const ok = { kind: 'target_role', matchPercentage: 64, scoreBreakdown: { aiAvailable: true } };
+  assert.equal(m.isTargetRoleScore(ok), true);
+  assert.equal(m.isTargetRoleScore({ ...ok, matchPercentage: 0, isNonTechRole: true }), false);
+  assert.equal(m.isTargetRoleScore({ kind: 'target_role', matchPercentage: 0, hasError: true }), false);
+  const row = m.studentRow({ _id: newId(), name: 'S' }, { cvAnalyses: [{ _id: newId(), updatedAt: new Date(), results: [{ ...ok, matchPercentage: 0, isNonTechRole: true }] }] }, new Date());
+  assert.equal(row.cvScore, null);
+});
+
+test('a role change makes the old CV score stop counting until the student re-analyses', async () => {
+  const [ann, bob] = studentsA;
+  const newRole = newId();
+  w.institutions[IDS.instA].targetRoles.push({ _id: newRole, title: 'Data analyst intern', description: 'Data', skills: ['SQL'] });
+  db.addCv(ann, [db.result(80, { missing: ['docker'] })], { daysAgo: 2 });
+  db.addCv(bob, [db.result(60)], { daysAgo: 2 });
+  ann.targetRoleId = newRole;
+  let rows = await rowsFor(adminA);
+  assert.equal(rows.Ann.cvScore, null, 'scored against the old role');
+  assert.equal(rows.Bob.cvScore, 60);
+  let ov = await get('/api/dashboard/overview', adminA);
+  assert.deepEqual([ov.body.avgCvScore, ov.body.studentsWithCvScore], [60, 1]);
+  assert.equal((await get(`/api/dashboard/students/${ann._id}`, adminA)).body.summary.cvScore, null);
+  // Re-analysed against the new role: that result counts, the older one for the old role still does not.
+  db.addCv(ann, [db.result(45, { roleId: newRole, missing: ['SQL'] })], { daysAgo: 1 });
+  db.addCv(ann, [db.result(99)], { daysAgo: 0, updatedAt: new Date(Date.now() - 3 * DAY) });
+  rows = await rowsFor(adminA);
+  assert.equal(rows.Ann.cvScore, 45);
+  ov = await get('/api/dashboard/overview', adminA);
+  assert.deepEqual([ov.body.avgCvScore, ov.body.studentsWithCvScore], [52.5, 2]);
+});
+
+test('a deleted role means no CV score, and no missing skills from it', async () => {
+  for (const s of studentsA.slice(0, 5)) db.addCv(s, [db.result(70, { missing: ['git'] })]);
+  let ov = await get('/api/dashboard/overview', adminA);
+  assert.equal(ov.body.studentsWithCvScore, 5);
+  assert.deepEqual(ov.body.topMissingSkills, [{ skill: 'git', students: 5 }]);
+  // The role is removed from the institution; the students' targetRoleId still points at it.
+  w.institutions[IDS.instA].targetRoles = [{ _id: newId(), title: 'Other role', description: 'x', skills: [] }];
+  const rows = await rowsFor(adminA);
+  assert.equal(rows.Ann.cvScore, null);
+  ov = await get('/api/dashboard/overview', adminA);
+  assert.deepEqual([ov.body.avgCvScore, ov.body.studentsWithCvScore, ov.body.topMissingSkills], [null, 0, null]);
+});
+
+test('a target-role result without a targetRoleId never counts', () => {
+  const role = { _id: newId(), title: 'R', skills: [] };
+  const row = m.studentRow({ _id: newId(), name: 'S', targetRoleId: role._id }, { cvAnalyses: [{ _id: newId(), updatedAt: new Date(), results: [{ kind: 'target_role', matchPercentage: 70, scoreBreakdown: { aiAvailable: true } }] }] }, new Date(), { targetRoles: [role] });
+  assert.equal(row.cvScore, null);
+});
+
+test('the CV projection selects each result targetRoleId and no CV text', () => {
+  const fields = String(dashboardRepoSource.match(/const CV_FIELDS = \[([\s\S]*?)\]/)[1]);
+  assert.match(fields, /'results\.targetRoleId'/);
+  assert.doesNotMatch(fields, /resumeText/);
+});
+
+test('a student with an uploaded but unanalysed CV is not no_cv, and is flagged cvNotScored', async () => {
+  const [ann, bob, cy] = studentsA;
+  ann.currentCV = { ...ann.currentCV, uploadedAt: new Date() };
+  db.addCv(bob, [db.result(70)]);
+  db.addCv(cy, [db.result(60, { kind: 'job_description' })]);
+  const rows = await rowsFor(adminA);
+  assert.ok(!codes(rows.Ann).includes('no_cv'));
+  assert.equal(rows.Ann.cvScore, null);
+  assert.equal(rows.Ann.cvNotScored, true);
+  assert.equal(rows.Bob.cvNotScored, false);
+  assert.equal(rows.Cy.cvNotScored, true, 'only checked against a pasted job, so not scored against the role');
+  assert.ok(codes(rows.Ed).includes('no_cv'));
+  assert.equal(rows.Ed.cvNotScored, false, 'no CV at all is no_cv, not "not scored"');
+  const prof = await get(`/api/dashboard/students/${ann._id}`, adminA);
+  assert.equal(prof.body.summary.cvNotScored, true);
+  noSecrets(JSON.stringify(prof.body), 'student profile');
+  assert.doesNotMatch(JSON.stringify(prof.body), /currentCV/);
+});
+
+test('the student projection selects currentCV.uploadedAt only, never the CV text', () => {
+  const fields = dashboardRepoSource.match(/const STUDENT_FIELDS = '([^']*)'/)[1].split(' ');
+  assert.ok(fields.includes('currentCV.uploadedAt'));
+  assert.deepEqual(fields.filter((f) => f.startsWith('currentCV')), ['currentCV.uploadedAt']);
 });

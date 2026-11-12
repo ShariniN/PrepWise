@@ -70,3 +70,33 @@ test('common word forms count as the same skill', () => {
   assert.ok(findSkills('Used pytest and JUnit').includes('testing'));
   assert.ok(!findSkills('I like to read').includes('testing'));
 });
+
+test('with requiredSkills, the target role skills are the required list, in the role spelling', () => {
+  const skills = ['Requirements gathering', 'Process mapping', 'User stories', 'Excel or Google Sheets', 'SQL basics', 'Stakeholder communication', 'Documentation', 'Problem solving', 'Presentation skills'];
+  const cv = 'Wrote user stories and documentation for a student club app. Used Google Sheets and SQL for reports.';
+  const m = keywordMatch(cv, 'ignored when requiredSkills is given: Python, React, Docker', skills);
+  assert.deepEqual(m.required, skills);
+  assert.deepEqual(m.matched, ['User stories', 'Excel or Google Sheets', 'SQL basics', 'Documentation']);
+  assert.deepEqual(m.missing, ['Requirements gathering', 'Process mapping', 'Stakeholder communication', 'Problem solving', 'Presentation skills']);
+  assert.equal(m.score, 4 / 9);
+});
+
+test('requiredSkills: "or" needs one option, "and" needs every part, plurals and symbols are matched', () => {
+  const skills = ['JavaScript or Python', 'HTML and CSS', 'Data structures and algorithms', 'REST APIs', 'C++', 'C#', '.NET'];
+  const m = keywordMatch('Python scripts, HTML pages, a REST API in C# on .NET, algorithms course', '', skills);
+  assert.deepEqual(m.matched, ['JavaScript or Python', 'REST APIs', 'C#', '.NET']);
+  assert.deepEqual(m.missing, ['HTML and CSS', 'Data structures and algorithms', 'C++']);
+  assert.equal(keywordMatch('c++ and c', '', ['C#']).matched.length, 0, 'C# is not read inside other text');
+});
+
+test('an empty requiredSkills list falls back to the fixed technical list', () => {
+  const m = keywordMatch('Python and Git', 'Needs Python, Git and Docker', []);
+  assert.deepEqual(m.required, ['python', 'git', 'docker']);
+});
+
+test('scoreResume passes requiredSkills to the keyword part', async () => {
+  const r = await scoreResume({ resumeText: 'I use SQL daily', jobDesc: 'Python role', requiredSkills: ['SQL', 'Excel'], generate: async () => '0.5' });
+  assert.deepEqual([r.requiredSkills, r.matchedSkills, r.missingSkills], [['SQL', 'Excel'], ['SQL'], ['Excel']]);
+  assert.equal(r.keywordScore, 0.5);
+  assert.equal(r.matchPercentage, 50);
+});

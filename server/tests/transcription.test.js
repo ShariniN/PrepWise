@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import { transcribe, TranscriptionUnavailableError, transcriptionService } from '../services/transcription.js';
+import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import app from '../app.js';
 
 const MESSAGE = "Voice answers aren't available right now. Type your answer instead.";
@@ -77,6 +78,26 @@ test('a non-audio upload is refused with 400', async () => {
   process.env.GROQ_API_KEY = 'test-key';
   const res = await upload().attach('audio', Buffer.from('text'), { filename: 'a.txt', contentType: 'text/plain' });
   assert.equal(res.status, 400, res.text);
+});
+
+test('transcription counts against the monthly AI cap; over the cap is 503 TRANSCRIPTION_UNAVAILABLE and nothing is sent', async () => {
+  process.env.GROQ_API_KEY = 'test-key';
+  resetAiCapCache();
+  let calls = 0;
+  const metered = [];
+  mock.method(usageRepo, 'getCap', async () => 1);
+  mock.method(usageRepo, 'increment', async (institutionId) => { metered.push(String(institutionId)); calls += 1; return { calls }; });
+  const sent = mock.method(transcriptionService, 'transcribe', async () => ({ text: 'hello', durationSec: 1 }));
+  const audio = () => upload().attach('audio', Buffer.from('fake audio'), { filename: 'a.webm', contentType: 'audio/webm' });
+  const ok = await audio();
+  assert.equal(ok.status, 200, ok.text);
+  const over = await audio();
+  assert.equal(over.status, 503);
+  assert.equal(over.body.code, 'TRANSCRIPTION_UNAVAILABLE');
+  assert.equal(over.body.message, MESSAGE);
+  assert.equal(sent.mock.callCount(), 1, 'nothing is sent to the provider over the cap');
+  assert.deepEqual(metered, [IDS.instA, IDS.instA]);
+  resetAiCapCache();
 });
 
 // Last in this file: it uses up the per-minute allowance.
