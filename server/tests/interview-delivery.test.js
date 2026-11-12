@@ -8,6 +8,7 @@ import { makeWorld, IDS } from './helpers.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
 import { sanitizeDeliveryMetrics, summarizeDelivery } from '../modules/interviews/interviews.controller.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 const KEYS = ['cameraUsed', 'faceVisiblePct', 'eyeContactPct', 'lookAwayCount', 'headMovement', 'wordsPerMinute', 'fillerWordCount', 'durationSec'];
@@ -30,6 +31,7 @@ beforeEach(() => {
     async save() { return this; },
   };
   mock.method(InterviewModel, 'findOne', async () => interview);
+  installAnswerClaims((id) => (String(id) === String(interview._id) ? interview : null));
   mock.method(usageRepo, 'increment', async () => ({ calls: 1 }));
   mock.method(usageRepo, 'getCap', async () => 100);
   aiPrompts = [];
@@ -100,7 +102,7 @@ test('camera fields are null unless cameraUsed is exactly true', async () => {
 
 test('old clients without deliveryMetrics, or junk values, still submit fine and store null', async () => {
   for (const body of [{}, { deliveryMetrics: 'abc' }]) {
-    interview.responses = [];
+    interview.responses = []; interview.claimedAnswers = [];
     const res = await answer(body);
     assert.equal(res.status, 200, res.text);
     assert.equal(interview.responses[0].deliveryMetrics, null);

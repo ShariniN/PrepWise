@@ -83,11 +83,13 @@ test('sub-processor list is public and honest about what is in use', async () =>
   const res = await request(app).get('/api/compliance/subprocessors');
   assert.equal(res.status, 200);
   const by = Object.fromEntries(res.body.subprocessors.map((s) => [s.name, s.status]));
-  for (const name of ['MongoDB Atlas', 'Google Gemini API', 'JDoodle', 'Judge0', 'AssemblyAI', 'Vercel', 'Cloudflare']) {
+  for (const name of ['MongoDB Atlas', 'Google Gemini API', 'JDoodle', 'Judge0', 'Groq (voice transcription)', 'Vercel', 'Cloudflare']) {
     assert.ok(name in by, name);
   }
   assert.equal(by['Google Gemini API'], 'in_use');
   assert.equal(by['Judge0'], 'planned');
+  assert.equal(by['Groq (voice transcription)'], 'in_use');
+  assert.ok(!('AssemblyAI' in by), 'AssemblyAI is no longer used');
   assert.equal(by['Vercel'], 'planned');
   assert.equal(by['Cloudflare'], 'planned');
 });

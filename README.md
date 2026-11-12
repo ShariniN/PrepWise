@@ -13,7 +13,7 @@ PrepWise is being developed as a subscription product for universities, priced p
 
 ## Tech stack
 
-React + Vite + Tailwind (client), Node.js + Express + MongoDB/Mongoose (server), JWT cookie auth, Google Gemini (default AI provider), JDoodle (code execution), AssemblyAI (speech to text).
+React + Vite + Tailwind (client), Node.js + Express + MongoDB/Mongoose (server), JWT cookie auth, Google Gemini (default AI provider), JDoodle (code execution), Groq Whisper (speech to text).
 
 ## Running locally
 
@@ -32,7 +32,7 @@ npm install
 npm run dev                    # http://localhost:5173
 ```
 
-API keys for code execution (JDoodle or Judge0), AI (Gemini) and voice (AssemblyAI) go in `server/.env`; see `server/.env.example`. Without them those features report "unavailable" instead of faking results.
+API keys for code execution (JDoodle or Judge0), AI (Gemini) and voice (Groq, the same `GROQ_API_KEY`) go in `server/.env`; see `server/.env.example`. Without them those features report "unavailable" instead of faking results.
 
 `npm run dev` and `npm start` in `server/` connect to the `MONGODB_URI` in your `.env` instead of the embedded database.
 

@@ -18,7 +18,16 @@ const questionSchema = new mongoose.Schema({
   slot: { type: Number, min: 0, max: 4 },
   level: { type: String, enum: ['easy', 'medium', 'hard'] },
   expectedDuration: { type: Number, default: 120 }, 
-  // Optional hidden tests for coding questions. Never sent to the client (see getNextQuestion).
+  // Adaptive coding slot: the seeded practice question it came from. Its tests stay in the practice set and are
+  // loaded on the server when the answer is marked; only the visible ones are copied here for the student.
+  practiceQuestionId: { type: mongoose.Schema.Types.ObjectId, default: undefined },
+  statement: { type: String, default: undefined },
+  languages: { type: [String], default: undefined },
+  visibleTests: { type: [new mongoose.Schema({ id: String, input: String, expectedOutput: String, comparison: String }, { _id: false })], default: undefined },
+  hiddenTestCount: { type: Number, default: undefined },
+  timeLimitMs: { type: Number, default: undefined },
+  memoryLimitKb: { type: Number, default: undefined },
+  // Hidden tests of older interview questions. Never sent to the client.
   tests: { type: [new mongoose.Schema({ input: String, expectedOutput: String, comparison: String }, { _id: true })], default: undefined },
   followUpQuestions: [{ type: String }],
   starterCode: {
@@ -65,6 +74,8 @@ const responseSchema = new mongoose.Schema({
   questionId: { type: String, required: true },
   question: { type: String, required: true },
   questionType: { type: String, required: true },
+  // Adaptive interview: the level the question was asked at.
+  level: { type: String, enum: ['easy', 'medium', 'hard'] },
   audioUrl: { type: String }, 
   transcription: { type: String },
   textResponse: { type: String },
@@ -125,6 +136,9 @@ const interviewSchema = new mongoose.Schema({
   readiness: { type: String, enum: ['just_starting', 'some_practice', 'ready', null], default: null },
   // Server-side question bank for the adaptive flow. Never sent to the client.
   pool: { type: mongoose.Schema.Types.Mixed, select: false },
+  // questionIds whose answer is being or has been recorded. Claimed with one conditional update before scoring, so
+  // an answer sent twice at the same time (double click, two tabs) is stored and scored once.
+  claimedAnswers: { type: [String], select: false, default: undefined },
   currentQuestionIndex: { type: Number, default: 0 },
   
   status: { 
@@ -233,6 +247,7 @@ interviewSchema.set('toJSON', {
   transform: function(doc, ret) {
     delete ret.__v;
     delete ret.pool;
+    delete ret.claimedAnswers;
     return ret;
   }
 });

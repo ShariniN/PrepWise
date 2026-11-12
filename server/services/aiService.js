@@ -1,11 +1,9 @@
-import { GEMINI_MODEL, AI_MODELS } from '../config/ai.js';
+import { AI_MODELS } from '../config/ai.js';
 import { generateWithFallback } from './geminiClient.js';
 import axios from 'axios';
 import { consumeAi } from './aiUsage.js';
 
 
-const questionCache = new Map();
-const CACHE_TTL = 3600000; 
 
 let requestCount = 0;
 let lastResetTime = Date.now();
@@ -31,11 +29,6 @@ const checkRateLimit = async () => {
   requestCount++;
 };
 
-
-const getCacheKey = (resumeText, jobDescription) => {
-  const key = `${resumeText.substring(0, 200)}_${jobDescription.substring(0, 200)}`;
-  return key.replace(/\s+/g, '').toLowerCase();
-};
 
 
 export const parseAIResponse = (rawText) => {
@@ -170,65 +163,6 @@ const callAIModel = async (instruction, inputPrompt, fallbackGeminiPrompt, confi
 const callGemini = async (prompt, config = {}) => {
   const { text } = await generateWithFallback(prompt, { models: AI_MODELS, temperature: config.temperature });
   return text;
-};
-
-// Generate personalized interview questions WITH CACHING
-export const generateInterviewQuestions = async (resumeText, jobDescription) => {
-  console.log('🤖 Starting question generation with AI');
-  
-  const cacheKey = getCacheKey(resumeText, jobDescription);
-  const cached = questionCache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('✅ Returning cached questions');
-    return cached.questions;
-  }
-  
-  await checkRateLimit();
-
-  const instruction = `You are creating personalized interview questions for a software engineering intern position. Generate exactly 10 questions (3 behavioral, 4 technical, 3 coding). Reference specific CV content and use only javascript, python, java, cpp, c. Return ONLY a valid JSON array.`;
-
-  const inputPrompt = `CANDIDATE'S CV (first 2000 chars):
-${resumeText.substring(0, 2000)}
-
-JOB REQUIREMENTS (first 1000 chars):
-${jobDescription.substring(0, 1000)}`;
-  
-  const fallbackPrompt = `${instruction}\n\n${inputPrompt}\n\nCRITICAL: Return ONLY a valid JSON array with this EXACT structure:
-[
-  {
-    "questionId": "q1",
-    "type": "behavioral",
-    "question": "Tell me about a challenging project you worked on. What was the situation and how did you handle it?",
-    "category": "project_experience",
-    "difficulty": "easy",
-    "expectedDuration": 180,
-    "followUpQuestions": [],
-    "starterCode": null,
-    "language": null
-  }
-]`;
-
-  try {
-    const rawText = await callAIModel(instruction, inputPrompt, fallbackPrompt);
-    console.log('📥 Raw response length:', rawText.length);
-    
-    const parsedQuestions = parseAIResponse(rawText);
-    console.log('✅ Parsed questions count:', parsedQuestions.length);
-    
-    questionCache.set(cacheKey, {
-      questions: parsedQuestions,
-      timestamp: Date.now()
-    });
-    
-    return parsedQuestions;
-  } catch (error) {
-    if (error.message.includes('429') || error.message.includes('quota')) {
-      console.error('⚠️ API Quota exceeded - will use fallback questions');
-      throw error;
-    }
-    throw error;
-  }
 };
 
 export const generateAIFeedback = async (question, questionType, responseText, code, language, executionResults) => {
@@ -384,7 +318,6 @@ const calculateCategoryScores = (responses) => {
 
 
 export default { 
-  generateInterviewQuestions, 
   generateAIFeedback, 
   generateOverallInterviewFeedback
 };

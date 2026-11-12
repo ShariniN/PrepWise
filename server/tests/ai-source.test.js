@@ -7,6 +7,7 @@ import request from 'supertest';
 import { makeWorld, IDS } from './helpers.js';
 import InterviewModel from '../models/Interview.js';
 import { usageRepo, resetAiCapCache } from '../services/aiUsage.js';
+import { installAnswerClaims } from './support/interviewClaims.js';
 import app from '../app.js';
 
 let w, student, interview, increments;
@@ -22,6 +23,7 @@ beforeEach(() => {
     async save() { return this; },
   };
   mock.method(InterviewModel, 'findOne', async () => interview);
+  installAnswerClaims((id) => (String(id) === String(interview._id) ? interview : null));
   increments = [];
   mock.method(usageRepo, 'increment', async (id) => { increments.push(id); return { calls: increments.length }; });
   mock.method(console, 'error', () => {});

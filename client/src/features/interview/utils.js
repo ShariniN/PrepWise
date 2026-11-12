@@ -48,10 +48,6 @@ export const isCodingQuestionType = (type) => {
   return ['coding', 'technical_coding', 'problem-solving'].includes(type);
 };
 
-export const isSetupValid = (jobDescription, resumeText) => {
-  return jobDescription?.trim().length > 0 && resumeText?.trim().length >= 50;
-};
-
 // Feedback processing utilities
 export const processFeedback = (rawFeedback, isCodingQuestion) => {
   let feedback;
@@ -170,68 +166,3 @@ export const formatTime = (seconds) => {
   const secs = seconds % 60;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
-
-export const formatFileSize = (bytes) => {
-  if (!bytes) return 'N/A';
-  return `${Math.round(bytes / 1024)}KB`;
-};
-
-// Supported languages configuration
-export const SUPPORTED_LANGUAGES = [
-  { 
-    value: 'nodejs', 
-    label: 'JavaScript (Node.js)', 
-    template: 'console.log("Hello World");\n\n// Your code here\nfunction solution() {\n    // Implement your solution\n    return "result";\n}\n\nconsole.log(solution());',
-    jdoodleLanguage: 'nodejs',
-    version: '4'
-  },
-  { 
-    value: 'python3', 
-    label: 'Python 3', 
-    template: 'print("Hello World")\n\n# Your code here\ndef solution():\n    # Implement your solution\n    return "result"\n\nprint(solution())',
-    jdoodleLanguage: 'python3',
-    version: '4'
-  },
-  { 
-    value: 'java', 
-    label: 'Java', 
-    template: 'import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World");\n        System.out.println(solution());\n    }\n    \n    public static String solution() {\n        return "result";\n    }\n}',
-    jdoodleLanguage: 'java',
-    version: '4'
-  },
-  { 
-    value: 'c', 
-    label: 'C', 
-    template: '#include <stdio.h>\n\nint main() {\n    printf("Hello World\\n");\n    return 0;\n}',
-    jdoodleLanguage: 'c',
-    version: '5'
-  },
-  { 
-    value: 'cpp', 
-    label: 'C++', 
-    template: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World" << endl;\n    return 0;\n}',
-    jdoodleLanguage: 'cpp',
-    version: '5'
-  },
-  { 
-    value: 'csharp', 
-    label: 'C#', 
-    template: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello World");\n    }\n}',
-    jdoodleLanguage: 'csharp',
-    version: '4'
-  },
-  { 
-    value: 'php', 
-    label: 'PHP', 
-    template: '<?php\necho "Hello World\\n";\n?>',
-    jdoodleLanguage: 'php',
-    version: '4'
-  },
-  { 
-    value: 'go', 
-    label: 'Go', 
-    template: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello World")\n}',
-    jdoodleLanguage: 'go',
-    version: '4'
-  }
-];
