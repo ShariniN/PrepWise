@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import userAuth from '../../middleware/userAuth.js';
-import { executeCode } from '../code/code.controller.js';
 import rateLimit from 'express-rate-limit';
 import { transcriptionService, TranscriptionUnavailableError } from '../../services/transcription.js';
 
@@ -17,13 +16,6 @@ import {
 } from './interviews.controller.js';
 
 const interviewRouter = express.Router();
-
-// Rate limiting for code execution
-const codeExecutionLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // Increased limit for better UX
-  message: 'Too many code execution requests, please try again later.'
-});
 
 const MAX_AUDIO_MB = 25; // Groq's limit for one transcription upload
 const NOT_AUDIO = 'Only audio files are allowed';
@@ -71,9 +63,6 @@ export const transcribeAudio = async (req, res) => {
 interviewRouter.use(userAuth);
 
 interviewRouter.post('/transcribe', transcriptionLimiter, requireTranscriptionKey, audioUpload.single('audio'), transcribeAudio);
-
-// Old path kept for older clients; same single execution service as /api/code/execute
-interviewRouter.post('/execute-code', codeExecutionLimiter, executeCode);
 
 // Start screen and interview creation
 interviewRouter.get('/setup', getInterviewSetup);

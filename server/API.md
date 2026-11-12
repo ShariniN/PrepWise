@@ -65,14 +65,6 @@ An adaptive mock interview has 5 slots in the order behavioural, technical, codi
 | PUT `/interviews/:interviewId/complete` | none | `{ success, results: { ...scores, feedback, questionsAnswered, totalQuestions, startLevel, levelReached, deliverySummary } }`. Ends early; the level reached follows the last answer. | 404 |
 | GET `/interviews/:interviewId/feedback` | none | `{ success, feedback: { ...scores, feedback, responses, startLevel, levelReached, questions, deliverySummary, excludedFallbackAnswers } }` | 404 |
 | POST `/interviews/transcribe` | multipart audio in field `audio` (max 25 MB, 20 a minute) | `{ success, text, durationSec }`. Speech to text with Groq Whisper; audio is not stored. | 400 no audio or not audio; 503 `TRANSCRIPTION_UNAVAILABLE` (no `GROQ_API_KEY` or provider failure) |
-| POST `/interviews/execute-code` | same as `/code/execute` | same as `/code/execute` (10 a minute) | |
-
-## Code (`/api/code`, any user)
-
-| Method and path | Body | Response | Errors |
-|---|---|---|---|
-| POST `/code/execute` | `script`, `language`, `stdin?` | `{ success, verdict, output, error, executionTime, memory, statusCode }` | 400 missing field or unsupported language; 413 too large; 503 `verdict: "unavailable"` with `reason` when no runner is set up (nothing is scored); 429 (50 per 15 minutes) |
-| GET `/code/health` and GET `/code/languages` | none | `{ success, provider, configured, supportedLanguages, languages, warning?, timestamp }` | |
 
 ## People (`/api/institution`, university admin)
 

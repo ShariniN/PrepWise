@@ -48,7 +48,7 @@ afterEach(() => {
 test('protected routes reject requests with no login', async () => {
   for (const [method, url] of [
     ['get', '/api/user/profile'],
-    ['post', '/api/code/execute'],
+    ['get', '/api/practice/questions'],
     ['post', '/api/interviews/transcribe'],
     ['post', '/api/interviews/create'],
   ]) {
@@ -102,17 +102,6 @@ test('profile update ignores role and plan fields from the client', async () => 
   assert.equal(res.status, 200);
   assert.deepEqual(Object.keys(captured), ['$set']); // only $set (no $unset when a phone is sent)
   assert.deepEqual(Object.keys(captured.$set).sort(), ['lastActive', 'name', 'phoneNumber']);
-});
-
-test('code execution reports unavailable instead of returning fake output', async () => {
-  const res = await request(app)
-    .post('/api/code/execute')
-    .set('Cookie', authCookie())
-    .send({ script: 'print(1)', language: 'python3' });
-
-  assert.equal(res.status, 503);
-  assert.notEqual(res.body.success, true);
-  assert.equal(res.body.output, undefined);
 });
 
 test('transcription reports not configured when no key is set', async () => {

@@ -282,10 +282,3 @@ test('sandbox outage: the reason reaches the student in plain words', async () =
   assert.doesNotMatch(run.body.message, /down for test/, 'internal details are not passed through');
 });
 
-test('sandbox outage on /api/code/execute also gives the friendly reason', async () => {
-  provider.down = 'quota';
-  const res = await request(app).post('/api/code/execute').set(as(stuA)).send({ language: 'javascript', script: 'console.log(1)' });
-  assert.equal(res.status, 503);
-  assert.equal(res.body.reason, 'quota');
-  assert.match(res.body.error, /limit for today/);
-});

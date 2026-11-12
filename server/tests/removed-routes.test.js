@@ -57,7 +57,9 @@ export const REMOVED = [
   ['post', '/api/questions/draft'], ['get', '/api/user/skills-assessments'], ['delete', `/api/user/assessment/${id}`],
   ['post', '/api/swot/save-ratings'], ['get', '/api/grading/queue'],
   // adaptive interviews: creation uses the CV on file, and the next question comes with each answer
-  ['post', '/api/interviews/create-with-profile-cv'], ['get', `/api/interviews/${id}/next-question`], ['post', '/api/interviews/process-cv']
+  ['post', '/api/interviews/create-with-profile-cv'], ['get', `/api/interviews/${id}/next-question`], ['post', '/api/interviews/process-cv'],
+  // free-form code execution spent runner credits and nothing called it; practice and the coding slot have their own paths
+  ['post', '/api/code/execute'], ['get', '/api/code/health'], ['get', '/api/code/languages'], ['post', '/api/interviews/execute-code']
 ];
 
 test('every removed endpoint returns a JSON 404 for every role', async () => {

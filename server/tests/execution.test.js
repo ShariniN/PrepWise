@@ -1,9 +1,7 @@
 // Execution service: provider selection, verdict mapping, cache, outage handling. No network: HTTP is faked.
 import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import request from 'supertest';
-import { makeWorld, IDS } from './helpers.js';
-import app from '../app.js';
+import './helpers.js';
 import * as exec from '../services/execution/index.js';
 import Judge0Provider from '../services/execution/judge0Provider.js';
 import JDoodleProvider from '../services/execution/jdoodleProvider.js';
@@ -11,10 +9,7 @@ import { mapJudge0Status } from '../services/execution/verdicts.js';
 import { normalizeLanguage, supportedLanguages } from '../services/execution/languages.js';
 import { VmProvider, runJs } from './support/vmChecker.js';
 
-let w, student;
 beforeEach(() => {
-  w = makeWorld(); w.install();
-  student = w.addUser({ email: 's@a.edu', institutionId: IDS.instA });
   exec.resetCache();
   exec.setProvider(null);
   mock.method(console, 'error', () => {});
@@ -148,28 +143,6 @@ test('cache entries expire after the TTL and the LRU evicts the oldest', () => {
   assert.equal(c.get('a'), 1);
   now = 5000;
   assert.equal(c.get('a'), undefined);
-});
-
-test('/api/code/execute: unavailable gives 503 and no output; with a provider it keeps the client response shape', async () => {
-  const down = await request(app).post('/api/code/execute').set('Cookie', w.cookie(student)).send({ script: 'print(1)', language: 'python3' });
-  assert.equal(down.status, 503);
-  assert.equal(down.body.verdict, 'unavailable');
-  assert.equal(down.body.output, undefined);
-
-  exec.setProvider(new VmProvider());
-  const ok = await request(app).post('/api/code/execute').set('Cookie', w.cookie(student)).send({ script: 'console.log("hi")', language: 'nodejs', stdin: '' });
-  assert.equal(ok.status, 200);
-  assert.equal(ok.body.success, true);
-  assert.equal(ok.body.output, 'hi\n');
-  assert.equal(ok.body.statusCode, 200);
-  assert.ok('executionTime' in ok.body && 'memory' in ok.body && 'error' in ok.body);
-
-  const bad = await request(app).post('/api/code/execute').set('Cookie', w.cookie(student)).send({ script: 'x', language: 'cobol' });
-  assert.equal(bad.status, 400);
-  const errRun = await request(app).post('/api/interviews/execute-code').set('Cookie', w.cookie(student)).send({ script: 'throw new Error("no")', language: 'javascript' });
-  assert.equal(errRun.status, 200);
-  assert.equal(errRun.body.success, false);
-  assert.equal(errRun.body.verdict, 'runtime_error');
 });
 
 test('vm checker enforces a hard timeout and reports compile errors', () => {
