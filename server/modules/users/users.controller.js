@@ -22,7 +22,7 @@ export const getUserProfile = async (req, res) => {
 
     const userId = req.user._id || req.user.id;
     
-    const user = await userModel.findById(userId).select('-password -resetOtp -resetOtpExpireAtExpireAt');
+    const user = await userModel.findById(userId).select('-password -resetOtp -resetOtpExpireAt');
     
     if (!user) {
       return res.status(404).json({
@@ -73,7 +73,7 @@ export const updateUserProfile = async (req, res) => {
       {
         new: true,
         runValidators: true,
-        select: '-password -resetOtp -resetOtpExpireAtExpireAt'
+        select: '-password -resetOtp -resetOtpExpireAt'
       }
     );
 

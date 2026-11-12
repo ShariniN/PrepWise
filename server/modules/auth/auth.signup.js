@@ -9,6 +9,7 @@ import { audit } from '../../services/audit.js';
 import { passwordOk, PASSWORD_MESSAGE } from '../../services/accountRules.js';
 import peopleRepo from '../people/people.repo.js';
 import { seatsUsed } from '../people/people.service.js';
+import { withSeatLock, SeatLockBusyError } from '../../services/seatLock.js';
 
 export const VERIFY_TTL_MS = 24 * 60 * 60 * 1000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -97,17 +98,24 @@ export const startSignup = async ({ name, email, password }) => {
   if (await seatsFull(institution)) throw new SignupError(409, 'SEAT_LIMIT_REACHED', SEAT_MESSAGE);
 
   const { token, hash, expiresAt } = newVerifyToken();
-  const user = await signupRepo.createUser({
-    name: name.trim(),
-    email: cleanEmail,
-    password: await bcrypt.hash(password, 10),
-    role: 'student',
-    institutionId: institution._id,
-    status: 'unverified',
-    isAccountVerified: false,
-    emailVerifyTokenHash: hash,
-    emailVerifyExpiresAt: expiresAt,
-  });
+  let user;
+  try {
+    user = await signupRepo.createUser({
+      name: name.trim(),
+      email: cleanEmail,
+      password: await bcrypt.hash(password, 10),
+      role: 'student',
+      institutionId: institution._id,
+      status: 'unverified',
+      isAccountVerified: false,
+      emailVerifyTokenHash: hash,
+      emailVerifyExpiresAt: expiresAt,
+    });
+  } catch (error) {
+    // Two signups for one address raced; the other one won, and this caller gets the same generic answer.
+    if (error?.code === 11000) return { link: null };
+    throw error;
+  }
   const link = buildVerifyLink(token);
   await sendVerifyEmail(user, link);
   await audit({ actor: user._id, action: 'user.signup', target: user._id, institutionId: institution._id });
@@ -125,23 +133,35 @@ export const resendVerification = async (email) => {
 export const completeVerification = async (token) => {
   const invalid = new SignupError(400, 'VERIFY_INVALID', 'This verification link is not valid. Request a new one.');
   if (typeof token !== 'string' || !/^[a-f0-9]{64}$/i.test(token)) throw invalid;
+  const hash = hashToken(token);
 
-  const user = await signupRepo.findByVerifyHash(hashToken(token));
-  if (!user || user.status !== 'unverified') throw invalid;
-  if (!user.emailVerifyExpiresAt || new Date(user.emailVerifyExpiresAt).getTime() < Date.now()) {
-    throw new SignupError(400, 'VERIFY_EXPIRED', 'This verification link has expired. Request a new one.');
+  const first = await signupRepo.findByVerifyHash(hash);
+  if (!first || first.status !== 'unverified') throw invalid;
+
+  try {
+    // Everything from reading the token to activating runs under the institution's seat lock, so two
+    // verifications can neither take the last seat together nor activate the same token twice.
+    return await withSeatLock(first.institutionId, async () => {
+      const user = await signupRepo.findByVerifyHash(hash);
+      if (!user || user.status !== 'unverified') throw invalid;
+      if (!user.emailVerifyExpiresAt || new Date(user.emailVerifyExpiresAt).getTime() < Date.now()) {
+        throw new SignupError(400, 'VERIFY_EXPIRED', 'This verification link has expired. Request a new one.');
+      }
+      const institution = await peopleRepo.getInstitution(user.institutionId);
+      if (!institution || institution.status !== 'active') throw invalid;
+      // The seat is taken now, not at signup, so unverified accounts never block real students.
+      if (await seatsFull(institution)) throw new SignupError(409, 'SEAT_LIMIT_REACHED', SEAT_MESSAGE);
+
+      user.status = 'active';
+      user.isAccountVerified = true;
+      user.emailVerifyTokenHash = '';
+      user.emailVerifyExpiresAt = null;
+      await user.save();
+      await audit({ actor: user._id, action: 'user.verify_email', target: user._id, institutionId: user.institutionId });
+      return user;
+    });
+  } catch (error) {
+    if (error instanceof SeatLockBusyError) throw new SignupError(503, 'TRY_AGAIN', error.message);
+    throw error;
   }
-
-  const institution = await peopleRepo.getInstitution(user.institutionId);
-  if (!institution || institution.status !== 'active') throw invalid;
-  // The seat is taken now, not at signup, so unverified accounts never block real students.
-  if (await seatsFull(institution)) throw new SignupError(409, 'SEAT_LIMIT_REACHED', SEAT_MESSAGE);
-
-  user.status = 'active';
-  user.isAccountVerified = true;
-  user.emailVerifyTokenHash = '';
-  user.emailVerifyExpiresAt = null;
-  await user.save();
-  await audit({ actor: user._id, action: 'user.verify_email', target: user._id, institutionId: user.institutionId });
-  return user;
 };

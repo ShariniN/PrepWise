@@ -3,8 +3,10 @@ import { test, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
-import { makeWorld, IDS, userModel } from './helpers.js';
+import { makeWorld, IDS, userModel, peopleRepo, transporter } from './helpers.js';
 import { hashToken } from '../services/inviteTokens.js';
+import { seatLockRepo, withSeatLock, SeatLockBusyError } from '../services/seatLock.js';
+import Institution from '../models/Institution.js';
 import { signupRepo } from '../modules/auth/auth.signup.js';
 import { seatsUsed } from '../modules/people/people.service.js';
 import app from '../app.js';
@@ -24,6 +26,17 @@ beforeEach(() => {
     return base.call(userModel, q);
   });
   mock.method(signupRepo, 'createUser', async (data) => w.addUser(data));
+  // In-memory seat lock with the same rule as the real query: free when unset or expired.
+  mock.method(seatLockRepo, 'acquire', async (id, now, until) => {
+    const inst = w.institutions[String(id)];
+    if (inst.seatLockUntil && inst.seatLockUntil >= now) return null;
+    inst.seatLockUntil = until;
+    return { _id: id };
+  });
+  mock.method(seatLockRepo, 'release', async (id, until) => {
+    const inst = w.institutions[String(id)];
+    if (inst.seatLockUntil === until) inst.seatLockUntil = null;
+  });
 });
 afterEach(() => mock.restoreAll());
 
@@ -224,4 +237,99 @@ test('user has no OTP verify fields but keeps the reset ones', () => {
   assert.ok(!('verifyOtp' in paths));
   assert.ok(!('verifyOtpExpireAt' in paths));
   assert.ok('resetOtp' in paths && 'resetOtpExpireAt' in paths);
+});
+
+// Make the seat count and the save yield, so concurrent requests really interleave.
+const slowDown = () => {
+  const count = peopleRepo.countStudentsByStatus;
+  mock.method(peopleRepo, 'countStudentsByStatus', async (id) => {
+    await new Promise(setImmediate);
+    const result = await count(id);
+    await new Promise(setImmediate);
+    return result;
+  });
+  for (const u of w.users) {
+    const save = u.save;
+    u.save = async function slowSave() { await new Promise(setImmediate); return save.call(this); };
+  }
+};
+
+test('concurrent verifies for the last seat: exactly one activates', async () => {
+  for (let i = 0; i < 2; i++) w.addUser({ email: `s${i}@a.edu`, institutionId: IDS.instA });
+  const t1 = tokenOf(await signup({ email: 'one@a.edu' }));
+  const t2 = tokenOf(await signup({ email: 'two@a.edu' }));
+  slowDown();
+  const [a, b] = await Promise.all([verify(t1), verify(t2)]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 409]);
+  assert.equal([a, b].find((r) => r.status === 409).body.code, 'SEAT_LIMIT_REACHED');
+  assert.equal(w.users.filter((u) => u.status === 'active').length, 3);
+  const pending = w.users.filter((u) => u.status === 'unverified');
+  assert.equal(pending.length, 1);
+  assert.notEqual(pending[0].emailVerifyTokenHash, '');
+  assert.equal(w.institutions[IDS.instA].seatLockUntil, null);
+});
+
+test('concurrent double-submit of one token activates once', async () => {
+  const token = tokenOf(await signup());
+  slowDown();
+  const [a, b] = await Promise.all([verify(token), verify(token)]);
+  assert.deepEqual([a.status, b.status].sort(), [200, 400]);
+  assert.equal([a, b].find((r) => r.status === 400).body.code, 'VERIFY_INVALID');
+  assert.equal(w.users[0].status, 'active');
+  assert.equal(w.audit.filter((x) => x.action === 'user.verify_email').length, 1);
+});
+
+test('an expired seat lock is taken over', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].seatLockUntil = new Date(Date.now() - 1000);
+  const res = await verify(token);
+  assert.equal(res.status, 200);
+  assert.equal(w.institutions[IDS.instA].seatLockUntil, null);
+});
+
+test('a lock that stays held makes verify answer 503 TRY_AGAIN and leaves the account unverified', async () => {
+  const token = tokenOf(await signup());
+  w.institutions[IDS.instA].seatLockUntil = new Date(Date.now() + 60000);
+  const res = await verify(token);
+  assert.equal(res.status, 503);
+  assert.equal(res.body.code, 'TRY_AGAIN');
+  assert.equal(res.body.message, 'Too many people are signing up right now. Try again in a moment.');
+  assert.equal(w.users[0].status, 'unverified');
+});
+
+test('withSeatLock releases the lock when the work throws and gives up with SeatLockBusyError', async () => {
+  await assert.rejects(withSeatLock(IDS.instA, async () => { throw new Error('boom'); }), /boom/);
+  assert.equal(w.institutions[IDS.instA].seatLockUntil, null);
+  w.institutions[IDS.instA].seatLockUntil = new Date(Date.now() + 60000);
+  await assert.rejects(withSeatLock(IDS.instA, async () => 1, { waitMs: 50 }), SeatLockBusyError);
+});
+
+test('seat lock acquire asks for an unset, missing or expired lock', async () => {
+  seatLockRepo.acquire.mock.restore();
+  const seen = [];
+  mock.method(Institution, 'findOneAndUpdate', async (filter, update) => { seen.push([filter, update]); return null; });
+  const now = new Date();
+  const until = new Date(now.getTime() + 5000);
+  await seatLockRepo.acquire(IDS.instA, now, until);
+  assert.deepEqual(seen[0][0].$or, [{ seatLockUntil: null }, { seatLockUntil: { $exists: false } }, { seatLockUntil: { $lt: now } }]);
+  assert.deepEqual(seen[0][1], { $set: { seatLockUntil: until } });
+});
+
+test('a racing signup that hits the duplicate-email index gets the same generic 200', async () => {
+  mock.method(signupRepo, 'createUser', async () => { throw Object.assign(new Error('E11000 duplicate key'), { code: 11000 }); });
+  const res = await signup();
+  assert.equal(res.status, 200);
+  assert.equal(res.body.message, 'Check your email for a link to finish signing up.');
+  assert.equal(res.body.devVerificationLink, undefined);
+  assert.equal(w.mails.length, 0);
+});
+
+test('a failed verification email is logged but the answer stays the generic 200', async () => {
+  const errors = [];
+  mock.method(console, 'error', (...a) => errors.push(a.join(' ')));
+  mock.method(transporter, 'sendMail', async () => { throw new Error('smtp down'); });
+  const res = await signup();
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.ok(errors.some((e) => /Verification email failed: smtp down/.test(e)));
 });
