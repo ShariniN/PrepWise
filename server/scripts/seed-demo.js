@@ -1,6 +1,7 @@
 // Creates two fake universities for demos and tests. Fake data only, no real CVs, no AI calls.
 // University A also gets fake mock interviews and CV analyses for 25 of its 40 students (see demoActivity.js),
-// so the lecturer dashboard has data. Students are split into 'Group 1' and 'Group 2'.
+// so the lecturer dashboard has data. Students are split into 'Group 1' and 'Group 2', every student has a target
+// role (spread over the five defaults) and each lecturer sees one group.
 // Usage: npm run seed:demo            (refuses to run when NODE_ENV=production)
 //        npm run seed:demo -- --reset (deletes the two demo institutions and everything in them first)
 import crypto from 'node:crypto';
@@ -21,6 +22,14 @@ const LAST = ['Adams', 'Brooks', 'Chen', 'Dias', 'Evans', 'Fox', 'Gupta', 'Hughe
 export const DEMOS = [
   { name: 'Demo University A', slug: 'demo-a', domain: 'demo-a.test', loginDomain: 'email.com', limit: 60, selfSignup: true },
   { name: 'Demo University B', slug: 'demo-b', domain: 'demo-b.test', loginDomain: 'demo-b.test', limit: 45 },
+];
+
+// The admin and the two lecturers. `host` says which domain the login uses: the short login domain or the
+// university's own.
+export const STAFF = [
+  { name: 'Dana Admin', local: 'admin', host: 'login', role: 'university_admin' },
+  { name: 'Leo Lecturer', local: 'lecturer', host: 'login', role: 'lecturer' },
+  { name: 'Lena Lecturer', local: 'lecturer2', host: 'domain', role: 'lecturer' },
 ];
 
 // Each demo lecturer sees one group.
@@ -82,11 +91,8 @@ export const main = async () => {
     });
 
     const staff = [];
-    for (const [name, email, role] of [
-      ['Dana Admin', `admin@${d.loginDomain}`, 'university_admin'],
-      ['Leo Lecturer', `lecturer@${d.loginDomain}`, 'lecturer'],
-      ['Lena Lecturer', `lecturer2@${d.domain}`, 'lecturer'],
-    ]) {
+    for (const { name, local, host, role } of STAFF) {
+      const email = `${local}@${host === 'login' ? d.loginDomain : d.domain}`;
       const password = DEMO_PASSWORDS[role];
       staff.push(await make(name, email, role, password, LECTURER_GROUPS[name] ? { assignedGroups: LECTURER_GROUPS[name] } : {}));
       console.log(`${role.padEnd(16)} ${email}  password: ${password}`);
@@ -96,22 +102,23 @@ export const main = async () => {
     const studentPassword = DEMO_PASSWORDS.student;
     const now = new Date();
     const plan = demoPlan({ count: 40 });
+    const roles = institution.targetRoles.map((r) => r.toObject());
     const planned = studentNames(40).map((n, i) => ({
-      _id: new mongoose.Types.ObjectId(), name: `${n.first} ${n.last}`, group: plan[i].group,
+      _id: new mongoose.Types.ObjectId(), name: `${n.first} ${n.last}`, group: plan[i].group, targetRoleId: roles[plan[i].roleIndex % roles.length]._id,
       email: i === 0 ? `student@${d.loginDomain}` : `student${String(i + 1).padStart(2, '0')}@${d.domain}`,
     }));
     const withActivity = ACTIVITY_SLUGS.includes(d.slug);
-    const activity = withActivity ? buildDemoActivity({ students: planned, institutionId: institution._id, now, plan }) : null;
+    const activity = withActivity ? buildDemoActivity({ students: planned, institutionId: institution._id, roles, now, plan }) : null;
     for (const [i, s] of planned.entries()) {
-      await make(s.name, s.email, 'student', studentPassword, { _id: s._id, group: s.group, lastActive: activity ? activity.lastActive[i] : now });
+      await make(s.name, s.email, 'student', studentPassword, { _id: s._id, group: s.group, targetRoleId: s.targetRoleId, lastActive: activity ? activity.lastActive[i] : now });
     }
     console.log(`student          student@${d.loginDomain}  password: ${studentPassword}`);
     console.log(`student          student02@${d.domain} .. student40@${d.domain}  password (all 39): ${studentPassword}`);
     console.log('students are split into "Group 1" and "Group 2" (20 each)');
 
     if (activity) {
-      // Checked against the Interview schema, then written through the driver so fields the schema in this
-      // branch does not declare yet (responses[].deliveryMetrics) are kept.
+      // Checked against the Interview schema, then written through the driver so the stored documents are exactly
+      // what was built.
       for (const doc of activity.interviews) {
         const err = new Interview(doc).validateSync();
         if (err) throw new Error(`Demo interview is invalid: ${err.message}`);
