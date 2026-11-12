@@ -1,4 +1,5 @@
-// Real-browser walk through the current product (run prep.mjs first). No AI calls and no code runs.
+// Real-browser walk through the current product (run prep.mjs first). No code runs on the server; the mock interview
+// section runs code in the browser only and makes about 7 AI calls when an AI key is set (none without one).
 // Usage: node e2e.mjs   (WEB=http://localhost:5173, screenshots go to ./e2e/)
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
