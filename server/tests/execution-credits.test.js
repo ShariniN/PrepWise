@@ -173,7 +173,7 @@ test('browser Run record: no runner call, stored as an unverified run, client cl
   // but the student does show as active
   const list = await request(app).get('/api/practice/questions?unseen=1').set('Cookie', w.cookie(stu));
   assert.ok(list.body.questions.some((x) => x.id === String(q._id)));
-  const { practiceSummary, studentRow } = await import('../modules/lecturer/lecturer.metrics.js');
+  const { practiceSummary, studentRow } = await import('../modules/dashboard/dashboard.metrics.js');
   const summary = practiceSummary(db.attempts);
   assert.equal(summary.submissions, 0);
   assert.equal(summary.solved, 0);

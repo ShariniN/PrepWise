@@ -1,29 +1,29 @@
-// In-memory stand-in for modules/lecturer/lecturer.repo.js. Like the real repository it filters by institutionId, but it returns
+// In-memory stand-in for modules/dashboard/dashboard.repo.js. Like the real repository it filters by institutionId, but it returns
 // FULL documents (CV text, secrets, hidden tests included) so the tests prove the controller's whitelists, not
 // the fake's projection.
 import { mock } from 'node:test';
-import lecturerRepo from '../../modules/lecturer/lecturer.repo.js';
+import dashboardRepo from '../../modules/dashboard/dashboard.repo.js';
 import { newId } from '../helpers.js';
 
 const same = (a, b) => String(a ?? '') === String(b ?? '');
 const clone = (o) => (o == null ? o : structuredClone(Object.fromEntries(Object.entries(o).filter(([, v]) => typeof v !== 'function'))));
 const inIds = (ids, v) => ids.some((i) => same(i, v));
 
-export const installLecturerWorld = (world) => {
+export const installDashboardWorld = (world) => {
   const db = { interviews: [], cvs: [], attempts: [] };
   world.ldb = db;
   const isStudent = (u, inst) => same(u.institutionId, inst) && u.role === 'student' && u.status === 'active';
 
-  mock.method(lecturerRepo, 'listStudents', async (inst, { group } = {}) =>
+  mock.method(dashboardRepo, 'listStudents', async (inst, { group } = {}) =>
     world.users.filter((u) => isStudent(u, inst) && (!group || (u.group || '') === group)).map(clone));
-  mock.method(lecturerRepo, 'distinctGroups', async (inst) =>
+  mock.method(dashboardRepo, 'distinctGroups', async (inst) =>
     [...new Set(world.users.filter((u) => isStudent(u, inst)).map((u) => u.group).filter(Boolean))]);
-  mock.method(lecturerRepo, 'findStudent', async (inst, id) => clone(world.users.find((u) => same(u._id, id) && isStudent(u, inst))) || null);
-  mock.method(lecturerRepo, 'interviewsFor', async (inst, ids) => db.interviews.filter((i) => same(i.institutionId, inst) && inIds(ids, i.userId)).map(clone));
-  mock.method(lecturerRepo, 'findInterview', async (inst, uid, id) =>
+  mock.method(dashboardRepo, 'findStudent', async (inst, id) => clone(world.users.find((u) => same(u._id, id) && isStudent(u, inst))) || null);
+  mock.method(dashboardRepo, 'interviewsFor', async (inst, ids) => db.interviews.filter((i) => same(i.institutionId, inst) && inIds(ids, i.userId)).map(clone));
+  mock.method(dashboardRepo, 'findInterview', async (inst, uid, id) =>
     clone(db.interviews.find((i) => same(i._id, id) && same(i.institutionId, inst) && same(i.userId, uid))) || null);
-  mock.method(lecturerRepo, 'cvAnalysesFor', async (inst, ids) => db.cvs.filter((c) => same(c.institutionId, inst) && inIds(ids, c.userId)).map(clone));
-  mock.method(lecturerRepo, 'attemptsFor', async (inst, ids) =>
+  mock.method(dashboardRepo, 'cvAnalysesFor', async (inst, ids) => db.cvs.filter((c) => same(c.institutionId, inst) && inIds(ids, c.userId)).map(clone));
+  mock.method(dashboardRepo, 'attemptsFor', async (inst, ids) =>
     db.attempts.filter((a) => same(a.institutionId, inst) && inIds(ids, a.userId) && ['run', 'submit'].includes(a.runKind) && !a.assessmentSessionId).map(clone));
 
   const answer = (questionType, score, extra = {}) => ({

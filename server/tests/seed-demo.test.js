@@ -11,7 +11,7 @@ import Interview from '../models/Interview.js';
 import CVAnalysis from '../models/CvAnalysis.js';
 import { demoPlan, buildDemoActivity, prng } from '../scripts/demoActivity.js';
 import { DEMO_PASSWORDS, ACTIVITY_SLUGS, DEMOS } from '../scripts/seed-demo.js';
-import * as m from '../modules/lecturer/lecturer.metrics.js';
+import * as m from '../modules/dashboard/dashboard.metrics.js';
 
 const NOW = new Date('2026-11-10T12:00:00Z');
 const inst = new mongoose.Types.ObjectId('aaaaaaaaaaaaaaaaaaaaaaaa');

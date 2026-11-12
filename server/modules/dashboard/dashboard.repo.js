@@ -25,7 +25,7 @@ const CV_FIELDS = [
   'results.strengths', 'results.contentWeaknesses', 'results.structureWeaknesses', 'results.skillsMatched', 'results.skillsMissing',
 ].join(' ');
 
-const lecturerRepo = {
+const dashboardRepo = {
   // Active students of the institution, optionally one group.
   listStudents: (institutionId, { group } = {}) => {
     const q = { institutionId, ...STUDENT_FILTER };
@@ -61,4 +61,4 @@ const lecturerRepo = {
   },
 };
 
-export default lecturerRepo;
+export default dashboardRepo;

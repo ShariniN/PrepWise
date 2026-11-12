@@ -6,8 +6,8 @@ import { audit } from '../../services/audit.js';
 import { cleanGroup, PeopleError } from '../people/people.service.js';
 import { fail, isId, intParam } from '../../services/http.js';
 import { toCsv } from '../../services/csv.js';
-import lecturerRepo from './lecturer.repo.js';
-import * as m from './lecturer.metrics.js';
+import dashboardRepo from './dashboard.repo.js';
+import * as m from './dashboard.metrics.js';
 
 const sid = (v) => String(v);
 const iso = (d) => (d ? new Date(d).toISOString() : null);
@@ -35,12 +35,12 @@ const groupParam = (req, res) => {
 
 // Loads every active student in scope with their data, and builds the table rows.
 const loadRows = async (institutionId, group, now) => {
-  const students = await lecturerRepo.listStudents(institutionId, group ? { group } : {});
+  const students = await dashboardRepo.listStudents(institutionId, group ? { group } : {});
   const ids = students.map((s) => sid(s._id));
   const [interviews, cvs, attempts] = await Promise.all([
-    lecturerRepo.interviewsFor(institutionId, ids),
-    lecturerRepo.cvAnalysesFor(institutionId, ids),
-    lecturerRepo.attemptsFor(institutionId, ids),
+    dashboardRepo.interviewsFor(institutionId, ids),
+    dashboardRepo.cvAnalysesFor(institutionId, ids),
+    dashboardRepo.attemptsFor(institutionId, ids),
   ]);
   const iv = groupBy(interviews); const cv = groupBy(cvs); const at = groupBy(attempts);
   return students.map((s) => m.studentRow(s, { interviews: iv.get(sid(s._id)) || [], cvAnalyses: cv.get(sid(s._id)) || [], attempts: at.get(sid(s._id)) || [] }, now));
@@ -52,7 +52,7 @@ export const overview = async (req, res) => {
   if (!g) return;
   const institutionId = institutionOf(req);
   const now = new Date();
-  const [rows, groups] = await Promise.all([loadRows(institutionId, g.group, now), lecturerRepo.distinctGroups(institutionId)]);
+  const [rows, groups] = await Promise.all([loadRows(institutionId, g.group, now), dashboardRepo.distinctGroups(institutionId)]);
   res.json({
     success: true, group: g.group || null, groups: [...new Set(groups)].sort((a, b) => a.localeCompare(b)), generatedAt: now.toISOString(),
     ...m.overview(rows, now),
@@ -105,7 +105,7 @@ export const studentsCsv = async (req, res) => {
 const loadStudent = async (req, res) => {
   if (!isId(req.params.id)) { fail(res, 404, 'Student not found'); return null; }
   const institutionId = institutionOf(req);
-  const student = await lecturerRepo.findStudent(institutionId, req.params.id);
+  const student = await dashboardRepo.findStudent(institutionId, req.params.id);
   if (!student) { fail(res, 404, 'Student not found'); return null; }
   return { institutionId, student };
 };
@@ -141,9 +141,9 @@ export const student = async (req, res) => {
   const { institutionId, student: u } = s;
   const id = sid(u._id);
   const [interviews, cvs, attempts] = await Promise.all([
-    lecturerRepo.interviewsFor(institutionId, [id]),
-    lecturerRepo.cvAnalysesFor(institutionId, [id]),
-    lecturerRepo.attemptsFor(institutionId, [id]),
+    dashboardRepo.interviewsFor(institutionId, [id]),
+    dashboardRepo.cvAnalysesFor(institutionId, [id]),
+    dashboardRepo.attemptsFor(institutionId, [id]),
   ]);
   const mine = (xs) => xs.filter((x) => sid(x.userId) === id); // defence in depth
   const ivs = mine(interviews); const cv = mine(cvs); const at = mine(attempts);
@@ -205,7 +205,7 @@ export const interview = async (req, res) => {
   if (!s) return;
   if (!isId(req.params.interviewId)) return fail(res, 404, 'Interview not found');
   const id = sid(s.student._id);
-  const iv = await lecturerRepo.findInterview(s.institutionId, id, req.params.interviewId);
+  const iv = await dashboardRepo.findInterview(s.institutionId, id, req.params.interviewId);
   if (!iv || sid(iv.userId) !== id) return fail(res, 404, 'Interview not found');
   await audit({ actor: req.user.id, action: 'lecturer.view_student', target: id, institutionId: s.institutionId, meta: { view: 'interview', interviewId: sid(iv._id) } });
   const responses = iv.responses || [];
